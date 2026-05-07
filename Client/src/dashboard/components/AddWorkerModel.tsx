@@ -1,0 +1,709 @@
+'use client';
+import { useState, useCallback } from 'react';
+import type { AddWorkerFormData, DechubService, ServiceConfig } from '../types/dashboard.type';
+import { INITIAL_ADD_WORKER, DECHUB_SERVICES } from '../types/dashboard.type';
+import { inviteWorker } from '../api/dashboard.api';
+
+// ─── Step labels ──────────────────────────────────────────────────────────────
+
+const STEPS = ['Worker type', 'Details', 'Services', 'Contract', 'Review'];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StepBar({ current }: { current: number }) {
+  return (
+    <div className="db-step-bar">
+      {STEPS.map((label, i) => {
+        const state = i < current ? 'done' : i === current ? 'active' : 'pending';
+        return (
+          <div key={label} className="db-step-item">
+            <div className={`db-step-num ${state}`}>
+              {state === 'done' ? '✓' : i + 1}
+            </div>
+            <span className={`db-step-label ${state}`}>{label}</span>
+            {i < STEPS.length - 1 && (
+              <div className={`db-step-connector ${state === 'done' ? 'done' : ''}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Step 1: Worker type ──────────────────────────────────────────────────────
+
+function Step1Type({ data, onChange }: {
+  data: AddWorkerFormData;
+  onChange: (k: keyof AddWorkerFormData, v: string) => void;
+}) {
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.6 }}>
+        Choose the type of worker you want to add to Dechub.
+        This determines the contract template, compliance rules, and payment flow.
+      </p>
+
+      <div style={{ marginBottom: 24 }}>
+        <div className="db-form-group" style={{ marginBottom: 8 }}>
+          <label className="db-label" style={{ marginBottom: 10 }}>Worker Type</label>
+        </div>
+        <div className="db-type-grid">
+          <button
+            type="button"
+            className={`db-type-card ${data.workerType === 'contractor' ? 'selected' : ''}`}
+            onClick={() => onChange('workerType', 'contractor')}
+          >
+            {data.workerType === 'contractor' && (
+              <span className="db-type-card-check">✓</span>
+            )}
+            <div className="db-type-card-icon">👤</div>
+            <div className="db-type-card-title">Contractor</div>
+            <div className="db-type-card-desc">
+              Self-employed professional working on a project basis.
+              Submits invoices monthly. No employer obligations.
+            </div>
+          </button>
+          <button
+            type="button"
+            className={`db-type-card ${data.workerType === 'full_time_employee' ? 'selected' : ''}`}
+            onClick={() => onChange('workerType', 'full_time_employee')}
+          >
+            {data.workerType === 'full_time_employee' && (
+              <span className="db-type-card-check">✓</span>
+            )}
+            <div className="db-type-card-icon">🏢</div>
+            <div className="db-type-card-title">Full-time Employee</div>
+            <div className="db-type-card-desc">
+              Employed with a full contract, benefits, and payroll.
+              Dechub handles payroll, statutory compliance.
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div className="db-form-group" style={{ marginBottom: 8 }}>
+          <label className="db-label" style={{ marginBottom: 10 }}>Worker Location Track</label>
+        </div>
+        <div className="db-type-grid">
+          <button
+            type="button"
+            className={`db-type-card ${data.track === 'track_2_us' ? 'selected' : ''}`}
+            onClick={() => onChange('track', 'track_2_us')}
+          >
+            {data.track === 'track_2_us' && (
+              <span className="db-type-card-check">✓</span>
+            )}
+            <div className="db-type-card-icon">🇺🇸</div>
+            <div className="db-type-card-title">Track 2 — US</div>
+            <div className="db-type-card-desc">
+              US professional hired by a foreign company. USD contracts,
+              Wise payouts, W-9/W-8BEN tax forms. <strong>MVP ready.</strong>
+            </div>
+          </button>
+          <button
+            type="button"
+            className={`db-type-card ${data.track === 'track_1_india' ? 'selected' : ''}`}
+            onClick={() => onChange('track', 'track_1_india')}
+          >
+            {data.track === 'track_1_india' && (
+              <span className="db-type-card-check">✓</span>
+            )}
+            <div className="db-type-card-icon">🇮🇳</div>
+            <div className="db-type-card-title">Track 1 — India</div>
+            <div className="db-type-card-desc">
+              Indian professional hired by a foreign company. INR payroll,
+              TDS/PF/ESI, Form 16. <strong>Coming Q3 2026.</strong>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 2: Worker details ───────────────────────────────────────────────────
+
+const COUNTRIES = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
+  'France', 'India', 'Singapore', 'Netherlands', 'UAE', 'Sweden', 'Brazil',
+];
+
+function Step2Details({ data, onChange, errors }: {
+  data: AddWorkerFormData;
+  onChange: (k: keyof AddWorkerFormData, v: string) => void;
+  errors: Record<string, string>;
+}) {
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.6 }}>
+        Enter the worker's basic information. An invitation email will be sent
+        to their email address to complete their profile and KYC.
+      </p>
+
+      <div className="db-form-row">
+        <div className="db-form-group">
+          <label className="db-label">First name <span className="db-req">*</span></label>
+          <input
+            className={`db-input ${errors.firstName ? 'error' : ''}`}
+            placeholder="John"
+            value={data.firstName}
+            onChange={(e) => onChange('firstName', e.target.value)}
+          />
+          {errors.firstName && <p className="db-field-error">{errors.firstName}</p>}
+        </div>
+        <div className="db-form-group">
+          <label className="db-label">Last name <span className="db-req">*</span></label>
+          <input
+            className={`db-input ${errors.lastName ? 'error' : ''}`}
+            placeholder="Smith"
+            value={data.lastName}
+            onChange={(e) => onChange('lastName', e.target.value)}
+          />
+          {errors.lastName && <p className="db-field-error">{errors.lastName}</p>}
+        </div>
+      </div>
+
+      <div className="db-form-group">
+        <label className="db-label">Work email <span className="db-req">*</span></label>
+        <input
+          type="email"
+          className={`db-input ${errors.email ? 'error' : ''}`}
+          placeholder="john@example.com"
+          value={data.email}
+          onChange={(e) => onChange('email', e.target.value)}
+        />
+        {errors.email && <p className="db-field-error">{errors.email}</p>}
+        <p style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>
+          Invite email will be sent here
+        </p>
+      </div>
+
+      <div className="db-form-row">
+        <div className="db-form-group">
+          <label className="db-label">Job title / Role <span className="db-req">*</span></label>
+          <input
+            className={`db-input ${errors.roleTitle ? 'error' : ''}`}
+            placeholder="Senior React Developer"
+            value={data.roleTitle}
+            onChange={(e) => onChange('roleTitle', e.target.value)}
+          />
+          {errors.roleTitle && <p className="db-field-error">{errors.roleTitle}</p>}
+        </div>
+        <div className="db-form-group">
+          <label className="db-label">Department</label>
+          <input
+            className="db-input"
+            placeholder="Engineering"
+            value={data.department}
+            onChange={(e) => onChange('department', e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="db-form-group">
+        <label className="db-label">Country of residence <span className="db-req">*</span></label>
+        <select
+          className={`db-select ${errors.country ? 'error' : ''}`}
+          value={data.country}
+          onChange={(e) => onChange('country', e.target.value)}
+        >
+          <option value="">Select country…</option>
+          {COUNTRIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+          <option value="Other">Other</option>
+        </select>
+        {errors.country && <p className="db-field-error">{errors.country}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 3: Service selection ────────────────────────────────────────────────
+
+function Step3Services({ data, onToggle }: {
+  data: AddWorkerFormData;
+  onToggle: (id: string) => void;
+}) {
+  const selected = data.selectedServices;
+
+  const optionalAddons = selected.filter((s) => {
+    const cfg = DECHUB_SERVICES.find((x) => x.id === s);
+    return cfg?.tier === 'optional' && cfg?.priceLabel;
+  });
+
+  const monthlyCost = 49 + optionalAddons.length * 5;
+
+  const renderService = (cfg: ServiceConfig) => {
+    const isOn = selected.includes(cfg.id);
+
+    return (
+      <div
+        key={cfg.id}
+        className={[
+          'db-service-card',
+          cfg.required ? 'required' : '',
+          isOn && !cfg.required ? 'selected' : '',
+          cfg.comingSoon ? 'coming-soon' : '',
+        ].filter(Boolean).join(' ')}
+        onClick={() => !cfg.required && !cfg.comingSoon && onToggle(cfg.id)}
+        role={cfg.required || cfg.comingSoon ? undefined : 'checkbox'}
+        aria-checked={isOn}
+        tabIndex={cfg.required || cfg.comingSoon ? undefined : 0}
+        onKeyDown={(e) => {
+          if (!cfg.required && !cfg.comingSoon && (e.key === ' ' || e.key === 'Enter')) {
+            e.preventDefault();
+            onToggle(cfg.id);
+          }
+        }}
+      >
+        <div className="db-service-icon">{cfg.icon}</div>
+        <div className="db-service-info">
+          <div className="db-service-name">
+            {cfg.name}
+            {cfg.required && (
+              <span className="db-service-required-tag">Required</span>
+            )}
+            {cfg.comingSoon && (
+              <span className="db-service-soon-tag">Coming soon</span>
+            )}
+            {cfg.priceLabel && !cfg.comingSoon && (
+              <span className="db-service-price">{cfg.priceLabel}</span>
+            )}
+          </div>
+          <div className="db-service-desc">{cfg.desc}</div>
+        </div>
+
+        {!cfg.required && !cfg.comingSoon && (
+          <div className={`db-service-toggle ${isOn ? 'on' : ''}`} aria-hidden="true">
+            <div className="db-service-toggle-thumb" />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const core        = DECHUB_SERVICES.filter((s) => s.tier === 'core');
+  const recommended = DECHUB_SERVICES.filter((s) => s.tier === 'recommended');
+  const optional    = DECHUB_SERVICES.filter((s) => s.tier === 'optional');
+
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 1.6 }}>
+        Choose which Dechub services to activate for{' '}
+        <strong>{data.firstName || 'this worker'}</strong>.
+        Core services are always included. You can toggle recommended and optional services.
+      </p>
+
+      <p className="db-service-section-label">Always included (Core)</p>
+      {core.map(renderService)}
+
+      <p className="db-service-section-label">Recommended</p>
+      {recommended.map(renderService)}
+
+      <p className="db-service-section-label">Optional add-ons</p>
+      {optional.map(renderService)}
+
+      <div className="db-cost-summary">
+        <div>
+          <div className="db-cost-label">Estimated monthly cost for this worker</div>
+          <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
+            Base $49 + {optionalAddons.length} optional add-on{optionalAddons.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+        <div className="db-cost-value">${monthlyCost}<span style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>/mo</span></div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 4: Contract terms ───────────────────────────────────────────────────
+
+function Step4Contract({ data, onChange, errors }: {
+  data: AddWorkerFormData;
+  onChange: (k: keyof AddWorkerFormData, v: string) => void;
+  errors: Record<string, string>;
+}) {
+  const currencies = ['USD', 'GBP', 'EUR', 'CAD', 'AUD'];
+
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.6 }}>
+        Set the contract terms. Dechub will auto-generate the PDF agreement
+        from these details and send it for e-signature via DocuSign.
+      </p>
+
+      <div className="db-form-row">
+        <div className="db-form-group">
+          <label className="db-label">Pay rate <span className="db-req">*</span></label>
+          <input
+            type="number"
+            className={`db-input ${errors.payRate ? 'error' : ''}`}
+            placeholder="3000"
+            value={data.payRate}
+            onChange={(e) => onChange('payRate', e.target.value)}
+            min="0"
+          />
+          {errors.payRate && <p className="db-field-error">{errors.payRate}</p>}
+        </div>
+        <div className="db-form-group">
+          <label className="db-label">Currency</label>
+          <select
+            className="db-select"
+            value={data.payCurrency}
+            onChange={(e) => onChange('payCurrency', e.target.value)}
+          >
+            {currencies.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="db-form-group">
+        <label className="db-label">Pay frequency</label>
+        <select
+          className="db-select"
+          value={data.payFrequency}
+          onChange={(e) => onChange('payFrequency', e.target.value)}
+        >
+          <option value="monthly">Monthly (last day of month)</option>
+          <option value="biweekly">Bi-weekly (every 2 weeks)</option>
+          <option value="hourly">Hourly (based on invoice)</option>
+        </select>
+      </div>
+
+      <div className="db-form-row">
+        <div className="db-form-group">
+          <label className="db-label">Start date <span className="db-req">*</span></label>
+          <input
+            type="date"
+            className={`db-input ${errors.startDate ? 'error' : ''}`}
+            value={data.startDate}
+            onChange={(e) => onChange('startDate', e.target.value)}
+          />
+          {errors.startDate && <p className="db-field-error">{errors.startDate}</p>}
+        </div>
+        <div className="db-form-group">
+          <label className="db-label">End date <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
+          <input
+            type="date"
+            className="db-input"
+            value={data.endDate}
+            onChange={(e) => onChange('endDate', e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="db-form-group">
+        <label className="db-label">Notice period (days)</label>
+        <input
+          type="number"
+          className="db-input"
+          value={data.noticePeriodDays}
+          onChange={(e) => onChange('noticePeriodDays', e.target.value)}
+          min="0"
+          max="90"
+          style={{ width: '50%' }}
+        />
+      </div>
+
+      <div className="db-form-group">
+        <label className="db-label">Scope of work <span className="db-req">*</span></label>
+        <textarea
+          className={`db-textarea ${errors.scopeOfWork ? 'error' : ''}`}
+          placeholder="Describe the work to be done, deliverables, and any specific requirements…"
+          value={data.scopeOfWork}
+          onChange={(e) => onChange('scopeOfWork', e.target.value)}
+          style={{ height: 100 }}
+        />
+        {errors.scopeOfWork && <p className="db-field-error">{errors.scopeOfWork}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 5: Review ───────────────────────────────────────────────────────────
+
+function Step5Review({ data }: { data: AddWorkerFormData }) {
+  const trackLabel = data.track === 'track_2_us' ? '🇺🇸 Track 2 — US' : '🇮🇳 Track 1 — India';
+  const typeLabel  = data.workerType === 'contractor' ? 'Contractor' : 'Full-time Employee';
+
+  const selectedServiceConfigs = DECHUB_SERVICES.filter((s) =>
+    data.selectedServices.includes(s.id),
+  );
+
+  return (
+    <div>
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #0a1628, #162d54)',
+          borderRadius: 12,
+          padding: '20px 24px',
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            width: 46, height: 46,
+            borderRadius: 12,
+            background: 'rgba(0,201,167,0.2)',
+            display: 'grid', placeItems: 'center',
+            fontSize: 22, flexShrink: 0,
+          }}
+        >
+          👤
+        </div>
+        <div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
+            {data.firstName} {data.lastName}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13 }}>
+            {data.roleTitle} · {data.country}
+          </div>
+        </div>
+        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+          <div style={{ color: '#00c9a7', fontWeight: 700, fontSize: 18 }}>
+            {data.payCurrency} {data.payRate
+              ? Number(data.payRate).toLocaleString()
+              : '—'}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+            per {data.payFrequency === 'hourly' ? 'hour' : data.payFrequency === 'biweekly' ? 'bi-week' : 'month'}
+          </div>
+        </div>
+      </div>
+
+      <div className="db-review-section">
+        <div className="db-review-section-title">Worker info</div>
+        <div className="db-review-row"><span className="db-review-key">Email</span><span className="db-review-val">{data.email}</span></div>
+        <div className="db-review-row"><span className="db-review-key">Worker type</span><span className="db-review-val">{typeLabel}</span></div>
+        <div className="db-review-row"><span className="db-review-key">Track</span><span className="db-review-val">{trackLabel}</span></div>
+        <div className="db-review-row"><span className="db-review-key">Department</span><span className="db-review-val">{data.department || '—'}</span></div>
+      </div>
+
+      <div className="db-review-section">
+        <div className="db-review-section-title">Contract terms</div>
+        <div className="db-review-row"><span className="db-review-key">Pay rate</span><span className="db-review-val">{data.payCurrency} {data.payRate ? Number(data.payRate).toLocaleString() : '—'} / {data.payFrequency}</span></div>
+        <div className="db-review-row"><span className="db-review-key">Start date</span><span className="db-review-val">{data.startDate || '—'}</span></div>
+        <div className="db-review-row"><span className="db-review-key">End date</span><span className="db-review-val">{data.endDate || 'No fixed end date'}</span></div>
+        <div className="db-review-row"><span className="db-review-key">Notice period</span><span className="db-review-val">{data.noticePeriodDays} days</span></div>
+      </div>
+
+      <div className="db-review-section">
+        <div className="db-review-section-title">Selected services ({selectedServiceConfigs.length})</div>
+        <div className="db-service-chips">
+          {selectedServiceConfigs.map((s) => (
+            <span key={s.id} className="db-service-chip">
+              {s.icon} {s.name}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: '#f0fdf4',
+          border: '1px solid #bbf7d0',
+          borderRadius: 10,
+          padding: '12px 16px',
+          fontSize: 13,
+          color: '#166534',
+          lineHeight: 1.6,
+        }}
+      >
+        ✅ After clicking <strong>Send Invite</strong>:
+        an invitation email is sent to <strong>{data.email}</strong> →
+        they complete KYC → Dechub auto-generates the contract PDF →
+        DocuSign sends e-signature request to both parties →
+        payment flow activates on the start date.
+      </div>
+    </div>
+  );
+}
+
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+function validateStep(step: number, data: AddWorkerFormData): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  if (step === 0) {
+    if (!data.workerType) errors.workerType = 'Select a worker type';
+    if (!data.track)      errors.track      = 'Select a track';
+  }
+
+  if (step === 1) {
+    if (!data.firstName.trim()) errors.firstName = 'Required';
+    if (!data.lastName.trim())  errors.lastName  = 'Required';
+    if (!data.email.trim())     errors.email     = 'Required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.email = 'Invalid email';
+    if (!data.roleTitle.trim()) errors.roleTitle = 'Required';
+    if (!data.country)          errors.country   = 'Select a country';
+  }
+
+  if (step === 3) {
+    if (!data.payRate || Number(data.payRate) <= 0) errors.payRate = 'Enter a valid pay rate';
+    if (!data.startDate) errors.startDate = 'Required';
+    if (!data.scopeOfWork.trim()) errors.scopeOfWork = 'Describe the scope of work';
+  }
+
+  return errors;
+}
+
+// ─── Main modal ───────────────────────────────────────────────────────────────
+
+interface AddWorkerModalProps {
+  onClose:   () => void;
+  onSuccess: (worker: unknown) => void;
+}
+
+export default function AddWorkerModal({ onClose, onSuccess }: AddWorkerModalProps) {
+  const [step,     setStep]     = useState(0);
+  const [data,     setData]     = useState<AddWorkerFormData>(INITIAL_ADD_WORKER);
+  const [errors,   setErrors]   = useState<Record<string, string>>({});
+  const [loading,  setLoading]  = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const handleChange = useCallback(<K extends keyof AddWorkerFormData>(
+    key: K,
+    value: AddWorkerFormData[K],
+  ) => {
+    setData((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => { const n = { ...prev }; delete n[key as string]; return n; });
+  }, []);
+
+  const handleStringChange = useCallback((key: keyof AddWorkerFormData, value: string) => {
+    handleChange(key, value as AddWorkerFormData[typeof key]);
+  }, [handleChange]);
+
+  const toggleService = useCallback((id: string) => {
+    setData((prev) => {
+      const curr = prev.selectedServices;
+      const serviceId = id as DechubService;
+      const next = curr.includes(serviceId)
+        ? curr.filter((service) => service !== serviceId)
+        : [...curr, serviceId];
+      return { ...prev, selectedServices: next };
+    });
+  }, []);
+
+  const handleNext = useCallback(async () => {
+    const stepErrors = validateStep(step, data);
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      return;
+    }
+    setErrors({});
+
+    if (step < STEPS.length - 1) {
+      setStep((s) => s + 1);
+      return;
+    }
+
+    // Final step — submit
+    setLoading(true);
+    setApiError(null);
+    try {
+      const worker = await inviteWorker(data);
+      onSuccess(worker);
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setApiError(e?.message ?? 'Failed to invite worker. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [step, data, onSuccess]);
+
+  const handleBack = () => {
+    if (step > 0) setStep((s) => s - 1);
+  };
+
+  return (
+    <div className="db-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="db-modal">
+        {/* Header */}
+        <div className="db-modal-header">
+          <div>
+            <div className="db-modal-title">Add Worker</div>
+            <div className="db-modal-sub">
+              Step {step + 1} of {STEPS.length} — {STEPS[step]}
+            </div>
+          </div>
+          <button className="db-modal-close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        {/* Step bar */}
+        <StepBar current={step} />
+
+        {/* Body */}
+        <div className="db-modal-body">
+          {step === 0 && (
+            <Step1Type data={data} onChange={handleStringChange} />
+          )}
+          {step === 1 && (
+            <Step2Details data={data} onChange={handleStringChange} errors={errors} />
+          )}
+          {step === 2 && (
+            <Step3Services data={data} onToggle={toggleService} />
+          )}
+          {step === 3 && (
+            <Step4Contract data={data} onChange={handleStringChange} errors={errors} />
+          )}
+          {step === 4 && (
+            <Step5Review data={data} />
+          )}
+
+          {/* API error */}
+          {apiError && (
+            <div
+              role="alert"
+              style={{
+                marginTop: 16,
+                background: '#fef2f2', border: '1px solid #fecaca',
+                borderRadius: 8, padding: '10px 14px',
+                color: '#dc2626', fontSize: 13,
+              }}
+            >
+              ⚠ {apiError}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="db-modal-footer">
+          <button
+            type="button"
+            className="db-btn-secondary"
+            onClick={step === 0 ? onClose : handleBack}
+            disabled={loading}
+          >
+            {step === 0 ? 'Cancel' : '← Back'}
+          </button>
+
+          <button
+            type="button"
+            className="db-btn-primary"
+            onClick={handleNext}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="db-spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+                Sending…
+              </>
+            ) : step === STEPS.length - 1 ? (
+              '📧 Send Invite'
+            ) : (
+              `Continue →`
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

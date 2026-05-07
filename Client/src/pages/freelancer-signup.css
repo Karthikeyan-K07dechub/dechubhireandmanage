@@ -1,0 +1,16 @@
+.fsp-back {
+  margin-bottom: 18px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fsp-note {
+  margin-bottom: 20px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.7;
+}

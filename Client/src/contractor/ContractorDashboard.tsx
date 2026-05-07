@@ -1,0 +1,1138 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type {
+  ContractorContract,
+  ContractorInvoice,
+  ContractorPage,
+  ContractorProfile,
+  InvoiceStatus,
+  SubmitInvoicePayload,
+} from './types/contractor.types';
+import {
+  contractorTokenStore,
+  getContractorProfile,
+  getMyContract,
+  getMyInvoices,
+  submitInvoice,
+  updateContractorProfile,
+} from './api/contractor.api';
+
+interface ContractorDashboardProps {
+  previewProfile?: ContractorProfile | null;
+  onLogoutOverride?: () => void;
+}
+
+const INVOICE_BADGE: Record<InvoiceStatus, { cls: string; label: string }> = {
+  draft: { cls: 'inv-badge inv-badge-draft', label: 'Draft' },
+  submitted: { cls: 'inv-badge inv-badge-submitted', label: 'Submitted' },
+  approved: { cls: 'inv-badge inv-badge-approved', label: 'Approved' },
+  paid: { cls: 'inv-badge inv-badge-paid', label: 'Paid' },
+  disputed: { cls: 'inv-badge inv-badge-disputed', label: 'Disputed' },
+};
+
+const MARKETPLACE_AVAILABILITY_OPTIONS = [
+  { value: 'available_now', label: 'Available now' },
+  { value: 'this_week', label: 'Available this week' },
+  { value: 'two_weeks', label: '2 weeks notice' },
+  { value: 'next_month', label: 'Available next month' },
+  { value: 'not_available', label: 'Not available' },
+] as const;
+
+const SKILL_SUGGESTIONS: string[] = [];
+
+const DEFAULT_MARKETPLACE_TITLE = 'Freelancer';
+const DEFAULT_MARKETPLACE_SUMMARIES = new Set([
+  'Tell companies about your strongest skills and the kind of freelance work you want.',
+  'Experienced freelancer available for contract work.',
+  'Self-signup freelancer profile',
+]);
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f4f9', fontSize: 13.5, gap: 18 }}>
+      <span style={{ color: '#64748b' }}>{label}</span>
+      <span style={{ fontWeight: 600, color: '#0f172a', textAlign: 'right' }}>{value}</span>
+    </div>
+  );
+}
+
+function SubmitInvoiceModal({
+  profile,
+  onClose,
+  onSuccess,
+}: {
+  profile: ContractorProfile;
+  onClose: () => void;
+  onSuccess: (invoice: ContractorInvoice) => void;
+}) {
+  const [form, setForm] = useState<SubmitInvoicePayload>({
+    periodStart: '',
+    periodEnd: '',
+    amountGross: profile.payRate ?? 0,
+    description: `Monthly contractor services - ${profile.roleTitle}`,
+    hoursWorked: undefined,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const isHourly = profile.payFrequency === 'hourly';
+
+  const validate = () => {
+    const next: Record<string, string> = {};
+    if (!form.periodStart) next.periodStart = 'Required';
+    if (!form.periodEnd) next.periodEnd = 'Required';
+    if (form.periodEnd && form.periodStart && form.periodEnd < form.periodStart) {
+      next.periodEnd = 'End must be after start';
+    }
+    if (!form.amountGross || form.amountGross <= 0) next.amountGross = 'Enter a valid amount';
+    if (!form.description.trim()) next.description = 'Required';
+    if (isHourly && !form.hoursWorked) next.hoursWorked = 'Required for hourly contracts';
+    return next;
+  };
+
+  const handleSubmit = async () => {
+    const next = validate();
+    if (Object.keys(next).length > 0) {
+      setErrors(next);
+      return;
+    }
+
+    setErrors({});
+    setError(null);
+    setLoading(true);
+    try {
+      const invoice = await submitInvoice(form);
+      onSuccess(invoice);
+    } catch (err) {
+      setError((err as Error).message ?? 'Failed to submit invoice.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="cp-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="cp-modal">
+        <div className="cp-modal-header">
+          <div>
+            <div className="cp-modal-title">Submit Invoice</div>
+            <div className="cp-modal-sub">
+              {profile.payCurrency} {profile.payRate?.toLocaleString()} / {profile.payFrequency}
+            </div>
+          </div>
+          <button className="cp-modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="cp-modal-body">
+          {error && <div className="cp-error">Warning: {error}</div>}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+            <div className="cp-field">
+              <label className="cp-label">Period start <span className="cp-req">*</span></label>
+              <input
+                type="date"
+                className={`cp-input ${errors.periodStart ? 'error' : ''}`}
+                value={form.periodStart}
+                onChange={(e) => setForm((prev) => ({ ...prev, periodStart: e.target.value }))}
+              />
+              {errors.periodStart && <p className="cp-field-error">{errors.periodStart}</p>}
+            </div>
+            <div className="cp-field">
+              <label className="cp-label">Period end <span className="cp-req">*</span></label>
+              <input
+                type="date"
+                className={`cp-input ${errors.periodEnd ? 'error' : ''}`}
+                value={form.periodEnd}
+                onChange={(e) => setForm((prev) => ({ ...prev, periodEnd: e.target.value }))}
+              />
+              {errors.periodEnd && <p className="cp-field-error">{errors.periodEnd}</p>}
+            </div>
+          </div>
+
+          {isHourly && (
+            <div className="cp-field">
+              <label className="cp-label">Hours worked <span className="cp-req">*</span></label>
+              <input
+                type="number"
+                className={`cp-input ${errors.hoursWorked ? 'error' : ''}`}
+                value={form.hoursWorked ?? ''}
+                onChange={(e) => {
+                  const hours = Number(e.target.value);
+                  setForm((prev) => ({
+                    ...prev,
+                    hoursWorked: hours,
+                    amountGross: hours * (profile.payRate ?? 0),
+                  }));
+                }}
+              />
+              {errors.hoursWorked && <p className="cp-field-error">{errors.hoursWorked}</p>}
+            </div>
+          )}
+
+          <div className="cp-field">
+            <label className="cp-label">Invoice amount ({profile.payCurrency}) <span className="cp-req">*</span></label>
+            <input
+              type="number"
+              className={`cp-input ${errors.amountGross ? 'error' : ''}`}
+              value={form.amountGross}
+              readOnly={isHourly}
+              onChange={(e) => setForm((prev) => ({ ...prev, amountGross: Number(e.target.value) }))}
+            />
+            {errors.amountGross && <p className="cp-field-error">{errors.amountGross}</p>}
+          </div>
+
+          <div className="cp-field">
+            <label className="cp-label">Description <span className="cp-req">*</span></label>
+            <textarea
+              className={`cp-textarea ${errors.description ? 'error' : ''}`}
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              style={{ height: 80 }}
+            />
+            {errors.description && <p className="cp-field-error">{errors.description}</p>}
+          </div>
+        </div>
+
+        <div className="cp-modal-footer">
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              flex: 1,
+              height: 44,
+              background: '#fff',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: 10,
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              color: '#475569',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="cp-btn-primary"
+            style={{ flex: 2, height: 44, borderRadius: 10 }}
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? 'Submitting...' : 'Submit Invoice'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardHome({
+  profile,
+  invoices,
+  onSubmitInvoice,
+  onNavigate,
+}: {
+  profile: ContractorProfile;
+  invoices: ContractorInvoice[];
+  onSubmitInvoice: () => void;
+  onNavigate: (page: ContractorPage) => void;
+}) {
+  const totalPaid = invoices.filter((invoice) => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amountGross, 0);
+  const totalPending = invoices.filter((invoice) => invoice.status === 'submitted').reduce((sum, invoice) => sum + invoice.amountGross, 0);
+  const nextPayment = invoices.find((invoice) => invoice.status === 'approved');
+  const recentInvoices = invoices.slice(0, 4);
+
+  return (
+    <div className="cd-page">
+      <div className="cd-page-title">Welcome back, {profile.firstName}</div>
+      <div className="cd-page-sub">{profile.roleTitle} at {profile.companyName}</div>
+
+      <div className="cd-stats">
+        <div className="cd-stat">
+          <div className="cd-stat-label">Pay rate</div>
+          <div className="cd-stat-value" style={{ fontSize: 20 }}>{profile.payCurrency} {profile.payRate?.toLocaleString()}</div>
+          <div className="cd-stat-hint">per {profile.payFrequency}</div>
+        </div>
+        <div className="cd-stat">
+          <div className="cd-stat-label">Total earned</div>
+          <div className="cd-stat-value">{profile.payCurrency} {totalPaid.toLocaleString()}</div>
+          <div className="cd-stat-hint">All paid invoices</div>
+        </div>
+        <div className="cd-stat">
+          <div className="cd-stat-label">Pending approval</div>
+          <div className="cd-stat-value">{profile.payCurrency} {totalPending.toLocaleString()}</div>
+          <div className="cd-stat-hint">{invoices.filter((invoice) => invoice.status === 'submitted').length} invoice(s)</div>
+        </div>
+        <div className="cd-stat">
+          <div className="cd-stat-label">Next payment</div>
+          <div className="cd-stat-value" style={{ fontSize: 18 }}>
+            {nextPayment ? `${profile.payCurrency} ${nextPayment.amountGross.toLocaleString()}` : '-'}
+          </div>
+          <div className="cd-stat-hint">{nextPayment ? 'Processing after approval' : 'No approved invoices'}</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+        <div className="cd-card">
+          <div className="cd-card-header">
+            <span className="cd-card-title">Recent Invoices</span>
+            <button
+              className="db-card-link"
+              onClick={() => onNavigate('invoices')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}
+            >
+              View all →
+            </button>
+          </div>
+
+          {recentInvoices.length === 0 ? (
+            <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>No invoices yet</div>
+              <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 16 }}>Submit your first invoice to get paid.</div>
+              <button className="cp-btn-primary" style={{ width: 'auto', padding: '0 24px' }} onClick={onSubmitInvoice}>
+                Submit Invoice
+              </button>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    {['Invoice #', 'Period', 'Amount', 'Status'].map((heading) => (
+                      <th key={heading} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', background: '#f8fafc', borderBottom: '1px solid #e8ecf2' }}>
+                        {heading}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentInvoices.map((invoice) => (
+                    <tr key={invoice._id} style={{ borderBottom: '1px solid #f1f4f9' }}>
+                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>{invoice.invoiceNumber}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12.5, color: '#64748b' }}>
+                        {new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>{invoice.currency} {invoice.amountGross.toLocaleString()}</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <span className={INVOICE_BADGE[invoice.status].cls}>{INVOICE_BADGE[invoice.status].label}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div style={{ background: 'linear-gradient(135deg, #0a1628, #162d54)', borderRadius: 14, padding: '22px 22px', marginBottom: 16 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Submit this month&apos;s invoice</div>
+            <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: 16 }}>
+              Submit by the last day of the month for on-time payment.
+            </div>
+            <button
+              type="button"
+              onClick={onSubmitInvoice}
+              style={{
+                width: '100%',
+                height: 40,
+                background: '#00c9a7',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Submit Invoice
+            </button>
+          </div>
+
+          <div className="cd-card">
+            <div className="cd-card-header">
+              <span className="cd-card-title">Contract Status</span>
+            </div>
+            <div style={{ padding: '16px 20px' }}>
+              <DetailRow label="KYC" value={profile.kycStatus === 'approved' ? 'Verified' : 'Pending'} />
+              <DetailRow label="Account" value={profile.status === 'active' ? 'Active' : profile.status} />
+              <DetailRow label="Skills" value={profile.skills.length ? `${profile.skills.length} added` : 'No skills yet'} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkillsPage({
+  profile,
+  onSave,
+}: {
+  profile: ContractorProfile;
+  onSave: (skills: string[]) => Promise<void>;
+}) {
+  const [draftSkills, setDraftSkills] = useState<string[]>(profile.skills ?? []);
+  const [newSkill, setNewSkill] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setDraftSkills(profile.skills ?? []);
+  }, [profile.skills]);
+
+  const availableSuggestions = useMemo(
+    () => SKILL_SUGGESTIONS.filter((skill) => !draftSkills.some((item) => item.toLowerCase() === skill.toLowerCase())),
+    [draftSkills],
+  );
+
+  const persistSkills = async (nextSkills: string[], successMessage: string) => {
+    setDraftSkills(nextSkills);
+    setSaving(true);
+    setMessage('');
+    setError('');
+    try {
+      await onSave(nextSkills);
+      setMessage(successMessage);
+    } catch (err) {
+      setDraftSkills(profile.skills ?? []);
+      setError((err as Error).message ?? 'Failed to update skills.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addSkill = async (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (draftSkills.some((skill) => skill.toLowerCase() === trimmed.toLowerCase())) {
+      setNewSkill('');
+      return;
+    }
+
+    const nextSkills = [...draftSkills, trimmed];
+    setNewSkill('');
+    await persistSkills(nextSkills, `"${trimmed}" added and saved.`);
+  };
+
+  const removeSkill = async (skillToRemove: string) => {
+    const nextSkills = draftSkills.filter((skill) => skill !== skillToRemove);
+    await persistSkills(nextSkills, `"${skillToRemove}" removed and saved.`);
+  };
+
+  const handleSave = async () => {
+    await persistSkills(draftSkills, 'Skills updated successfully.');
+  };
+
+  return (
+    <div className="cd-page">
+      <div className="cd-page-title">Skills</div>
+      <div className="cd-page-sub">Add and update the skills you want shown on your contractor profile.</div>
+
+      <div className="cd-card" style={{ padding: '28px' }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 18, alignItems: 'center' }}>
+          <input
+            className="cp-input"
+            value={newSkill}
+            onChange={(e) => setNewSkill(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void addSkill(newSkill);
+              }
+            }}
+            placeholder="Add a skill like React, Node.js, UI Design"
+            style={{ flex: 1 }}
+          />
+          <button type="button" className="cp-btn-primary" style={{ width: 'auto', padding: '0 20px' }} onClick={() => void addSkill(newSkill)} disabled={saving}>
+            Add skill
+          </button>
+        </div>
+
+        {draftSkills.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
+            {draftSkills.map((skill) => (
+              <button
+                key={skill}
+                type="button"
+                onClick={() => void removeSkill(skill)}
+                style={{
+                  border: '1px solid #cbd5e1',
+                  background: '#fff',
+                  color: '#0f172a',
+                  borderRadius: 999,
+                  padding: '9px 14px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {skill} ×
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{ marginBottom: 24, fontSize: 13, color: '#94a3b8' }}>
+            No skills added yet. Start by adding the strengths you want shown on your profile.
+          </div>
+        )}
+
+        <div style={{ marginBottom: 14, fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Suggested skills
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
+          {availableSuggestions.map((skill) => (
+            <button
+              key={skill}
+              type="button"
+              onClick={() => void addSkill(skill)}
+              style={{
+                border: '1px dashed #93c5fd',
+                background: '#eff6ff',
+                color: '#1d4ed8',
+                borderRadius: 999,
+                padding: '8px 14px',
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              + {skill}
+            </button>
+          ))}
+        </div>
+
+        {message && <div style={{ marginBottom: 14, color: '#15803d', fontSize: 13, fontWeight: 600 }}>{message}</div>}
+        {error && <div style={{ marginBottom: 14, color: '#dc2626', fontSize: 13, fontWeight: 600 }}>{error}</div>}
+
+        <button type="button" className="cp-btn-primary" style={{ width: 'auto', padding: '0 24px' }} onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save skills'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+void SkillsPage;
+
+function InvoicesPage({
+  invoices,
+  onSubmit,
+  readOnly,
+}: {
+  invoices: ContractorInvoice[];
+  onSubmit: () => void;
+  readOnly: boolean;
+}) {
+  return (
+    <div className="cd-page">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+        <div>
+          <div className="cd-page-title">My Invoices</div>
+          <div className="cd-page-sub">{invoices.length} total</div>
+        </div>
+        {!readOnly && (
+          <button className="cp-btn-primary" style={{ width: 'auto', padding: '0 20px', height: 42 }} onClick={onSubmit}>
+            Submit Invoice
+          </button>
+        )}
+      </div>
+
+      <div className="cd-card">
+        {invoices.length === 0 ? (
+          <div style={{ padding: '64px 32px', textAlign: 'center', color: '#94a3b8' }}>
+            No invoices yet.
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['Invoice #', 'Period', 'Description', 'Amount', 'Status'].map((heading) => (
+                  <th key={heading} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', background: '#f8fafc', borderBottom: '1px solid #e8ecf2' }}>
+                    {heading}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((invoice) => (
+                <tr key={invoice._id} style={{ borderBottom: '1px solid #f1f4f9' }}>
+                  <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>{invoice.invoiceNumber}</td>
+                  <td style={{ padding: '13px 16px', fontSize: 12.5, color: '#64748b' }}>{new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}</td>
+                  <td style={{ padding: '13px 16px', fontSize: 13, color: '#475569' }}>{invoice.description}</td>
+                  <td style={{ padding: '13px 16px', fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{invoice.currency} {invoice.amountGross.toLocaleString()}</td>
+                  <td style={{ padding: '13px 16px' }}><span className={INVOICE_BADGE[invoice.status].cls}>{INVOICE_BADGE[invoice.status].label}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ContractPage({ profile, readOnly }: { profile: ContractorProfile; readOnly: boolean }) {
+  const [contract, setContract] = useState<ContractorContract | null>(null);
+  const [loading, setLoading] = useState(!readOnly);
+
+  useEffect(() => {
+    if (readOnly) {
+      setLoading(false);
+      return;
+    }
+
+    getMyContract()
+      .then((data) => {
+        setContract(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [readOnly]);
+
+  return (
+    <div className="cd-page">
+      <div className="cd-page-title">My Contract</div>
+      <div className="cd-page-sub">Your active contractor agreement with {profile.companyName}</div>
+
+      {readOnly ? (
+        <div className="cd-card" style={{ padding: 32, color: '#64748b' }}>
+          Contract preview is not available in self-signup mode yet.
+        </div>
+      ) : loading ? (
+        <div className="cd-card" style={{ padding: 32, color: '#64748b' }}>Loading contract...</div>
+      ) : !contract ? (
+        <div className="cd-card" style={{ padding: 32, color: '#64748b' }}>Contract not found.</div>
+      ) : (
+        <div className="cd-card" style={{ padding: '24px 28px' }}>
+          <DetailRow label="Role" value={contract.roleTitle} />
+          <DetailRow label="Company" value={contract.companyName} />
+          <DetailRow label="Pay rate" value={`${contract.payCurrency} ${contract.payRate?.toLocaleString()} / ${contract.payFrequency}`} />
+          <DetailRow label="Status" value={contract.status.toUpperCase()} />
+          <DetailRow label="Worker signature" value={contract.workerSigned ? 'Signed' : 'Pending'} />
+          <DetailRow label="Company signature" value={contract.companySigned ? 'Signed' : 'Pending'} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProfilePage({
+  profile,
+  readOnly,
+  onSave,
+}: {
+  profile: ContractorProfile;
+  readOnly: boolean;
+  onSave: (payload: {
+    firstName: string;
+    lastName: string;
+    marketplaceTitle: string;
+    marketplaceBio: string;
+    marketplaceAvailability: ContractorProfile['marketplaceAvailability'];
+    marketplaceRate: number;
+    city: string;
+    country: string;
+    skills: string[];
+  }) => Promise<void>;
+}) {
+  const buildFormState = useCallback(() => ({
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    marketplaceTitle: profile.marketplaceTitle,
+    marketplaceBio: profile.marketplaceBio,
+    marketplaceAvailability: profile.marketplaceAvailability,
+    marketplaceRate: String(profile.marketplaceRate ?? 0),
+    city: profile.city,
+    country: profile.country,
+    skillsInput: profile.skills.join(', '),
+  }), [profile]);
+
+  const [form, setForm] = useState(buildFormState);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const fullName = `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() || 'Not added yet';
+  const domainValue =
+    profile.marketplaceTitle?.trim() && profile.marketplaceTitle.trim() !== DEFAULT_MARKETPLACE_TITLE
+      ? profile.marketplaceTitle.trim()
+      : 'Not added yet';
+  const locationValue =
+    profile.city?.trim() && profile.country?.trim() && profile.country.trim().toLowerCase() !== 'unknown'
+      ? `${profile.city.trim()}, ${profile.country.trim()}`
+      : profile.country?.trim() && profile.country.trim().toLowerCase() !== 'unknown'
+      ? profile.country.trim()
+      : 'Not added yet';
+  const rateValue =
+    typeof profile.marketplaceRate === 'number' && profile.marketplaceRate > 0
+      ? `${profile.payCurrency} ${profile.marketplaceRate}/hr`
+      : 'Not added yet';
+  const summaryValue =
+    profile.marketplaceBio?.trim() && !DEFAULT_MARKETPLACE_SUMMARIES.has(profile.marketplaceBio.trim())
+      ? profile.marketplaceBio.trim()
+      : 'No profile summary added yet.';
+  const skillsValue = profile.skills.length ? profile.skills.join(', ') : 'No skills added yet';
+  const hasRateBadge = typeof profile.marketplaceRate === 'number' && profile.marketplaceRate > 0;
+  const heroSkills = profile.skills.slice(0, 2);
+  const extraSkillCount = Math.max(profile.skills.length - heroSkills.length, 0);
+  const hasDomainValue = domainValue !== 'Not added yet';
+  const hasLocationValue = locationValue !== 'Not added yet';
+  const heroSkillsLabel = [
+    ...heroSkills,
+    extraSkillCount > 0 ? `+${extraSkillCount} more` : null,
+  ].filter(Boolean).join('  •  ');
+
+  useEffect(() => {
+    setForm(buildFormState());
+  }, [buildFormState]);
+
+  useEffect(() => {
+    if (!message) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setMessage('');
+    }, 5_000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [message]);
+
+  const handleSave = async () => {
+    const skills = Array.from(
+      new Set(
+        form.skillsInput
+          .split(',')
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+      ),
+    );
+
+    setSaving(true);
+    setMessage('');
+    setError('');
+    try {
+      await onSave({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        marketplaceTitle: form.marketplaceTitle.trim(),
+        marketplaceBio: form.marketplaceBio.trim(),
+        marketplaceAvailability: form.marketplaceAvailability,
+        marketplaceRate: Number(form.marketplaceRate) || 0,
+        city: form.city.trim(),
+        country: form.country.trim(),
+        skills,
+      });
+      setMessage('Marketplace profile updated successfully.');
+      setIsEditing(false);
+    } catch (err) {
+      setError((err as Error).message ?? 'Failed to save profile.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStartEdit = () => {
+    setForm(buildFormState());
+    setError('');
+    setMessage('');
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setForm(buildFormState());
+    setError('');
+    setIsEditing(false);
+  };
+
+  if (readOnly || !isEditing) {
+    return (
+      <div className="cd-page">
+        <div className="cd-page-title">My Profile</div>
+        <div className="cd-page-sub">
+          {readOnly
+            ? 'Your contractor profile and account settings'
+            : 'Review the freelancer details that companies currently see in the marketplace.'}
+        </div>
+        <div className="cd-profile-shell">
+          {message && !readOnly && (
+            <div className="cd-profile-success">
+              {message}
+            </div>
+          )}
+
+          <div className="cd-profile-hero">
+            <div className="cd-profile-hero-copy">
+              <div className="cd-profile-hero-name">{fullName}</div>
+              <div className="cd-profile-hero-meta">
+                {hasDomainValue && <span>{domainValue}</span>}
+                {hasDomainValue && hasLocationValue && <span className="cd-profile-dot" />}
+                {hasLocationValue && <span>{locationValue}</span>}
+              </div>
+              <div className="cd-profile-badges">
+                <span className="cd-profile-badge cd-profile-badge-primary">{profile.marketplaceAvailabilityLabel}</span>
+                {hasRateBadge && <span className="cd-profile-badge">{rateValue}</span>}
+                {heroSkillsLabel && <span className="cd-profile-badge">{heroSkillsLabel}</span>}
+              </div>
+            </div>
+
+            {!readOnly && (
+              <button
+                type="button"
+                className="cd-profile-edit-btn"
+                onClick={handleStartEdit}
+              >
+                Update profile
+              </button>
+            )}
+          </div>
+
+          <div className="cd-profile-grid">
+            <div className="cd-profile-info-card">
+              <div className="cd-profile-section-title">Overview</div>
+              <div className="cd-profile-info-list">
+                <DetailRow label="Full name" value={fullName} />
+                <DetailRow label="Email" value={profile.email?.trim() || 'Not added yet'} />
+                <DetailRow label="Professional domain" value={domainValue} />
+                <DetailRow label="Location" value={locationValue} />
+              </div>
+            </div>
+
+            <div className="cd-profile-info-card">
+              <div className="cd-profile-section-title">Hiring Snapshot</div>
+              <div className="cd-profile-metrics">
+                <div className="cd-profile-metric">
+                  <span className="cd-profile-metric-label">Availability</span>
+                  <strong>{profile.marketplaceAvailabilityLabel || 'Not added yet'}</strong>
+                </div>
+                <div className="cd-profile-metric">
+                  <span className="cd-profile-metric-label">Expected rate</span>
+                  <strong>{rateValue}</strong>
+                </div>
+                <div className="cd-profile-metric">
+                  <span className="cd-profile-metric-label">Skills</span>
+                  <strong>{profile.skills.length ? `${profile.skills.length} added` : 'Not added yet'}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="cd-profile-summary-card">
+            <div className="cd-profile-section-title">Profile summary</div>
+            <p>{summaryValue}</p>
+          </div>
+
+          <div className="cd-profile-summary-card">
+            <div className="cd-profile-section-title">Skills visible to companies</div>
+            <div className="cd-profile-skill-cloud">
+              {profile.skills.length ? profile.skills.map((skill) => (
+                <span key={skill} className="cd-profile-skill-pill">{skill}</span>
+              )) : (
+                <span className="cd-profile-empty-note">{skillsValue}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cd-page">
+      <div className="cd-page-title">My Profile</div>
+      <div className="cd-page-sub">Update the freelancer details that companies see in the marketplace.</div>
+
+      <div className="cd-profile-editor">
+        <div className="cd-profile-editor-head">
+          <div>
+            <div className="cd-profile-section-title">Edit your public profile</div>
+            <div className="cd-page-sub" style={{ marginBottom: 0 }}>
+              These details appear on your marketplace card and help companies understand your fit faster.
+            </div>
+          </div>
+          <div className="cd-profile-editor-tag">Visible to companies</div>
+        </div>
+
+        {error && <div style={{ marginBottom: 14, color: '#dc2626', fontSize: 13, fontWeight: 600 }}>{error}</div>}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+          <div className="cp-field">
+            <label className="cp-label">First name</label>
+            <input className="cp-input" value={form.firstName} onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))} />
+          </div>
+          <div className="cp-field">
+            <label className="cp-label">Last name</label>
+            <input className="cp-input" value={form.lastName} onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))} />
+          </div>
+        </div>
+
+        <div className="cp-field">
+          <label className="cp-label">Professional domain</label>
+          <input className="cp-input" value={form.marketplaceTitle} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceTitle: e.target.value }))} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
+          <div className="cp-field">
+            <label className="cp-label">City</label>
+            <input className="cp-input" value={form.city} onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))} />
+          </div>
+          <div className="cp-field">
+            <label className="cp-label">Country</label>
+            <input className="cp-input" value={form.country} onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))} />
+          </div>
+          <div className="cp-field">
+            <label className="cp-label">Expected hourly rate ({profile.payCurrency})</label>
+            <input className="cp-input" type="number" min="0" value={form.marketplaceRate} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceRate: e.target.value }))} />
+          </div>
+        </div>
+
+        <div className="cp-field">
+          <label className="cp-label">Availability</label>
+          <select
+            className="cp-input"
+            value={form.marketplaceAvailability}
+            onChange={(e) => setForm((prev) => ({
+              ...prev,
+              marketplaceAvailability: e.target.value as ContractorProfile['marketplaceAvailability'],
+            }))}
+          >
+            {MARKETPLACE_AVAILABILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="cp-field">
+          <label className="cp-label">Profile summary</label>
+          <textarea
+            className="cp-textarea"
+            style={{ height: 120 }}
+            value={form.marketplaceBio}
+            onChange={(e) => setForm((prev) => ({ ...prev, marketplaceBio: e.target.value }))}
+          />
+        </div>
+
+        <div className="cp-field" style={{ marginBottom: 10 }}>
+          <label className="cp-label">Skills shown in marketplace</label>
+          <textarea
+            className="cp-textarea"
+            style={{ height: 88 }}
+            value={form.skillsInput}
+            onChange={(e) => setForm((prev) => ({ ...prev, skillsInput: e.target.value }))}
+            placeholder="React, TypeScript, Node.js"
+          />
+          <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+            Separate skills with commas. These will appear on your marketplace card.
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            style={{
+              width: 'auto',
+              minWidth: 130,
+              padding: '0 24px',
+              height: 46,
+              borderRadius: 12,
+              border: '1px solid #d7dfeb',
+              background: '#fff',
+              color: '#475569',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.7 : 1,
+            }}
+            onClick={handleCancelEdit}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="cp-btn-primary"
+            style={{ width: 'auto', minWidth: 150, padding: '0 24px' }}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save profile'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ContractorDashboard({
+  previewProfile = null,
+  onLogoutOverride,
+}: ContractorDashboardProps) {
+  const [page, setPage] = useState<ContractorPage>('dashboard');
+  const [profile, setProfile] = useState<ContractorProfile | null>(null);
+  const [invoices, setInvoices] = useState<ContractorInvoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const isPreviewMode = Boolean(previewProfile);
+
+  useEffect(() => {
+    if (previewProfile) {
+      setProfile(previewProfile);
+      setInvoices([]);
+      setLoading(false);
+      return;
+    }
+
+    Promise.all([getContractorProfile(), getMyInvoices()])
+      .then(([contractorProfile, contractorInvoices]) => {
+        setProfile(contractorProfile);
+        setInvoices(contractorInvoices);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [previewProfile]);
+
+  const handleInvoiceSuccess = useCallback((invoice: ContractorInvoice) => {
+    setInvoices((prev) => [invoice, ...prev]);
+    setShowInvoice(false);
+    setPage('invoices');
+  }, []);
+
+  const handleLogout = () => {
+    if (onLogoutOverride) {
+      onLogoutOverride();
+      return;
+    }
+    contractorTokenStore.clear();
+    window.location.href = '/';
+  };
+
+  const handleOpenInvoiceModal = () => {
+    if (!isPreviewMode) {
+      setShowInvoice(true);
+    }
+  };
+
+  const handleSaveProfile = async (payload: {
+    firstName: string;
+    lastName: string;
+    marketplaceTitle: string;
+    marketplaceBio: string;
+    marketplaceAvailability: ContractorProfile['marketplaceAvailability'];
+    marketplaceRate: number;
+    city: string;
+    country: string;
+    skills: string[];
+  }) => {
+    if (isPreviewMode) {
+      setProfile((prev) => (prev ? {
+        ...prev,
+        ...payload,
+        marketplaceAvailabilityLabel:
+          MARKETPLACE_AVAILABILITY_OPTIONS.find((option) => option.value === payload.marketplaceAvailability)?.label
+          ?? prev.marketplaceAvailabilityLabel,
+      } : prev));
+      return;
+    }
+
+    const savedProfile = await updateContractorProfile(payload);
+    setProfile(savedProfile);
+  };
+
+  if (loading || !profile) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="cp-spinner dark" style={{ width: 28, height: 28, borderWidth: 3, margin: '0 auto 16px' }} />
+          <p style={{ color: '#94a3b8', fontSize: 14 }}>Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const initials = `${profile.firstName[0] ?? ''}${profile.lastName[0] ?? ''}`.toUpperCase();
+  const nav: { id: ContractorPage; label: string }[] = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'invoices', label: 'Invoices' },
+    { id: 'contract', label: 'Contract' },
+    { id: 'profile', label: 'Profile' },
+  ];
+
+  return (
+    <div className="cd-shell">
+      <header className="cd-topbar">
+        <div className="cd-logo">
+          <div className="cd-logo-dot" />
+          Dechub
+        </div>
+
+        <nav className="cd-nav">
+          {nav.map((item) => (
+            <button
+              key={item.id}
+              className={`cd-nav-item ${page === item.id ? 'active' : ''}`}
+              onClick={() => setPage(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="cd-user">
+          <div>
+            <div className="cd-user-name">{profile.firstName} {profile.lastName}</div>
+            <div className="cd-user-role">{profile.companyName}</div>
+          </div>
+          <div className="cd-avatar">{initials}</div>
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, padding: '0 4px' }}
+          >
+            ⇥
+          </button>
+        </div>
+      </header>
+
+      {page === 'dashboard' && (
+        <DashboardHome
+          profile={profile}
+          invoices={invoices}
+          onSubmitInvoice={handleOpenInvoiceModal}
+          onNavigate={setPage}
+        />
+      )}
+
+      {page === 'invoices' && (
+        <InvoicesPage
+          invoices={invoices}
+          onSubmit={handleOpenInvoiceModal}
+          readOnly={isPreviewMode}
+        />
+      )}
+
+      {page === 'contract' && <ContractPage profile={profile} readOnly={isPreviewMode} />}
+
+      {page === 'profile' && (
+        <ProfilePage
+          profile={profile}
+          readOnly={isPreviewMode}
+          onSave={handleSaveProfile}
+        />
+      )}
+
+      {showInvoice && !isPreviewMode && (
+        <SubmitInvoiceModal
+          profile={profile}
+          onClose={() => setShowInvoice(false)}
+          onSuccess={handleInvoiceSuccess}
+        />
+      )}
+    </div>
+  );
+}
