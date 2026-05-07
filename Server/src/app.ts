@@ -19,6 +19,7 @@ const allowedOrigins = new Set([
   env.CLIENT_URL,
   'http://localhost:5173',
   'http://localhost:5174',
+  'https://dechub.vercel.app'
 ]);
 
 // ─── Security headers ─────────────────────────────────────────────────────────
