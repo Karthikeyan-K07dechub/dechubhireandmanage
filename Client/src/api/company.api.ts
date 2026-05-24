@@ -143,12 +143,22 @@ export async function getSetupIntentClientSecret(): Promise<string> {
 export interface BillingPayload {
   billCurrency:    string;
   billingEmail?:   string;
-  paymentMethodId: string;  // returned by Stripe.js after card setup
+  paymentMethodId?: string;
 }
 
 export async function saveBilling(payload: BillingPayload): Promise<StepResult> {
   try {
-    const res = await api.post<ApiResponse<StepResult>>('/company/billing', payload);
+    const billingEmail = payload.billingEmail?.trim();
+    const isDummyPayment = !payload.paymentMethodId || payload.paymentMethodId === 'pm_mvp_dummy';
+    const requestBody = {
+      billCurrency: payload.billCurrency,
+      billingEmail,
+      paymentProvider: isDummyPayment ? 'dummy' : 'stripe',
+      ...(isDummyPayment
+        ? { dummyPaymentId: payload.paymentMethodId || 'pm_mvp_dummy' }
+        : { stripePaymentMethodId: payload.paymentMethodId }),
+    };
+    const res = await api.post<ApiResponse<StepResult>>('/company/billing', requestBody);
     return unwrapApiData(res.data);
   } catch (err) {
     throw normalizeError(err);

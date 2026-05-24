@@ -13,7 +13,7 @@ import {
   compareToken,
 } from '../utils/jwt';
 import { sendVerificationEmail } from '../utils/email';
-import { ok, created, AppError, Errors } from '../utils/response';
+import { ok, created, AppError, Errors, ValidationError } from '../utils/response';
 import { logger } from '../utils/logger';
 
 const FREE_EMAIL_DOMAINS = new Set([
@@ -71,7 +71,16 @@ const companySignupSchema = z.object({
 export async function signup(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const parsed = companySignupSchema.safeParse(req.body);
-    if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422, 'VALIDATION_ERROR');
+    if (!parsed.success) {
+      const fields: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join('.');
+        if (!fields[key]) {
+          fields[key] = issue.message;
+        }
+      }
+      throw new ValidationError(fields);
+    }
 
     const { firstName, lastName, workEmail, password, phone } = parsed.data;
     const normalizedEmail = workEmail.trim().toLowerCase();

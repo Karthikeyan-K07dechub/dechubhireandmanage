@@ -98,5 +98,6 @@ export interface AppHandlers {
   setShowPassword:      React.Dispatch<React.SetStateAction<boolean>>;
   validateEmail:        (email: string) => boolean;
   googleSignup:         () => void;
+  goToLogin?:           () => void;
   goToDashboard:        () => void;
 }

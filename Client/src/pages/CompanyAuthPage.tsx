@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import './company-auth.css';
-import { login, redirectToGoogle, register } from '../api/auth.api';
+import { login, redirectToGoogle, register, type AuthResult } from '../api/auth.api';
 import type { ApiError } from '../api/client';
 
 type AuthMode = 'login' | 'signup';
@@ -9,7 +9,11 @@ interface CompanyAuthPageProps {
   mode: AuthMode;
   onModeChange: (mode: AuthMode) => void;
   onBack: () => void;
-  onSuccess: () => void;
+  onSuccess: (result: AuthResult) => void;
+  onCreateAccount?: () => void;
+  showModeTabs?: boolean;
+  backLabel?: string;
+  onGoogleStart?: () => void;
 }
 
 function LogoMark() {
@@ -27,6 +31,10 @@ export default function CompanyAuthPage({
   onModeChange,
   onBack,
   onSuccess,
+  onCreateAccount,
+  showModeTabs = true,
+  backLabel = 'Back to landing',
+  onGoogleStart,
 }: CompanyAuthPageProps) {
   const [form, setForm] = useState({
     firstName: '',
@@ -117,13 +125,15 @@ export default function CompanyAuthPage({
     setError('');
 
     try {
+      let result: AuthResult;
+
       if (mode === 'login') {
-        await login({
+        result = await login({
           email: form.email.toLowerCase(),
           password: form.password,
         });
       } else {
-        await register({
+        result = await register({
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
           phone: form.phone.trim(),
@@ -132,7 +142,7 @@ export default function CompanyAuthPage({
         });
       }
 
-      onSuccess();
+      onSuccess(result);
     } catch (err) {
       const apiError = err as ApiError;
       if (apiError.fields) {
@@ -181,23 +191,25 @@ export default function CompanyAuthPage({
         <main className="cap-card-wrap">
           <div className="cap-card">
             <button className="cap-back" onClick={onBack}>
-              Back to landing
+              {backLabel}
             </button>
 
-            <div className="cap-tabs">
-              <button
-                className={`cap-tab ${mode === 'login' ? 'active' : ''}`}
-                onClick={() => onModeChange('login')}
-              >
-                Login
-              </button>
-              <button
-                className={`cap-tab ${mode === 'signup' ? 'active' : ''}`}
-                onClick={() => onModeChange('signup')}
-              >
-                Sign up
-              </button>
-            </div>
+            {showModeTabs && (
+              <div className="cap-tabs">
+                <button
+                  className={`cap-tab ${mode === 'login' ? 'active' : ''}`}
+                  onClick={() => onModeChange('login')}
+                >
+                  Login
+                </button>
+                <button
+                  className={`cap-tab ${mode === 'signup' ? 'active' : ''}`}
+                  onClick={() => onModeChange('signup')}
+                >
+                  Sign up
+                </button>
+              </div>
+            )}
 
             <h2>{pageCopy.title}</h2>
             <p className="cap-sub">{pageCopy.sub}</p>
@@ -207,7 +219,7 @@ export default function CompanyAuthPage({
             <button
               type="button"
               className="cap-google"
-              onClick={redirectToGoogle}
+              onClick={onGoogleStart ?? redirectToGoogle}
               disabled={loading}
             >
               <span className="cap-google-icon" aria-hidden="true">
@@ -297,9 +309,15 @@ export default function CompanyAuthPage({
 
             <div className="cap-switch">
               {pageCopy.switchText}{' '}
-              <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>
-                {pageCopy.switchAction}
-              </button>
+              {showModeTabs ? (
+                <button onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}>
+                  {pageCopy.switchAction}
+                </button>
+              ) : (
+                <button onClick={onCreateAccount}>
+                  {pageCopy.switchAction}
+                </button>
+              )}
             </div>
           </div>
         </main>

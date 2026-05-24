@@ -21,6 +21,7 @@ type ErrorMap = Record<string, string>;
 
 function step1(f: FormData): ErrorMap {
   const e: ErrorMap = {};
+  const normalizedPhone = f.phone.trim();
   if (!f.firstName.trim())          e.firstName = 'First name is required';
   if (!f.lastName.trim())           e.lastName  = 'Last name is required';
   if (!f.workEmail.trim())          e.workEmail = 'Work email is required';
@@ -28,6 +29,8 @@ function step1(f: FormData): ErrorMap {
   if (!f.password)                  e.password  = 'Password is required';
   else if (f.password.length < 8)   e.password  = 'Password must be at least 8 characters';
   if (!f.phone.trim())              e.phone     = 'Phone number is required';
+  else if (normalizedPhone.length < 7) e.phone  = 'Phone number is too short';
+  else if (normalizedPhone.length > 20) e.phone = 'Phone number is too long';
   return e;
 }
 

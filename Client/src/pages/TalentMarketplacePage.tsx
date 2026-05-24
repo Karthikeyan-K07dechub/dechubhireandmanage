@@ -4,6 +4,7 @@ import { getMarketplaceTalent, type MarketplaceTalentProfile } from '../api/mark
 import type { ApiError } from '../api/client';
 
 interface TalentMarketplacePageProps {
+  isAuthenticated: boolean;
   userName: string;
   onLogout: () => void;
 }
@@ -39,6 +40,7 @@ function isCompletedMarketplaceProfile(profile: MarketplaceTalentProfile): boole
 }
 
 export default function TalentMarketplacePage({
+  isAuthenticated,
   userName,
   onLogout,
 }: TalentMarketplacePageProps) {
@@ -93,8 +95,8 @@ export default function TalentMarketplacePage({
         </div>
 
         <div className="tmp-user">
-          <span>{userName}</span>
-          <button onClick={onLogout}>Logout</button>
+          <span>{isAuthenticated ? userName : 'Guest company'}</span>
+          {isAuthenticated ? <button onClick={onLogout}>Logout</button> : null}
         </div>
       </header>
 

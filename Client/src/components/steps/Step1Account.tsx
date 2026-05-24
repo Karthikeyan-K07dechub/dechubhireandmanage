@@ -4,7 +4,7 @@ import { AppHandlers, AppState } from '../../types/signup';
 
 export default function Step1Account({ state, handlers }: { state: AppState; handlers: AppHandlers }) {
   const { formData, errors, showPassword, passwordScore, passwordStrength, loadingAction } = state;
-  const { handleInputChange, setShowPassword, goToStep, validateEmail, googleSignup } = handlers;
+  const { handleInputChange, setShowPassword, goToStep, validateEmail, googleSignup, goToLogin } = handlers;
 
   return (
     <section className="card screen active">
@@ -83,7 +83,16 @@ export default function Step1Account({ state, handlers }: { state: AppState; han
       <ActionButton loading={loadingAction === 'step-2'} onClick={() => goToStep(2)}>
         Continue <ArrowIcon />
       </ActionButton>
-      <div className="form-link">Already have an account? <a href="#">Sign in</a></div>
+      <div className="form-link">
+        Already have an account?{' '}
+        <button
+          type="button"
+          onClick={goToLogin}
+          style={{ background: 'transparent', color: '#2563eb', fontWeight: 500, cursor: 'pointer' }}
+        >
+          Sign in
+        </button>
+      </div>
     </section>
   );
 }

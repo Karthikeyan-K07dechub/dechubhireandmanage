@@ -47,7 +47,7 @@ export default function RoleSelectionPage({
               <div className="rsp-option-icon">🏢</div>
               <div className="rsp-option-title">Client company</div>
               <div className="rsp-option-copy">
-                Continue to company login before entering the talent marketplace.
+                Choose between the marketplace and the company dashboard flow.
               </div>
             </button>
 

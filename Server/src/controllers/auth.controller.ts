@@ -21,6 +21,7 @@ import {
   created,
   AppError,
   Errors,
+  ValidationError,
 } from '../utils/response';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
@@ -119,7 +120,16 @@ const registerSchema = z.object({
 export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const parsed = registerSchema.safeParse(req.body);
-    if (!parsed.success) throw new AppError(parsed.error.errors[0].message, 422, 'VALIDATION_ERROR');
+    if (!parsed.success) {
+      const fields: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join('.');
+        if (!fields[key]) {
+          fields[key] = issue.message;
+        }
+      }
+      throw new ValidationError(fields);
+    }
 
     const { firstName, lastName, workEmail, password, phone } = parsed.data;
     const normalizedEmail = workEmail.trim().toLowerCase();

@@ -1,87 +1,217 @@
 import { useEffect, useRef, useState } from 'react';
 import './landing.css';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface LandingPageProps {
+  onLogin: () => void;
   onGetStarted: () => void;
-  onDemo?:      () => void;
+  onDemo?: () => void;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+const NAV_LINKS = [
+  { label: 'Solutions', id: 'features' },
+  { label: 'How it works', id: 'how-it-works' },
+  { label: "Who it's for", id: 'audiences' },
+  { label: 'Coverage', id: 'coverage' },
+  { label: 'Pricing', id: 'pricing' },
+] as const;
 
-const FEATURES = [
+const TRUSTED_BRANDS = [
+  'coinbase',
+  'INTUIT',
+  'reddit',
+  'Uber',
+  'ANTHROPIC',
+  'citi',
+  'ramp',
+  'MUJI',
+  'Klarna',
+  'DOORDASH',
+  'KLM',
+  'LUCID',
+  'PUMA',
+  'Aston Martin',
+  'Zillow',
+  'LinkedIn',
+  'verizon',
+] as const;
+
+const TRUSTED_COMPANIES = [
+  'Techflow Inc.',
+  'BuildAI',
+  'Nexus Corp',
+  'DataStream',
+  'VentureScale',
+  'CloudBase',
+] as const;
+
+const HERO_SERVICES = [
+  'Architecture & Interior Design',
+  'Graphic Design',
+  'Website Developers',
+] as const;
+
+const WORKFLOW_STEPS = [
   {
-    icon: '📄',
-    color: 'rgba(37,99,235,0.12)',
+    number: '1',
+    icon: '+',
+    title: 'Add a contractor',
+    description:
+      'Enter their details, choose services, set pay rate and start date. Dechub generates the contract automatically.',
+    details: ['Contract generation', 'Service selection', 'Legal templates'],
+  },
+  {
+    number: '2',
+    icon: 'Sign',
+    title: 'Contractor onboards',
+    description:
+      'They receive an invite email, complete KYC, add bank details, and sign via DocuSign with a guided setup.',
+    details: ['KYC verification', 'DocuSign e-sign', 'Wise / bank setup'],
+  },
+  {
+    number: '3',
+    icon: 'Pay',
+    title: 'Pay every month',
+    description:
+      'The contractor submits an invoice. You approve with one click and Wise processes payout in 1-2 business days.',
+    details: ['Invoice approval', 'Wise payout', 'Auto receipts'],
+  },
+] as const;
+
+const FEATURE_CARDS = [
+  {
+    icon: 'DOC',
     title: 'Smart contract generation',
-    desc:  'Legally compliant contractor agreements auto-generated from your inputs. No lawyer needed for standard hires.',
-    items: ['Fixed, milestone & hourly contracts', 'IP assignment & NDA clauses', 'Delaware law jurisdiction (US)'],
+    description:
+      'Legally compliant contractor agreements auto-generated from your inputs. No lawyer needed for standard hires.',
+    points: ['Fixed, milestone & hourly contracts', 'IP assignment & NDA clauses', 'Delaware law jurisdiction (US)'],
   },
   {
-    icon: '✍️',
-    color: 'rgba(0,201,167,0.12)',
+    icon: 'SIGN',
     title: 'DocuSign e-signature',
-    desc:  'Both parties sign electronically via DocuSign. Contractor signs first, then your company countersigns.',
-    items: ['Embedded signing — no app download', 'Dual-party signature tracking', 'Instant PDF on completion'],
+    description:
+      'Both parties sign electronically via DocuSign. Contractor signs first, then your company countersigns.',
+    points: ['Embedded signing with no app download', 'Dual-party signature tracking', 'Instant PDF on completion'],
   },
   {
-    icon: '🪪',
-    color: 'rgba(245,158,11,0.12)',
+    icon: 'KYC',
     title: 'KYC identity verification',
-    desc:  'Contractor uploads ID + selfie. Verified within 24 hours. Payments unlock only after approval.',
-    items: ['Passport, license, national ID', 'Liveness check via selfie', 'AES-256 encrypted storage'],
+    description:
+      'Contractor uploads ID plus selfie. Verified within 24 hours. Payments unlock only after approval.',
+    points: ['Passport, licence, national ID', 'Liveness check via selfie', 'AES-256 encrypted storage'],
   },
   {
-    icon: '💸',
-    color: 'rgba(16,185,129,0.12)',
+    icon: 'PAY',
     title: 'Wise global payments',
-    desc:  "After invoice approval, Wise transfers funds in 1–2 business days in the contractor's local currency.",
-    items: ['170+ countries supported', 'Zero hidden fees', 'Bank, Wise, or PayPal payout'],
+    description:
+      'After invoice approval, Wise transfers funds in 1-2 business days in the contractor local currency.',
+    points: ['170+ countries supported', 'Zero hidden fees', 'Bank, Wise, or PayPal payout'],
   },
   {
-    icon: '🧾',
-    color: 'rgba(124,58,237,0.12)',
+    icon: 'INV',
     title: 'Invoice management',
-    desc:  'Contractors submit monthly invoices from their portal. Approve or dispute with one click.',
-    items: ['Contractor self-service portal', 'Approve, dispute, or request changes', 'PDF receipts auto-generated'],
+    description:
+      'Contractors submit monthly invoices from their portal. Approve, dispute, or request changes with one click.',
+    points: ['Contractor self-service portal', 'Approve or dispute requests', 'PDF receipts auto-generated'],
   },
   {
-    icon: '⚖️',
-    color: 'rgba(239,68,68,0.12)',
+    icon: 'LAW',
     title: 'Compliance & tax forms',
-    desc:  'W-9 and W-8BEN guidance for US engagements. Completion certificates issued at contract end.',
-    items: ['W-9 / W-8BEN guided collection', 'Completion certificate on end', 'Tax calendar & reminders (add-on)'],
+    description:
+      'W-9 and W-8BEN guidance for US engagements. Completion certificates issued at contract end.',
+    points: ['W-9 / W-8BEN collection', 'Completion certificate on end', 'Tax calendar & reminders add-on'],
+  },
+] as const;
+
+const AUDIENCE_CARDS = [
+  {
+    eyebrow: 'For businesses',
+    title: 'Build your remote team. Skip the compliance chaos.',
+    description:
+      'Onboard contractors across borders, issue contracts in minutes, and trigger payments automatically with no legal or finance ops required.',
+    items: [
+      'Live dashboard to track every contractor and contract status',
+      'Auto-generated compliant contracts ready to sign',
+      'One-click invoice approval with instant Wise payout',
+      'All documents in one place: contracts, KYC, and invoices',
+    ],
+    cta: 'Set up your workspace',
+    theme: 'business',
+  },
+  {
+    eyebrow: 'For contractors',
+    title: 'Do the work you love. Get paid without the wait.',
+    description:
+      'Accept a project invite, sign digitally, submit your invoice, and receive payment to your local account wherever you are in the world.',
+    items: [
+      'Email invite to join with no account creation upfront',
+      '5-step mobile-first profile and onboarding flow',
+      'Raise invoices and watch payment status in real time',
+      'Paid in your currency across 170+ countries via Wise',
+    ],
+    cta: 'Start earning globally',
+    theme: 'contractor',
+  },
+] as const;
+
+const TRACKS = [
+  {
+    flag: 'US',
+    title: 'Track 2 - US Contractors',
+    status: 'Live now',
+    description:
+      'Hire US-based independent contractors from any country. Full contract, KYC, e-sign, and Wise payout pipeline, production ready.',
+    points: [
+      'USD contracts with DocuSign e-signature',
+      'W-9 / W-8BEN tax form guidance',
+      'Wise global payout in 1-2 business days',
+      'KYC identity verification',
+      'Completion certificate at contract end',
+    ],
+    tone: 'live',
+  },
+  {
+    flag: 'IN',
+    title: 'Track 1 - India Payroll',
+    status: 'Coming Q3 2026',
+    description:
+      'Full India statutory payroll with TDS, PF, ESI, and Form 16 for Indian employees hired by foreign companies.',
+    points: [
+      'INR payroll with TDS deduction',
+      'PF & ESI compliance',
+      'Form 16 auto-generation',
+      'India banking & UPI integration',
+    ],
+    tone: 'soon',
   },
 ] as const;
 
 const TESTIMONIALS = [
   {
-    text:     '"We hired 3 US contractors in one afternoon. Contract generated, signed via DocuSign same day, payment through Wise without any issues."',
+    quote:
+      'We hired 3 US contractors in one afternoon. Contract generated, signed the same day, and payment through Wise worked without any issues.',
     initials: 'RK',
-    gradient: 'linear-gradient(135deg,#7c3aed,#6366f1)',
-    name:     'Ravi Kumar',
-    role:     'CEO, BuildAI · Bengaluru',
+    name: 'Ravi Kumar',
+    role: 'CEO, BuildAI - Bengaluru',
   },
   {
-    text:     '"As a US contractor working with Indian companies, getting paid was a nightmare. Dechub made it seamless — invoice approved, Wise transfer next day."',
+    quote:
+      'As a US contractor working with Indian companies, getting paid was a nightmare. Dechub made it seamless from invoice approval to next-day transfer.',
     initials: 'JS',
-    gradient: 'linear-gradient(135deg,#5b21b6,#7c3aed)',
-    name:     'John Smith',
-    role:     'Senior React Developer · Austin, TX',
+    name: 'John Smith',
+    role: 'Senior React Developer - Austin, TX',
   },
   {
-    text:     '"We were spending $800/month on legal fees for contractor agreements. Dechub cut that to zero and gave our board the compliance confidence they needed."',
+    quote:
+      'We were spending $800 every month on legal work for contractor agreements. Dechub cut that to zero and gave our board far more confidence.',
     initials: 'AP',
-    gradient: 'linear-gradient(135deg,#4c1d95,#6d28d9)',
-    name:     'Anjali Patel',
-    role:     'COO, VentureScale · Mumbai',
+    name: 'Anjali Patel',
+    role: 'COO, VentureScale - Mumbai',
   },
 ] as const;
 
-const PRICE_INCLUDES = [
+const PRICING_POINTS = [
   'Contract generation & PDF',
-  'DocuSign e-signature (both parties)',
+  'DocuSign e-signature for both parties',
   'KYC identity verification ($1.50/check)',
   'Invoice management & approval flow',
   'Wise payment processing',
@@ -89,115 +219,176 @@ const PRICE_INCLUDES = [
   'Completion certificate',
 ] as const;
 
-const NAV_LINKS = [
-  { label: 'Solutions',    id: 'features' },
-  { label: 'How it works', id: 'how'      },
-  { label: "Who it's for", id: 'who'      },
-  { label: 'Coverage',     id: 'tracks'   },
-  { label: 'Pricing',      id: 'pricing'  },
+const FOOTER_COLUMNS = [
+  { title: 'Product', items: ['Features', 'How it works', 'Pricing', 'Coverage', "What's new"] },
+  { title: 'Company', items: ['About us', 'Blog', 'Careers', 'Press', 'Contact'] },
+  { title: 'Resources', items: ['Documentation', 'API reference', 'Hiring guides', 'Support', 'Status'] },
+  { title: 'Legal', items: ['Privacy policy', 'Terms of service', 'Cookie policy', 'Compliance'] },
 ] as const;
 
-// ─── Logo mark ────────────────────────────────────────────────────────────────
-
-function LogoMark({ size = 32 }: { size?: number }) {
+function LogoMark() {
   return (
-    <div
-      className="lp-logo-mark"
-      style={{ width: size, height: size, borderRadius: Math.round(size * 0.28) }}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        style={{ width: size * 0.55, height: size * 0.55, fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round' }}
-      >
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
+    <div className="landing-logo-mark" aria-hidden="true">
+      <span className="landing-logo-cut landing-logo-cut-a" />
+      <span className="landing-logo-cut landing-logo-cut-b" />
+      <span className="landing-logo-cut landing-logo-cut-c" />
     </div>
   );
 }
 
-// ─── Dashboard preview — light theme ─────────────────────────────────────────
+function HeroScreen() {
+  return (
+    <div className="landing-hero-screen">
+      <div className="landing-screen-wave landing-screen-wave-one" />
+      <div className="landing-screen-wave landing-screen-wave-two" />
+      <div className="landing-screen-noise" />
+      <div className="landing-screen-brand">
+        <LogoMark />
+        <span>DECHUB</span>
+      </div>
+    </div>
+  );
+}
 
-function DashboardPreview() {
-  const rows = [
-    { name: 'John Smith',  track: '🇺🇸 US', role: 'React Dev', badge: 'active',  pay: '$5k' },
-    { name: 'Sarah Lee',   track: '🇺🇸 US', role: 'Designer',  badge: 'pending', pay: '$3k' },
-    { name: 'Mike Torres', track: '🇺🇸 US', role: 'PM',        badge: 'invited', pay: '$4k' },
+function BrowserPreview() {
+  const workers = [
+    { name: 'John Smith', track: 'US', role: 'React Dev', status: 'Active', pay: '$5k' },
+    { name: 'Sarah Lee', track: 'US', role: 'Designer', status: 'KYC', pay: '$3k' },
+    { name: 'Mike Torres', track: 'US', role: 'PM', status: 'Invited', pay: '$4k' },
   ] as const;
 
-  const badgeClass: Record<string, string> = {
-    active:  'lp-preview-badge lp-preview-badge-active',
-    pending: 'lp-preview-badge lp-preview-badge-pending',
-    invited: 'lp-preview-badge lp-preview-badge-invited',
-  };
-  const badgeLabel: Record<string, string> = { active: 'Active', pending: 'KYC', invited: 'Invited' };
-
   return (
-    <div className="lp-preview">
-      {/* Window chrome */}
-      <div className="lp-preview-topbar">
-        <div className="lp-preview-dots">
-          <div className="lp-preview-dot" style={{ background: '#ff5f57' }} />
-          <div className="lp-preview-dot" style={{ background: '#febc2e' }} />
-          <div className="lp-preview-dot" style={{ background: '#28c840' }} />
+    <div className="landing-browser">
+      <div className="landing-browser-bar">
+        <div className="landing-browser-dots">
+          <span />
+          <span />
+          <span />
         </div>
-        <div className="lp-preview-url">app.dechub.in/dashboard</div>
+        <div className="landing-browser-url">app.dechub.in/dashboard</div>
       </div>
-
-      {/* Body */}
-      <div className="lp-preview-body">
-        {/* Sidebar */}
-        <div className="lp-preview-sidebar">
-          <div style={{ marginBottom: 18 }}>
-            <div className="lp-preview-nav-group-label">Main</div>
-            {(['Dashboard', 'Workers', 'Contracts', 'Invoices'] as const).map((item) => (
-              <div key={item} className={`lp-preview-nav-item ${item === 'Dashboard' ? 'active' : ''}`}>
-                <div className="lp-preview-nav-dot" />
-                {item}
-              </div>
-            ))}
+      <div className="landing-browser-body">
+        <aside className="landing-browser-sidebar">
+          <div className="landing-browser-group">MAIN</div>
+          {['Dashboard', 'Workers', 'Contracts', 'Invoices'].map((item) => (
+            <div key={item} className={`landing-browser-item${item === 'Dashboard' ? ' is-active' : ''}`}>
+              <span className="landing-browser-dot" />
+              {item}
+            </div>
+          ))}
+          <div className="landing-browser-group landing-browser-group-gap">OTHER</div>
+          {['Documents', 'Settings'].map((item) => (
+            <div key={item} className="landing-browser-item">
+              <span className="landing-browser-dot" />
+              {item}
+            </div>
+          ))}
+        </aside>
+        <div className="landing-browser-main">
+          <div className="landing-browser-stats">
+            <div>
+              <strong>12</strong>
+              <span>ACTIVE WORKERS</span>
+            </div>
+            <div>
+              <strong>3</strong>
+              <span>PENDING INVOICES</span>
+            </div>
+            <div>
+              <strong>May 31</strong>
+              <span>NEXT PAYROLL</span>
+            </div>
+            <div>
+              <strong>$36k</strong>
+              <span>MONTHLY COST</span>
+            </div>
           </div>
-          <div>
-            <div className="lp-preview-nav-group-label">Other</div>
-            {(['Documents', 'Settings'] as const).map((item) => (
-              <div key={item} className="lp-preview-nav-item">
-                <div className="lp-preview-nav-dot" />
-                {item}
+          <div className="landing-browser-table">
+            <div className="landing-browser-head">
+              <span>Worker</span>
+              <span>Track</span>
+              <span>Role</span>
+              <span>Status</span>
+              <span>Pay</span>
+            </div>
+            {workers.map((worker) => (
+              <div key={worker.name} className="landing-browser-row">
+                <span>{worker.name}</span>
+                <span>{worker.track}</span>
+                <span>{worker.role}</span>
+                <span className={`landing-browser-badge landing-browser-badge-${worker.status.toLowerCase()}`}>
+                  {worker.status}
+                </span>
+                <span>{worker.pay}</span>
               </div>
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* Main content */}
-        <div className="lp-preview-main">
-          {/* Stats */}
-          <div className="lp-preview-stats">
-            {[
-              { val: '12',     color: '#7c3aed', label: 'Active workers'   },
-              { val: '3',      color: '#0f172a', label: 'Pending invoices' },
-              { val: 'May 31', color: '#0f172a', label: 'Next payroll'     },
-              { val: '$36k',   color: '#0f172a', label: 'Monthly cost'     },
-            ].map(({ val, color, label }) => (
-              <div key={label} className="lp-preview-stat">
-                <div className="lp-preview-stat-val" style={{ color }}>{val}</div>
-                <div className="lp-preview-stat-label">{label}</div>
-              </div>
-            ))}
+function MetricWall() {
+  return (
+    <div className="landing-metric-shell">
+      <div className="landing-metric-header">
+        <h2>One Modern Experience For Today&apos;s Workforce</h2>
+      </div>
+      <div className="landing-metric-grid">
+        {[
+          ['170+', 'Countries where your contractors can receive payments'],
+          ['24hr', 'Average KYC verification turn around time'],
+          ['$0', 'Setup fee - pay only $49 per active worker per month'],
+          ['1-2d', 'Payment delivery via Wise after invoice approval'],
+        ].map(([value, label]) => (
+          <div key={value} className="landing-metric-card">
+            <strong>{value}</strong>
+            <span>{label}</span>
           </div>
-
-          {/* Table */}
-          <div className="lp-preview-table-head">
-            <span>Worker</span><span>Track</span><span>Role</span><span>Status</span><span>Pay</span>
-          </div>
-          {rows.map((row) => (
-            <div key={row.name} className="lp-preview-table-row">
-              <span style={{ fontWeight: 600, color: '#0f172a' }}>{row.name}</span>
-              <span style={{ fontSize: 10, color: '#94a3b8' }}>{row.track}</span>
-              <span style={{ color: '#64748b', fontSize: 10.5 }}>{row.role}</span>
-              <span><div className={badgeClass[row.badge]}>{badgeLabel[row.badge]}</div></span>
-              <span style={{ fontSize: 10.5, fontWeight: 600, color: row.badge === 'invited' ? '#94a3b8' : '#7c3aed' }}>
-                {row.pay}
-              </span>
-            </div>
+        ))}
+      </div>
+      <div className="landing-team-photo">
+        <div className="landing-team-panel landing-team-panel-a" />
+        <div className="landing-team-panel landing-team-panel-b" />
+        <div className="landing-team-panel landing-team-panel-c" />
+        <div className="landing-team-people">
+          {Array.from({ length: 7 }).map((_, index) => (
+            <div key={index} className={`landing-team-person landing-team-person-${index + 1}`} />
+          ))}
+        </div>
+      </div>
+      <div className="landing-metric-lower">
+        <div className="landing-note-card">
+          <p>
+            <strong>Built on in-house infrastructure,</strong> with single payroll engines, owned entities,
+            and more.
+          </p>
+          <button type="button">Learn more</button>
+        </div>
+        <div className="landing-chip-cloud">
+          {[
+            'Endpoint Protection',
+            'PEO',
+            'Engage',
+            'EOR',
+            'Device Lifecycle Management',
+            'Deel Benefits',
+            'Deel Mobility',
+            'HRIS',
+            'Mobile Device Management',
+            'Talent',
+            'Background Checks',
+            'Access Management',
+            'Equity Consulting',
+            'Workforce Planning',
+            'Contractor',
+            'Compensation',
+            'Deel Payroll',
+            'Entity Setup & Management',
+            'ATS',
+          ].map((chip) => (
+            <span key={chip}>{chip}</span>
           ))}
         </div>
       </div>
@@ -205,441 +396,499 @@ function DashboardPreview() {
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+function ContractorCards() {
+  const profiles = [
+    ['Sarah Jones', 'Marketing Director'],
+    ['Diane Moore', 'Project Manager'],
+    ['Alex Smith', 'CEO'],
+  ] as const;
 
-export default function LandingPage({ onGetStarted, onDemo }: LandingPageProps) {
-  const [scrolled,      setScrolled]      = useState(false);
-  const [mobileMenuOpen,setMobileMenuOpen]= useState(false);
+  return (
+    <div className="landing-profile-strip">
+      {profiles.map(([name, role], index) => (
+        <div key={name} className="landing-profile-card">
+          <div className={`landing-profile-avatar landing-profile-avatar-${index + 1}`} />
+          <strong>{name}</strong>
+          <span>{role}</span>
+          <p>
+            {index === 0 && 'This product has exceeded our expectations. The quality and performance are outstanding.'}
+            {index === 1 && 'Excellent service and fantastic results. We are very satisfied with our experience.'}
+            {index === 2 && 'A game changer for our business. I highly recommend this to anyone.'}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function VideoCaseStudy({ onDemo }: { onDemo?: () => void }) {
+  return (
+    <div className="landing-video-section">
+      <div className="landing-video-copy">
+        <div>
+          <span className="landing-section-kicker">Testimonials</span>
+          <h2>Our Customer Reviews</h2>
+        </div>
+        <p>Discover the insights from customers regarding their experiences with Deel.</p>
+      </div>
+      <div className="landing-video-carousel">
+        <div className="landing-video-side" />
+        <div className="landing-video-main">
+          <button type="button" className="landing-video-play" aria-label="Play review">
+            <span />
+          </button>
+          <div className="landing-video-film-strip" />
+          <div className="landing-video-person" />
+        </div>
+        <div className="landing-video-side landing-video-side-right" />
+      </div>
+      <div className="landing-video-footer">
+        <div className="landing-video-story">
+          <strong>Revolut</strong>
+          <p>See how the Revolut team has hired 150+ workers and relocated 10+ people through Deel.</p>
+          <div className="landing-video-dots">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <span key={index} className={index === 0 ? 'is-active' : ''} />
+            ))}
+          </div>
+        </div>
+        <button type="button" className="landing-video-cta" onClick={onDemo ?? (() => undefined)}>
+          Learn more
+        </button>
+        <p className="landing-video-sidecopy">
+          By embedding Dechub into their payment flow, teams can create the perfect product experience.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function LandingPage({ onLogin, onGetStarted, onDemo }: LandingPageProps) {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('lp-visible'); }),
-      { threshold: 0.1 },
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      },
+      { threshold: 0.12 },
     );
-    revealRefs.current.forEach((el) => { if (el) observer.observe(el); });
+
+    revealRefs.current.forEach((element) => {
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
     return () => observer.disconnect();
   }, []);
 
-  const addReveal = (index: number) => (el: HTMLElement | null) => { revealRefs.current[index] = el; };
-  const scrollTo  = (id: string) => {
+  const attachReveal = (index: number) => (element: HTMLElement | null) => {
+    revealRefs.current[index] = element;
+  };
+
+  const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setMobileMenuOpen(false);
+    setMenuOpen(false);
   };
 
   return (
-    <div className="lp-root">
+    <div className="landing-root">
+      <nav className={`landing-nav${scrolled ? ' is-scrolled' : ''}`}>
+        <div className="landing-shell landing-nav-shell">
+          <button type="button" className="landing-brand" onClick={() => scrollToSection('top')}>
+            <LogoMark />
+            <span>DECHUB</span>
+          </button>
 
-      {/* ══ NAVBAR ══════════════════════════════════════════════════════════ */}
-      <nav className={`lp-nav ${scrolled ? 'lp-nav-scrolled' : ''}`}>
-        <div className="lp-container">
-          <div className="lp-nav-inner">
-            <div className="lp-logo">
-              <LogoMark size={32} />
-              Dechub
-            </div>
-
-            <div className="lp-nav-links">
-              {NAV_LINKS.map(({ label, id }) => (
-                <button key={id} className="lp-nav-link" onClick={() => scrollTo(id)}>{label}</button>
-              ))}
-            </div>
-
-            <div className="lp-nav-actions">
-              <button className="lp-btn-ghost" onClick={onGetStarted}>Login</button>
-              <button className="lp-btn-primary" onClick={onGetStarted} style={{ fontSize: 13.5, padding: '10px 20px' }}>
-                Get Started for free
+          <div className="landing-nav-links">
+            {NAV_LINKS.map((link) => (
+              <button key={link.id} type="button" onClick={() => scrollToSection(link.id)}>
+                {link.label}
               </button>
-              <button
-                className="lp-hamburger"
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                aria-label="Toggle menu"
-              >
-                <span style={{ display: 'block', width: 22, height: 2, background: '#0f172a', borderRadius: 2, transition: 'all .3s', transform: mobileMenuOpen ? 'translateY(7px) rotate(45deg)' : 'none' }} />
-                <span style={{ display: 'block', width: 22, height: 2, background: '#0f172a', borderRadius: 2, transition: 'opacity .2s', opacity: mobileMenuOpen ? 0 : 1 }} />
-                <span style={{ display: 'block', width: 22, height: 2, background: '#0f172a', borderRadius: 2, transition: 'all .3s', transform: mobileMenuOpen ? 'translateY(-7px) rotate(-45deg)' : 'none' }} />
-              </button>
-            </div>
+            ))}
           </div>
 
-          {mobileMenuOpen && (
-            <div className="lp-mobile-menu">
-              {NAV_LINKS.map(({ label, id }) => (
-                <button key={id} className="lp-mobile-menu-link" onClick={() => scrollTo(id)}>{label}</button>
+          <div className="landing-nav-actions">
+            <button type="button" className="landing-nav-login" onClick={onLogin}>
+              Login
+            </button>
+            <button type="button" className="landing-pill-button" onClick={onGetStarted}>
+              Get Started for free
+            </button>
+            <button
+              type="button"
+              className={`landing-menu-toggle${menuOpen ? ' is-open' : ''}`}
+              aria-label="Toggle navigation menu"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          </div>
+        </div>
+
+        {menuOpen && (
+          <div className="landing-mobile-menu">
+            {NAV_LINKS.map((link) => (
+              <button key={link.id} type="button" onClick={() => scrollToSection(link.id)}>
+                {link.label}
+              </button>
+            ))}
+            <button type="button" className="landing-mobile-login" onClick={onLogin}>
+              Login
+            </button>
+            <button type="button" className="landing-pill-button" onClick={onGetStarted}>
+              Get Started for free
+            </button>
+          </div>
+        )}
+      </nav>
+
+      <main className="landing-main" id="top">
+        <section className="landing-hero">
+          <div className="landing-hero-aurora" />
+          <div className="landing-shell landing-hero-layout">
+            <div className="landing-hero-copy">
+              <div className="landing-live-pill">Now live - Track 2 US contractors</div>
+              <h1>
+                Hire, Pay &amp; Manage <span>Global contractors</span> without the chaos.
+              </h1>
+              <p>
+                Dechub is the all-in-one platform to onboard US contractors, generate contracts,
+                collect e-signatures, and process payments via Wise from one dashboard.
+              </p>
+
+              <div className="landing-hero-search">
+                <input type="text" value="Search for any service..." readOnly aria-label="Search services" />
+                <button type="button" aria-label="Search services">
+                  <span />
+                </button>
+              </div>
+
+              <div className="landing-service-pills">
+                {HERO_SERVICES.map((service) => (
+                  <span key={service}>{service}</span>
+                ))}
+              </div>
+
+              <button type="button" className="landing-hero-primary" onClick={onGetStarted}>
+                Start hiring for free
+              </button>
+            </div>
+
+            <div className="landing-hero-media">
+              <div className="landing-hero-pedestal">
+                <div className="landing-hero-rock landing-hero-rock-left" />
+                <div className="landing-hero-rock landing-hero-rock-center" />
+                <div className="landing-hero-rock landing-hero-rock-right" />
+              </div>
+              <div className="landing-laptop-base" />
+              <div className="landing-laptop-shadow" />
+              <div className="landing-laptop-frame">
+                <HeroScreen />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-brands landing-reveal" ref={attachReveal(0)}>
+          <div className="landing-shell">
+            <p className="landing-trust-copy">TRUSTED BY 40,000+ COMPANIES FROM STARTUPS TO ENTERPRISE</p>
+            <div className="landing-brand-grid">
+              {TRUSTED_BRANDS.map((brand) => (
+                <span key={brand}>{brand}</span>
               ))}
-              <div className="lp-mobile-menu-actions">
-                <button className="lp-btn-primary" onClick={() => { onGetStarted(); setMobileMenuOpen(false); }} style={{ width: '100%', justifyContent: 'center' }}>
-                  Get started free
+            </div>
+            <button type="button" className="landing-story-button" onClick={() => scrollToSection('reviews')}>
+              <span>175 STORIES</span>
+              Read about real results
+            </button>
+
+            <BrowserPreview />
+
+            <div className="landing-company-strip">
+              <p>Trusted by companies hiring global talent</p>
+              <div>
+                {TRUSTED_COMPANIES.map((company) => (
+                  <span key={company}>{company}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-metrics landing-reveal" ref={attachReveal(1)}>
+          <div className="landing-shell">
+            <MetricWall />
+          </div>
+        </section>
+
+        <section id="how-it-works" className="landing-how landing-reveal" ref={attachReveal(2)}>
+          <div className="landing-shell">
+            <div className="landing-section-heading landing-section-heading-centered">
+              <span className="landing-section-kicker">How it works</span>
+              <h2>Hire a global contractor in under 10 minutes</h2>
+              <p>No lawyers, no paperwork, no back-and-forth. Dechub handles the entire lifecycle.</p>
+            </div>
+
+            <div className="landing-how-grid">
+              {WORKFLOW_STEPS.map((step) => (
+                <article key={step.number} className="landing-how-card">
+                  <div className="landing-how-step">{step.number}</div>
+                  <div className="landing-how-icon">{step.icon}</div>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                  <div className="landing-how-details">
+                    {step.details.map((detail) => (
+                      <span key={detail}>{detail}</span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="landing-features landing-reveal" ref={attachReveal(3)}>
+          <div className="landing-shell">
+            <div className="landing-section-heading">
+              <span className="landing-section-kicker landing-section-kicker-light">Platform features</span>
+              <h2>Everything you need to run a global team</h2>
+              <p>
+                One platform replaces 6+ tools: contracts, e-sign, KYC, payments, documents, and
+                compliance.
+              </p>
+            </div>
+
+            <div className="landing-feature-grid">
+              {FEATURE_CARDS.map((feature) => (
+                <article key={feature.title} className="landing-feature-card">
+                  <div className={`landing-feature-icon landing-feature-icon-${feature.icon.toLowerCase()}`}>
+                    {feature.icon}
+                  </div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                  <ul>
+                    {feature.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="audiences" className="landing-audiences landing-reveal" ref={attachReveal(4)}>
+          <div className="landing-shell">
+            <div className="landing-section-heading landing-section-heading-centered landing-section-tight">
+              <span className="landing-section-kicker">Built for both sides</span>
+              <h2>Two roles. One seamless system.</h2>
+              <p>
+                Dechub bridges the gap between the businesses that hire and the professionals who
+                deliver with no back-and-forth and no paperwork pile-ups.
+              </p>
+            </div>
+
+            <div className="landing-audience-grid">
+              {AUDIENCE_CARDS.map((card) => (
+                <article
+                  key={card.title}
+                  className={`landing-audience-card landing-audience-card-${card.theme}`}
+                >
+                  <span className="landing-audience-pill">{card.eyebrow}</span>
+                  <h3>{card.title}</h3>
+                  <p>{card.description}</p>
+                  <ul>
+                    {card.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <button type="button" onClick={onGetStarted}>
+                    {card.cta}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-partner landing-reveal" ref={attachReveal(5)}>
+          <div className="landing-shell">
+            <div className="landing-partner-banner">
+              <div className="landing-partner-copy">
+                <h2>Your global hiring partner for India and the US</h2>
+                <ul>
+                  <li>Hire verified talent across India and the US</li>
+                  <li>Manage contracts, onboarding, and payments in one place</li>
+                  <li>Build remote teams faster with secure workforce solutions</li>
+                </ul>
+                <button type="button" onClick={onGetStarted}>
+                  Get Started Free
+                </button>
+                <div className="landing-guarantee">100% money-back guarantee</div>
+              </div>
+              <ContractorCards />
+            </div>
+          </div>
+        </section>
+
+        <section id="coverage" className="landing-coverage landing-reveal" ref={attachReveal(6)}>
+          <div className="landing-shell">
+            <div className="landing-section-heading landing-section-heading-centered">
+              <span className="landing-section-kicker landing-section-kicker-light">Coverage</span>
+              <h2>Global hiring, phased rollout</h2>
+              <p>Starting with US contractors, expanding to India payroll in Q3 2026.</p>
+            </div>
+
+            <div className="landing-track-grid">
+              {TRACKS.map((track) => (
+                <article key={track.title} className={`landing-track-card landing-track-card-${track.tone}`}>
+                  <div className="landing-track-flag">{track.flag}</div>
+                  <h3>{track.title}</h3>
+                  <span className="landing-track-status">{track.status}</span>
+                  <p>{track.description}</p>
+                  <ul>
+                    {track.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="reviews" className="landing-reviews landing-reveal" ref={attachReveal(7)}>
+          <div className="landing-shell">
+            <div className="landing-section-heading landing-section-heading-centered">
+              <span className="landing-section-kicker">What people say</span>
+              <h2>Loved by companies &amp; contractors</h2>
+            </div>
+
+            <div className="landing-review-grid">
+              {TESTIMONIALS.map((testimonial) => (
+                <article key={testimonial.name} className="landing-review-card">
+                  <div className="landing-stars">{'*****'}</div>
+                  <p>&quot;{testimonial.quote}&quot;</p>
+                  <div className="landing-review-author">
+                    <span>{testimonial.initials}</span>
+                    <div>
+                      <strong>{testimonial.name}</strong>
+                      <small>{testimonial.role}</small>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-case-study landing-reveal" ref={attachReveal(8)}>
+          <div className="landing-shell">
+            <VideoCaseStudy onDemo={onDemo} />
+          </div>
+        </section>
+
+        <section id="pricing" className="landing-pricing landing-reveal" ref={attachReveal(9)}>
+          <div className="landing-shell">
+            <div className="landing-section-heading landing-section-heading-centered">
+              <span className="landing-section-kicker landing-section-kicker-light">Simple pricing</span>
+              <h2>One price. No surprises.</h2>
+              <p>Pay per active worker. No setup fee, no annual commitment, and no hidden charges.</p>
+            </div>
+
+            <div className="landing-pricing-card">
+              <div className="landing-price">
+                <strong>$49</strong>
+                <span>/worker/month</span>
+              </div>
+              <p>Billed monthly per active worker. Add or remove workers anytime.</p>
+              <ul>
+                {PRICING_POINTS.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+              <button type="button" onClick={onGetStarted}>
+                Start free - first contractor on us
+              </button>
+              <small>Optional add-ons: Compliance advisory +$5/mo, HRMS +$5/mo (coming soon)</small>
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-final-cta landing-reveal" ref={attachReveal(10)}>
+          <div className="landing-shell">
+            <div className="landing-final-cta-card">
+              <h2>Ready to hire your first global contractor?</h2>
+              <p>Join companies hiring smarter with Dechub. Set up in 10 minutes, no credit card required.</p>
+              <div className="landing-final-cta-actions">
+                <button type="button" className="landing-final-primary" onClick={onGetStarted}>
+                  Get started for free
+                </button>
+                <button type="button" className="landing-final-secondary" onClick={onDemo ?? (() => undefined)}>
+                  Book a demo
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      </nav>
+          </div>
+        </section>
+      </main>
 
-      {/* ══ HERO ════════════════════════════════════════════════════════════ */}
-      <section id="hero" className="lp-hero">
-        <div className="lp-hero-bg">
-          <div className="lp-hero-grid" />
-          <div className="lp-hero-glow" />
-          <div className="lp-hero-glow2" />
-        </div>
-        <div className="lp-container" style={{ width: '100%' }}>
-          <div className="lp-hero-content">
-            <div className="lp-hero-tag">
-              <span className="lp-tag">🌏 Now live — Track 2 US contractors</span>
+      <footer className="landing-footer">
+        <div className="landing-shell">
+          <div className="landing-footer-top">
+            <div className="landing-footer-brand">
+              <div className="landing-brand landing-brand-footer">
+                <LogoMark />
+                <span>DECHUB</span>
+              </div>
+              <p>Global HR, payroll &amp; contractor management. Built in Bengaluru, used worldwide.</p>
+              <div className="landing-footer-socials">
+                <button type="button" aria-label="Twitter">
+                  X
+                </button>
+                <button type="button" aria-label="LinkedIn">
+                  in
+                </button>
+                <button type="button" aria-label="Share">
+                  ~
+                </button>
+              </div>
             </div>
-            <h1 className="lp-hero-title">
-              Hire, pay &amp; manage<br />
-              <span className="lp-hero-title-accent">global contractors</span><br />
-              without the chaos.
-            </h1>
-            <p className="lp-hero-sub">
-              Dechub is the all-in-one platform to onboard US contractors, generate contracts,
-              collect e-signatures, and process payments via Wise — all from one dashboard.
-            </p>
-            <div className="lp-hero-ctas">
-              <button className="lp-btn-primary" onClick={onGetStarted} style={{ fontSize: 15, padding: '15px 30px' }}>
-                Start hiring for free →
-              </button>
-              <button className="lp-btn-outline" onClick={() => scrollTo('how')}>
-                See how it works
-              </button>
-            </div>
-            <div className="lp-hero-note">
-              <svg viewBox="0 0 24 24">
-                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              No credit card · No setup fee · Cancel anytime
-            </div>
-          </div>
-          <DashboardPreview />
-        </div>
-      </section>
 
-      {/* ══ LOGOS ═══════════════════════════════════════════════════════════ */}
-      <section className="lp-logos">
-        <div className="lp-container">
-          <div className="lp-logos-label">Trusted by companies hiring global talent</div>
-          <div className="lp-logos-track">
-            {['Techflow Inc.', 'BuildAI', 'Nexus Corp', 'DataStream', 'VentureScale', 'CloudBase'].map((name) => (
-              <div key={name} className="lp-logo-item">{name}</div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ STATS ═══════════════════════════════════════════════════════════ */}
-      <section className="lp-stats">
-        <div className="lp-container">
-          <div className="lp-stats-grid lp-reveal" ref={addReveal(0)}>
-            {[
-              { num: ['170', '+'],  desc: 'Countries where your contractors can receive payments' },
-              { num: ['24',  'hr'], desc: 'Average KYC verification turnaround time' },
-              { num: ['$',   '0'],  desc: 'Setup fee — pay only $49 per active worker per month', dollar: true },
-              { num: ['1–2', 'd'],  desc: 'Payment delivery via Wise after invoice approval' },
-            ].map(({ num, desc, dollar }, i) => (
-              <div key={i} className="lp-stat-item">
-                <div className="lp-stat-number">
-                  {dollar
-                    ? <><span className="lp-stat-accent">{num[0]}</span>{num[1]}</>
-                    : <>{num[0]}<span className="lp-stat-accent">{num[1]}</span></>
-                  }
-                </div>
-                <div className="lp-stat-desc">{desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ HOW IT WORKS ════════════════════════════════════════════════════ */}
-      <section id="how" className="lp-how">
-        <div className="lp-container">
-          <div className="lp-how-header lp-reveal" ref={addReveal(1)}>
-            <div className="lp-section-label">How it works</div>
-            <h2 className="lp-section-title">Hire a global contractor<br />in under 10 minutes</h2>
-            <p className="lp-section-sub">No lawyers, no paperwork, no back-and-forth. Dechub handles the entire lifecycle.</p>
-          </div>
-          <div className="lp-steps lp-reveal" ref={addReveal(2)}>
-            {[
-              { num: '1', icon: '➕', title: 'Add a contractor',
-                desc: 'Enter their details, choose services, set pay rate and start date. Dechub generates the contract automatically.',
-                chips: ['Contract generation', 'Service selection', 'Legal templates'] },
-              { num: '2', icon: '✍️', title: 'Contractor onboards',
-                desc: 'They receive an invite email, complete KYC, add bank details, and sign via DocuSign — fully guided.',
-                chips: ['KYC verification', 'DocuSign e-sign', 'Wise / bank setup'] },
-              { num: '3', icon: '💸', title: 'Pay every month',
-                desc: 'Contractor submits an invoice. You approve with one click. Wise processes payment in 1–2 business days.',
-                chips: ['Invoice approval', 'Wise payout', 'Auto receipts'] },
-            ].map(({ num, icon, title, desc, chips }) => (
-              <div key={num} className="lp-step">
-                <div className="lp-step-num">{num}</div>
-                <div className="lp-step-icon">{icon}</div>
-                <div className="lp-step-title">{title}</div>
-                <div className="lp-step-desc">{desc}</div>
-                <div className="lp-step-chips">
-                  {chips.map((c) => <span key={c} className="lp-step-chip">{c}</span>)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ FEATURES ════════════════════════════════════════════════════════ */}
-      <section id="features" className="lp-features">
-        <div className="lp-container">
-          <div className="lp-features-header lp-reveal" ref={addReveal(3)}>
-            <div className="lp-section-label">Platform features</div>
-            <h2 className="lp-features-title">Everything you need to run a global team</h2>
-            <p className="lp-features-sub">
-              One platform replaces 6+ tools — contracts, e-sign, KYC, payments, documents, and compliance.
-            </p>
-          </div>
-          <div className="lp-features-grid lp-reveal" ref={addReveal(4)}>
-            {FEATURES.map(({ icon, color, title, desc, items }) => (
-              <div key={title} className="lp-feature-card">
-                <div className="lp-feature-icon-wrap" style={{ background: color }}>{icon}</div>
-                <div className="lp-feature-title">{title}</div>
-                <div className="lp-feature-desc">{desc}</div>
-                <div className="lp-feature-items">
-                  {items.map((item) => <div key={item} className="lp-feature-item">{item}</div>)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ WHO IT'S FOR ════════════════════════════════════════════════════ */}
-      <section id="who" className="lp-who">
-        <div className="lp-container">
-          <div className="lp-who-header lp-reveal" ref={addReveal(5)}>
-            <div className="lp-section-label">Who it's for</div>
-            <h2 className="lp-section-title">One platform. Two sides.</h2>
-            <p className="lp-section-sub">Works for both the company hiring and the contractor being hired.</p>
-          </div>
-          <div className="lp-who-grid lp-reveal" ref={addReveal(6)}>
-            {/* Company card — purple gradient */}
-            <div className="lp-who-card lp-who-card-company">
-              <div className="lp-who-glow lp-who-glow-purple" />
-              <div className="lp-who-tag lp-who-tag-company">For companies</div>
-              <div className="lp-who-title">You hire the talent.<br />We handle everything else.</div>
-              <div className="lp-who-desc">
-                Add US contractors, generate compliant contracts, approve invoices, and run payroll
-                — all without a single spreadsheet or legal call.
-              </div>
-              <div className="lp-who-features">
-                {[
-                  ['🏢', 'Company dashboard with real-time worker overview'],
-                  ['📋', 'Full contract lifecycle management'],
-                  ['✅', 'One-click invoice approval and Wise payment trigger'],
-                  ['📁', 'Centralised document storage — contracts, invoices, KYC'],
-                ].map(([icon, text]) => (
-                  <div key={text as string} className="lp-who-feature">
-                    <div className="lp-who-feature-icon lp-who-feature-icon-company">{icon}</div>
-                    {text}
-                  </div>
+            {FOOTER_COLUMNS.map((column) => (
+              <div key={column.title} className="landing-footer-column">
+                <h3>{column.title}</h3>
+                {column.items.map((item) => (
+                  <button key={item} type="button">
+                    {item}
+                  </button>
                 ))}
               </div>
-              <button className="lp-btn-who-company" onClick={onGetStarted}>
-                Start as a company →
-              </button>
-            </div>
-
-            {/* Contractor card — white */}
-            <div className="lp-who-card lp-who-card-contractor">
-              <div className="lp-who-glow lp-who-glow-soft" />
-              <div className="lp-who-tag lp-who-tag-contractor">For contractors</div>
-              <div className="lp-who-title lp-who-title-dark">Get paid globally.<br />No banking headaches.</div>
-              <div className="lp-who-desc lp-who-desc-dark">
-                Accept invitations, complete your profile, sign your contract, and receive payments
-                directly to your Wise account — from anywhere in the world.
-              </div>
-              <div className="lp-who-features">
-                {[
-                  ['📧', 'Accept invite via email — no cold signup needed'],
-                  ['📱', 'Mobile-friendly 5-step onboarding'],
-                  ['💰', 'Submit invoices and track payment status live'],
-                  ['🌍', 'Receive in local currency — 170+ countries'],
-                ].map(([icon, text]) => (
-                  <div key={text as string} className="lp-who-feature lp-who-feature-dark">
-                    <div className="lp-who-feature-icon lp-who-feature-icon-contractor">{icon}</div>
-                    {text}
-                  </div>
-                ))}
-              </div>
-              <button className="lp-btn-who-contractor" onClick={onGetStarted}>
-                Get started free →
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ TRACKS ══════════════════════════════════════════════════════════ */}
-      <section id="tracks" className="lp-tracks">
-        <div className="lp-container">
-          <div className="lp-tracks-header lp-reveal" ref={addReveal(7)}>
-            <div className="lp-section-label">Coverage</div>
-            <h2 className="lp-section-title">Global hiring, phased rollout</h2>
-            <p className="lp-section-sub">Starting with US contractors, expanding to India payroll in Q3 2026.</p>
-          </div>
-          <div className="lp-tracks-grid lp-reveal" ref={addReveal(8)}>
-            {/* US — purple */}
-            <div className="lp-track-card lp-track-card-us">
-              <div className="lp-track-flag">🇺🇸</div>
-              <div className="lp-track-title">Track 2 — US Contractors</div>
-              <div className="lp-track-status lp-track-status-live">Live now</div>
-              <div className="lp-track-desc">
-                Hire US-based independent contractors from any country. Full contract, KYC,
-                e-sign, and Wise payout pipeline — production ready.
-              </div>
-              <div className="lp-track-features">
-                {['USD contracts with DocuSign e-signature', 'W-9 / W-8BEN tax form guidance', 'Wise global payout in 1–2 business days', 'KYC identity verification', 'Completion certificate at contract end'].map((f) => (
-                  <div key={f} className="lp-track-feature lp-track-feature-us">{f}</div>
-                ))}
-              </div>
-            </div>
-            {/* India — white */}
-            <div className="lp-track-card lp-track-card-in">
-              <div className="lp-track-flag">🇮🇳</div>
-              <div className="lp-track-title lp-track-title-dark">Track 1 — India Payroll</div>
-              <div className="lp-track-status lp-track-status-soon">Coming Q3 2026</div>
-              <div className="lp-track-desc lp-track-desc-dark">
-                Full India statutory payroll with TDS, PF, ESI, and Form 16.
-                For Indian employees hired by foreign companies.
-              </div>
-              <div className="lp-track-features">
-                {['INR payroll with TDS deduction', 'PF & ESI compliance', 'Form 16 auto-generation', 'India banking & UPI integration'].map((f) => (
-                  <div key={f} className="lp-track-feature lp-track-feature-in">{f}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ TESTIMONIALS ════════════════════════════════════════════════════ */}
-      <section className="lp-testimonials">
-        <div className="lp-container">
-          <div className="lp-testimonials-header lp-reveal" ref={addReveal(9)}>
-            <div className="lp-section-label">What people say</div>
-            <h2 className="lp-section-title">Loved by companies &amp; contractors</h2>
-          </div>
-          <div className="lp-testimonials-grid lp-reveal" ref={addReveal(10)}>
-            {TESTIMONIALS.map(({ text, initials, gradient, name, role }) => (
-              <div key={name} className="lp-testimonial-card">
-                <div className="lp-stars">{'★★★★★'.split('').map((s, i) => <span key={i}>{s}</span>)}</div>
-                <div className="lp-testimonial-text">{text}</div>
-                <div className="lp-testimonial-author">
-                  <div className="lp-testimonial-avatar" style={{ background: gradient }}>{initials}</div>
-                  <div>
-                    <div className="lp-testimonial-name">{name}</div>
-                    <div className="lp-testimonial-role">{role}</div>
-                  </div>
-                </div>
-              </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ══ PRICING ═════════════════════════════════════════════════════════ */}
-      <section id="pricing" className="lp-pricing">
-        <div className="lp-container">
-          <div className="lp-pricing-header lp-reveal" ref={addReveal(11)}>
-            <div className="lp-section-label lp-section-label-light">Simple pricing</div>
-            <h2 className="lp-section-title lp-section-title-white">One price. No surprises.</h2>
-            <p className="lp-section-sub lp-section-sub-white">Pay per active worker. No setup fee, no annual commitment, no hidden charges.</p>
-          </div>
-          <div className="lp-pricing-card lp-reveal" ref={addReveal(12)}>
-            <div className="lp-price"><sup>$</sup>49<span className="lp-price-period">/worker/month</span></div>
-            <div className="lp-price-desc">Billed monthly per active worker. Add or remove workers anytime.</div>
-            <div className="lp-price-includes">
-              {PRICE_INCLUDES.map((item) => (
-                <div key={item} className="lp-price-include">{item}</div>
-              ))}
-            </div>
-            <button className="lp-btn-pricing" onClick={onGetStarted}>
-              Start free — first contractor on us →
-            </button>
-            <div className="lp-price-note">
-              Optional add-ons: Compliance advisory +$5/mo · HRMS +$5/mo (coming soon)
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ CTA BANNER ══════════════════════════════════════════════════════ */}
-      <section className="lp-cta">
-        <div className="lp-container">
-          <div className="lp-cta-inner lp-reveal" ref={addReveal(13)}>
-            <div className="lp-cta-glow" />
-            <h2 className="lp-cta-title">
-              Ready to hire your<br />
-              <span className="lp-cta-title-accent">first global contractor?</span>
-            </h2>
-            <p className="lp-cta-sub">
-              Join companies hiring smarter with Dechub. Set up in 10 minutes, no credit card required.
-            </p>
-            <div className="lp-cta-buttons">
-              <button className="lp-btn-cta-primary" onClick={onGetStarted}>
-                Get started for free →
-              </button>
-              <button className="lp-btn-cta-outline" onClick={onDemo ?? (() => {})}>
-                Book a demo
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ FOOTER ══════════════════════════════════════════════════════════ */}
-      <footer className="lp-footer">
-        <div className="lp-container">
-          <div className="lp-footer-top">
+          <div className="landing-footer-bottom">
+            <span>(c) 2026 Dechub Pvt. Ltd. - Bengaluru, India</span>
             <div>
-              <div className="lp-logo lp-footer-logo" style={{ marginBottom: 14 }}>
-                <LogoMark size={28} />
-                Dechub
-              </div>
-              <div className="lp-footer-tagline">
-                Global HR, payroll &amp; contractor management. Built in Bengaluru, used worldwide.
-              </div>
-              <div className="lp-footer-social">
-                {[['𝕏', 'Twitter'], ['in', 'LinkedIn'], ['⌥', 'GitHub']].map(([icon, label]) => (
-                  <button key={label} className="lp-social-btn" title={label}>{icon}</button>
-                ))}
-              </div>
-            </div>
-            {[
-              { title: 'Product',   items: ['Features', 'How it works', 'Pricing', 'Coverage', "What's new"] },
-              { title: 'Company',   items: ['About us', 'Blog', 'Careers', 'Press', 'Contact'] },
-              { title: 'Resources', items: ['Documentation', 'API reference', 'Hiring guides', 'Support', 'Status'] },
-              { title: 'Legal',     items: ['Privacy policy', 'Terms of service', 'Cookie policy', 'Compliance'] },
-            ].map(({ title, items }) => (
-              <div key={title}>
-                <div className="lp-footer-col-title">{title}</div>
-                <div className="lp-footer-links">
-                  {items.map((item) => <button key={item} className="lp-footer-link">{item}</button>)}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="lp-footer-bottom">
-            <div className="lp-footer-copy">© 2026 Dechub Pvt. Ltd. · Bengaluru, India</div>
-            <div className="lp-footer-legal">
-              {['Privacy', 'Terms', 'Cookies'].map((item) => (
-                <button key={item} className="lp-footer-legal-link">{item}</button>
-              ))}
+              <button type="button">Privacy</button>
+              <button type="button">Terms</button>
+              <button type="button">Cookies</button>
             </div>
           </div>
         </div>

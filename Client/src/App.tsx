@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import './styles.css';
 import LandingPage from './pages/LandingPage';
 import CompanyAuthPage from './pages/CompanyAuthPage';
+import CompanyChoicePage from './pages/CompanyChoicePage';
+import CompanyOnboardingPage from './pages/CompanyOnboardingPage';
 import TalentMarketplacePage from './pages/TalentMarketplacePage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
@@ -10,9 +12,25 @@ import FreelancerSignupSuccessPage from './pages/FreelancerSignupSuccessPage';
 import { tokenStore } from './api/client';
 import { handleGoogleCallback } from './api/auth.api';
 import { contractorTokenStore } from './contractor/api/contractor.api';
+import type { Step } from './types/signup';
 
-type AppPage = 'landing' | 'role-select' | 'auth' | 'freelancer-login' | 'freelancer-signup' | 'freelancer-success' | 'freelancer-dashboard' | 'marketplace';
+type AppPage =
+  | 'landing'
+  | 'role-select'
+  | 'company-choice'
+  | 'company-dashboard-auth'
+  | 'company-onboarding'
+  | 'auth'
+  | 'freelancer-login'
+  | 'freelancer-signup'
+  | 'freelancer-success'
+  | 'freelancer-dashboard'
+  | 'marketplace';
+
 type AuthMode = 'login' | 'signup';
+type CompanyDestination = 'marketplace' | 'dashboard';
+
+const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
 
 function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
@@ -21,8 +39,16 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
     return { page: 'role-select', mode: 'login' };
   }
 
-  if (normalizedPath === '/company/login') {
-    return { page: 'auth', mode: 'login' };
+  if (normalizedPath === '/company') {
+    return { page: 'company-choice', mode: 'login' };
+  }
+
+  if (normalizedPath === '/company/dashboard/login' || normalizedPath === '/company/login') {
+    return { page: 'company-dashboard-auth', mode: 'login' };
+  }
+
+  if (normalizedPath === '/company/onboarding') {
+    return { page: 'company-onboarding', mode: 'login' };
   }
 
   if (normalizedPath === '/company/signup') {
@@ -30,7 +56,7 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   }
 
   if (normalizedPath === '/auth/callback') {
-    return { page: 'auth', mode: 'login' };
+    return { page: 'company-dashboard-auth', mode: 'login' };
   }
 
   if (normalizedPath === '/freelancer/login') {
@@ -71,16 +97,29 @@ function getUserNameFromToken(): string {
   }
 }
 
+function setCompanyDestination(destination: CompanyDestination): void {
+  sessionStorage.setItem(COMPANY_DESTINATION_KEY, destination);
+}
+
+function getCompanyDestination(): CompanyDestination {
+  return sessionStorage.getItem(COMPANY_DESTINATION_KEY) === 'dashboard'
+    ? 'dashboard'
+    : 'marketplace';
+}
+
+function getNextCompanyStep(signupStep: number): Step | null {
+  if (signupStep >= 7) return null;
+  return Math.min(Math.max(signupStep + 1, 1), 6) as Step;
+}
+
 export default function App() {
-  const initialRoute = useMemo(
-    () => getRouteState(window.location.pathname),
-    [],
-  );
+  const initialRoute = useMemo(() => getRouteState(window.location.pathname), []);
 
   const [page, setPage] = useState<AppPage>(initialRoute.page);
   const [authMode, setAuthMode] = useState<AuthMode>(initialRoute.mode);
   const [userName, setUserName] = useState<string>(() => getUserNameFromToken());
   const [freelancerFirstName, setFreelancerFirstName] = useState('');
+  const [companyOnboardingStep, setCompanyOnboardingStep] = useState<Step>(1);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -101,27 +140,38 @@ export default function App() {
 
     const result = handleGoogleCallback();
     if (!result) {
-      setAuthMode('login');
-      setPage('auth');
+      setPage('company-dashboard-auth');
       return;
     }
 
     setUserName(getUserNameFromToken());
+
+    if (getCompanyDestination() === 'dashboard') {
+      const nextStep = getNextCompanyStep(result.signupStep);
+      if (nextStep) {
+        setCompanyOnboardingStep(nextStep);
+        setPage('company-onboarding');
+      } else {
+        window.location.replace('/dashboard');
+      }
+      return;
+    }
+
     setPage('marketplace');
   }, []);
 
   useEffect(() => {
-    if (page === 'marketplace' && !tokenStore.getAccess()) {
-      setAuthMode('login');
-      setPage('auth');
-      return;
-    }
-
     const targetPath =
       page === 'landing'
         ? '/'
         : page === 'role-select'
         ? '/get-started'
+        : page === 'company-choice'
+        ? '/company'
+        : page === 'company-dashboard-auth'
+        ? '/company/dashboard/login'
+        : page === 'company-onboarding'
+        ? '/company/onboarding'
         : page === 'marketplace'
         ? '/marketplace'
         : page === 'freelancer-login'
@@ -142,8 +192,20 @@ export default function App() {
     }
   }, [authMode, page]);
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = (result: { signupStep?: number }) => {
     setUserName(getUserNameFromToken());
+
+    if (getCompanyDestination() === 'dashboard') {
+      const nextStep = getNextCompanyStep(result.signupStep ?? 1);
+      if (nextStep) {
+        setCompanyOnboardingStep(nextStep);
+        setPage('company-onboarding');
+      } else {
+        window.location.replace('/dashboard');
+      }
+      return;
+    }
+
     setPage('marketplace');
   };
 
@@ -157,8 +219,12 @@ export default function App() {
   if (page === 'landing') {
     return (
       <LandingPage
-        onGetStarted={() => {
+        onLogin={() => {
           setPage('role-select');
+        }}
+        onGetStarted={() => {
+          setCompanyDestination('marketplace');
+          setPage('marketplace');
         }}
         onDemo={() => window.open('mailto:demo@dechub.in')}
       />
@@ -170,11 +236,45 @@ export default function App() {
       <RoleSelectionPage
         onBack={() => setPage('landing')}
         onCompany={() => {
-          setAuthMode('login');
-          setPage('auth');
+          setPage('company-choice');
         }}
         onFreelancer={() => {
           setPage('freelancer-login');
+        }}
+      />
+    );
+  }
+
+  if (page === 'company-choice') {
+    return (
+      <CompanyChoicePage
+        onBack={() => setPage('role-select')}
+        onMarketplace={() => {
+          setCompanyDestination('marketplace');
+          setPage('marketplace');
+        }}
+        onDashboard={() => {
+          setCompanyDestination('dashboard');
+          setPage('company-dashboard-auth');
+        }}
+      />
+    );
+  }
+
+  if (page === 'company-dashboard-auth') {
+    return (
+      <LoginPage
+        initialRole="company"
+        allowedRoles={['company']}
+        onCompanyLogin={handleAuthSuccess}
+        onContractorLogin={() => {
+          window.location.replace('/contractor/dashboard');
+        }}
+        onSignUp={() => {
+          tokenStore.clear();
+          setCompanyDestination('dashboard');
+          setCompanyOnboardingStep(1);
+          setPage('company-onboarding');
         }}
       />
     );
@@ -191,14 +291,25 @@ export default function App() {
     );
   }
 
+  if (page === 'company-onboarding') {
+    return (
+      <CompanyOnboardingPage
+        initialStep={companyOnboardingStep}
+        onBack={() => setPage('company-dashboard-auth')}
+        onComplete={() => {
+          window.location.replace('/dashboard');
+        }}
+      />
+    );
+  }
+
   if (page === 'freelancer-login') {
     return (
       <LoginPage
         initialRole="contractor"
         allowedRoles={['contractor']}
         onCompanyLogin={() => {
-          setAuthMode('login');
-          setPage('auth');
+          setPage('company-dashboard-auth');
         }}
         onContractorLogin={() => {
           window.location.replace('/contractor/dashboard');
@@ -241,6 +352,7 @@ export default function App() {
 
   return (
     <TalentMarketplacePage
+      isAuthenticated={Boolean(tokenStore.getAccess())}
       userName={userName}
       onLogout={handleLogout}
     />

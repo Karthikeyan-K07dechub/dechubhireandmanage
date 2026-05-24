@@ -63,7 +63,7 @@ function CardForm({ state, handlers, clientSecret, onPaymentMethodId }: CardForm
   const elements = useElements();
 
   const { formData, loadingAction } = state;
-  const { handleInputChange, goToStep, switchStep } = handlers;
+  const { handleInputChange, goToStep } = handlers;
 
   const [cardErrors, setCardErrors] = useState({ number: '', expiry: '', cvc: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -233,7 +233,7 @@ function CardForm({ state, handlers, clientSecret, onPaymentMethodId }: CardForm
           onClick={(e) => {
             e.preventDefault();
             // Skip billing — jump directly to Step 6
-            switchStep(6);
+            void goToStep(6);
           }}
         >
           Skip for now — add payment later
@@ -253,7 +253,7 @@ export default function Step5Billing({
   handlers: AppHandlers;
 }) {
   const { stripeClientSecret, loadingAction } = state;
-  const { handleInputChange, goToStep, switchStep } = handlers;
+  const { handleInputChange, goToStep } = handlers;
 
   const [isLoading, setIsLoading] = useState(!stripeClientSecret);
 
@@ -271,8 +271,10 @@ export default function Step5Billing({
 
   const handleDummyPayment = useCallback(() => {
     handleInputChange('stripePaymentMethodId', MVP_DUMMY_PAYMENT_ID);
-    switchStep(6);
-  }, [handleInputChange, switchStep]);
+    window.setTimeout(() => {
+      void goToStep(6);
+    }, 0);
+  }, [handleInputChange, goToStep]);
 
   return (
     <section className="card screen active">

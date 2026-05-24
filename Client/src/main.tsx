@@ -20,7 +20,7 @@ const isContractorDashboardRoute =
   pathname === '/contractor/dashboard' || pathname.startsWith('/contractor/dashboard/');
 
 if (isDashboardRoute && !tokenStore.getAccess()) {
-  window.location.replace('/login');
+  window.location.replace('/company/dashboard/login');
 }
 
 if (isContractorDashboardRoute && !contractorTokenStore.get()) {
