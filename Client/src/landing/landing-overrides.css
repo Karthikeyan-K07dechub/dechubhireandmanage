@@ -1,0 +1,36 @@
+.landing-template-root {
+  width: 100%;
+}
+
+.landing-template-root .main-landing-page {
+  max-width: 100%;
+}
+
+.landing-template-root .frame-12,
+.landing-template-root .frame-13,
+.landing-template-root .button,
+.landing-template-root .button-2,
+.landing-template-root .button-3,
+.landing-template-root .button-4,
+.landing-template-root .component,
+.landing-template-root .image-5,
+.landing-template-root .text-wrapper-160 {
+  cursor: pointer;
+}
+
+.landing-template-root .frame-12:focus-visible,
+.landing-template-root .frame-13:focus-visible,
+.landing-template-root .button-2:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.landing-template-root .frame-12:hover,
+.landing-template-root .frame-13:hover,
+.landing-template-root .button:hover,
+.landing-template-root .button-2:hover,
+.landing-template-root .button-3:hover,
+.landing-template-root .button-4:hover,
+.landing-template-root .component:hover {
+  filter: brightness(1.02);
+}
