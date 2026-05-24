@@ -46,6 +46,7 @@ body {
   background: var(--off);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 button,
@@ -112,6 +113,12 @@ input.valid {
 .app {
   display: flex;
   min-height: 100vh;
+}
+.app {
+  /* center the application horizontally and constrain max width */
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .left {
