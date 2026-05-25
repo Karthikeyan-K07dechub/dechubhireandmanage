@@ -52,6 +52,179 @@
   filter: brightness(1.02);
 }
 
+.landing-template-root .modern-experience-section {
+  position: absolute;
+  top: 1700px;
+  left: 0;
+  width: 1440px;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+}
+
+.landing-template-root .modern-experience-section__panel {
+  width: 1320px;
+  min-height: 1160px;
+  padding: 36px 24px 28px;
+  border-radius: 12px;
+  background: #6e40b5;
+  box-shadow: 0 28px 80px rgba(92, 52, 145, 0.22);
+}
+
+.landing-template-root .modern-experience-section__header {
+  padding: 0 28px;
+}
+
+.landing-template-root .modern-experience-section__title {
+  margin: 0;
+  font-family: "Inter", Helvetica;
+  font-size: 29px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+.landing-template-root .modern-experience-section__subtitle {
+  margin: 3px 0 0;
+  font-family: "DM Sans", Helvetica;
+  font-size: 20px;
+  line-height: 1.2;
+  color: rgba(231, 211, 255, 0.72);
+}
+
+.landing-template-root .modern-experience-section__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  width: 1130px;
+  margin: 22px auto 32px;
+}
+
+.landing-template-root .modern-experience-section__stat-card {
+  min-height: 204px;
+  padding: 28px 24px 22px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.landing-template-root .modern-experience-section__stat-value {
+  font-family: "Inter", Helvetica;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  color: #251d59;
+}
+
+.landing-template-root .modern-experience-section__stat-copy {
+  margin: 22px 0 0;
+  font-family: "DM Sans", Helvetica;
+  font-size: 10px;
+  line-height: 1.45;
+  color: #393046;
+}
+
+.landing-template-root .modern-experience-section__media-wrap {
+  width: 1220px;
+  height: 520px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.landing-template-root .modern-experience-section__media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.landing-template-root .modern-experience-section__labels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 1220px;
+  margin: 14px auto 12px;
+  font-family: "DM Sans", Helvetica;
+  font-size: 16px;
+  line-height: 1.2;
+  color: rgba(231, 211, 255, 0.72);
+}
+
+.landing-template-root .modern-experience-section__labels span:last-child {
+  text-align: center;
+}
+
+.landing-template-root .modern-experience-section__bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  width: 1240px;
+  margin: 0 auto;
+}
+
+.landing-template-root .modern-experience-section__info-card,
+.landing-template-root .modern-experience-section__tag-card {
+  min-height: 214px;
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.landing-template-root .modern-experience-section__info-card {
+  padding: 28px 28px 24px;
+}
+
+.landing-template-root .modern-experience-section__info-copy {
+  margin: 0;
+  max-width: 470px;
+  font-family: "DM Sans", Helvetica;
+  font-size: 17px;
+  line-height: 1.5;
+  color: #34284e;
+}
+
+.landing-template-root .modern-experience-section__info-copy strong {
+  font-weight: 700;
+}
+
+.landing-template-root .modern-experience-section__link {
+  margin-top: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: "DM Sans", Helvetica;
+  font-size: 14px;
+  font-weight: 500;
+  color: #23194b;
+  cursor: pointer;
+}
+
+.landing-template-root .modern-experience-section__tag-card {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-template-root .modern-experience-section__tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 8px;
+}
+
+.landing-template-root .modern-experience-section__tag-grid span {
+  padding: 5px 10px;
+  border: 1px solid rgba(106, 74, 163, 0.22);
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(88, 52, 138, 0.08);
+  font-family: "DM Sans", Helvetica;
+  font-size: 10px;
+  line-height: 1;
+  color: #5d4589;
+  white-space: nowrap;
+}
+
 @supports not (zoom: 1) {
   .landing-template-root .main-landing-page {
     width: calc(var(--page-design-width) * 1px);
