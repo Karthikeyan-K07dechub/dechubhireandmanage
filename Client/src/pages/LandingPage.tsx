@@ -2,7 +2,7 @@ import { Fragment, createElement, useMemo, type ReactNode } from 'react';
 import landingTemplate from '../landing/landing-template.html?raw';
 import heroBackground from '../landing/assets/back_img.png';
 import heroLaptop from '../landing/assets/laptop.png';
-import modernExperienceImage from '../image_34.png';
+import modernExperienceImage from '../modern-experience-generated.png';
 import '../landing/landing-globals.css';
 import '../landing/landing-styleguide.css';
 import '../landing/landing-design.css';
@@ -34,7 +34,6 @@ function buildLandingMarkup(): string {
       <div class="modern-experience-section__panel">
         <div class="modern-experience-section__header">
           <h2 class="modern-experience-section__title">One Modern Experience For Today's Workforce</h2>
-          <p class="modern-experience-section__subtitle">Container</p>
         </div>
 
         <div class="modern-experience-section__stats">
@@ -64,18 +63,21 @@ function buildLandingMarkup(): string {
           />
         </div>
 
-        <div class="modern-experience-section__labels">
-          <span>Frame 2147224572</span>
-          <span>Frame 2147224573</span>
-        </div>
-
         <div class="modern-experience-section__bottom">
           <article class="modern-experience-section__info-card">
-            <p class="modern-experience-section__info-copy">
-              <strong>Built on in-house infrastructure,</strong> with single payroll engines,
-              owned entities, and more.
-            </p>
-            <button class="modern-experience-section__link" type="button">Learn more -></button>
+            <div class="modern-experience-section__info-content">
+              <p class="modern-experience-section__info-copy">
+                <strong>Built on in-house infrastructure,</strong> with single payroll engines,
+                owned entities, and more.
+              </p>
+              <p class="modern-experience-section__info-copy modern-experience-section__info-copy--secondary">
+                Run onboarding, contracts, verification, and payouts from one reliable
+                workflow designed for fast-moving global teams.
+              </p>
+            </div>
+            <button class="modern-experience-section__link" type="button">
+              Learn more <span class="modern-experience-section__link-icon" aria-hidden="true">→</span>
+            </button>
           </article>
 
           <article class="modern-experience-section__tag-card">

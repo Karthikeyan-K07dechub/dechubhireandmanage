@@ -1292,13 +1292,14 @@
 
 .main-landing-page .section {
   position: absolute;
-  top: 1455px;
+  top: 1350px;
   left: 0;
   width: 1440px;
   height: 171px;
   border-bottom-width: 1px;
   border-bottom-style: solid;
   border-color: #ffffff61;
+  visibility: hidden;
 }
 
 .main-landing-page .text-wrapper-37 {
