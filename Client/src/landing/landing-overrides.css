@@ -89,6 +89,215 @@
 
 .landing-template-root .container-32 {
   top: 3405px;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 101px 168px 0;
+}
+
+.landing-template-root .platform-features,
+.landing-template-root .everything-you-need,
+.landing-template-root .one-platform,
+.landing-template-root .container-33 {
+  margin-left: 0;
+  width: 100%;
+  max-width: 1104px;
+}
+
+.landing-template-root .platform-features {
+  margin-top: 0;
+}
+
+.landing-template-root .everything-you-need {
+  margin-top: 6px;
+}
+
+.landing-template-root .one-platform {
+  margin-top: 24px;
+}
+
+.landing-template-root .container-33 {
+  margin-top: 52px;
+  border: 2px solid #7d49bd;
+}
+
+.landing-template-root .built-for-both-sides,
+.landing-template-root .container,
+.landing-template-root .text-wrapper-141,
+.landing-template-root .text-wrapper-142,
+.landing-template-root .text-wrapper-143,
+.landing-template-root .text-wrapper-144,
+.landing-template-root .text-wrapper-145,
+.landing-template-root .text-wrapper-146,
+.landing-template-root .text-wrapper-147,
+.landing-template-root .text-wrapper-148,
+.landing-template-root .email-invite-to-join,
+.landing-template-root .live-dashboard-track,
+.landing-template-root .rectangle,
+.landing-template-root .rectangle-2,
+.landing-template-root .rectangle-3,
+.landing-template-root .rectangle-4,
+.landing-template-root .rectangle-5,
+.landing-template-root .do-the-work-you-love,
+.landing-template-root .build-your-remote,
+.landing-template-root .next-page,
+.landing-template-root .next-page-2 {
+  transform: translateY(-620px);
+}
+
+.landing-template-root .container {
+  left: 72px;
+  width: 653px;
+  height: 560px;
+  border-radius: 42px;
+}
+
+.landing-template-root .rectangle {
+  left: 767px;
+  width: 605px;
+  height: 560px;
+  border-radius: 42px;
+}
+
+.landing-template-root .build-your-remote {
+  top: 5454px;
+  left: 112px;
+  width: 520px;
+  line-height: 1.28;
+}
+
+.landing-template-root .do-the-work-you-love {
+  top: 5458px;
+  left: 804px;
+  width: 500px;
+  line-height: 1.28;
+}
+
+.landing-template-root .text-wrapper-142 {
+  top: 5598px;
+  left: 122px;
+}
+
+.landing-template-root .text-wrapper-141 {
+  top: 5598px;
+  left: 814px;
+}
+
+.landing-template-root .rectangle-5 {
+  top: 5592px;
+  left: 112px;
+  width: 154px;
+  height: 32px;
+}
+
+.landing-template-root .rectangle-2 {
+  top: 5592px;
+  left: 804px;
+  width: 188px;
+  height: 34px;
+}
+
+.landing-template-root .text-wrapper-147 {
+  top: 5642px;
+  left: 112px;
+  width: 520px;
+  line-height: 1.36;
+}
+
+.landing-template-root .text-wrapper-148 {
+  top: 5642px;
+  left: 814px;
+  width: 500px;
+  line-height: 1.36;
+}
+
+.landing-template-root .live-dashboard-track {
+  top: 5734px;
+  left: 112px;
+  width: 520px;
+  line-height: 1.48;
+}
+
+.landing-template-root .email-invite-to-join {
+  top: 5734px;
+  left: 814px;
+  width: 500px;
+  line-height: 1.48;
+}
+
+.landing-template-root .rectangle-3 {
+  top: 5878px;
+  left: 112px;
+  width: 238px;
+  height: 46px;
+  border-radius: 999px;
+}
+
+.landing-template-root .rectangle-4 {
+  top: 5882px;
+  left: 814px;
+  width: 276px;
+  height: 40px;
+  border-radius: 999px;
+}
+
+.landing-template-root .text-wrapper-143 {
+  top: 5890px;
+  left: 134px;
+}
+
+.landing-template-root .text-wrapper-144 {
+  top: 5890px;
+  left: 836px;
+}
+
+.landing-template-root .next-page-2 {
+  top: 5892px;
+  left: 316px;
+  width: 22px;
+  height: 14px;
+}
+
+.landing-template-root .next-page {
+  top: 5892px;
+  left: 1048px;
+  width: 22px;
+  height: 14px;
+}
+
+.landing-template-root .container-35,
+.landing-template-root .container-39,
+.landing-template-root .container-41,
+.landing-template-root .container-44,
+.landing-template-root .container-46,
+.landing-template-root .container-48 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-template-root .text-wrapper-44,
+.landing-template-root .text-wrapper-48,
+.landing-template-root .text-wrapper-64 {
+  margin: 0;
+  width: auto;
+  height: auto;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-template-root .container-38,
+.landing-template-root .container-40,
+.landing-template-root .container-45,
+.landing-template-root .container-47 {
+  border-left: 2px solid #7d49bd;
+}
+
+.landing-template-root .container-43,
+.landing-template-root .container-45,
+.landing-template-root .container-47 {
+  border-top: 2px solid #7d49bd;
 }
 
 .landing-template-root .text-wrapper-86,
