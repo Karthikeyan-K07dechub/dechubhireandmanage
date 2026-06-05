@@ -14,8 +14,8 @@
   /* make the landing wrapper responsive: fill available width but cap at design width */
   width: 100%;
   max-width: calc(var(--page-design-width) * 1px);
-  /* keep the original design height as a minimum reference */
-  min-height: calc(var(--page-design-height) * 1px);
+  /* trim the canvas to the actual footer bottom to avoid trailing whitespace */
+  min-height: 10415px;
   height: auto;
   margin: 0 auto;
   transform-origin: top center;
@@ -144,6 +144,65 @@
   transform: translateY(-620px);
 }
 
+.landing-template-root .div {
+  top: 5450px;
+}
+
+
+.landing-template-root .container-2 {
+  top: 6970px;
+}
+
+.landing-template-root .frame-5 {
+  top: 7425px;
+}
+
+.landing-template-root .component-wrapper,
+.landing-template-root .img-wrapper,
+.landing-template-root .frame-9 {
+  top: 7573px;
+}
+
+.landing-template-root .element-wrapper {
+  top: 7605px;
+}
+
+.landing-template-root .div-w-full {
+  top: 8189px;
+}
+
+.landing-template-root .revolut-logo {
+  top: 8203px;
+}
+
+.landing-template-root .see-how-the-revolut {
+  top: 8238px;
+}
+
+.landing-template-root .frame-7 {
+  top: 8251px;
+}
+
+.landing-template-root .text-wrapper-156 {
+  top: 8222px;
+}
+
+.landing-template-root .frame-8 {
+  top: 8244px;
+}
+
+.landing-template-root .pricing {
+  top: 8399px;
+}
+
+.landing-template-root .container-65 {
+  top: 9455px;
+}
+
+.landing-template-root .container-72 {
+  top: 10000px;
+}
+
 .landing-template-root .container {
   left: 72px;
   width: 653px;
@@ -159,14 +218,14 @@
 }
 
 .landing-template-root .build-your-remote {
-  top: 5454px;
+  top: 5470px;
   left: 112px;
   width: 520px;
   line-height: 1.28;
 }
 
 .landing-template-root .do-the-work-you-love {
-  top: 5458px;
+  top: 5470px;
   left: 804px;
   width: 500px;
   line-height: 1.28;
@@ -174,12 +233,12 @@
 
 .landing-template-root .text-wrapper-142 {
   top: 5598px;
-  left: 122px;
+  left: 129px;
 }
 
 .landing-template-root .text-wrapper-141 {
-  top: 5598px;
-  left: 814px;
+  top: 5599px;
+  left: 821px;
 }
 
 .landing-template-root .rectangle-5 {
@@ -192,76 +251,76 @@
 .landing-template-root .rectangle-2 {
   top: 5592px;
   left: 804px;
-  width: 188px;
+  width: 154px;
   height: 34px;
 }
 
 .landing-template-root .text-wrapper-147 {
-  top: 5642px;
+  top: 5653px;
   left: 112px;
   width: 520px;
   line-height: 1.36;
 }
 
 .landing-template-root .text-wrapper-148 {
-  top: 5642px;
-  left: 814px;
+  top: 5650px;
+  left: 804px;
   width: 500px;
   line-height: 1.36;
 }
 
 .landing-template-root .live-dashboard-track {
-  top: 5734px;
+  top: 5750px;
   left: 112px;
   width: 520px;
   line-height: 1.48;
 }
 
 .landing-template-root .email-invite-to-join {
-  top: 5734px;
-  left: 814px;
+  top: 5747px;
+  left: 804px;
   width: 500px;
   line-height: 1.48;
 }
 
 .landing-template-root .rectangle-3 {
-  top: 5878px;
+  top: 5892px;
   left: 112px;
-  width: 238px;
-  height: 46px;
+  width: 276px;
+  height: 50px;
   border-radius: 999px;
 }
 
 .landing-template-root .rectangle-4 {
-  top: 5882px;
-  left: 814px;
+  top: 5892px;
+  left: 804px;
   width: 276px;
-  height: 40px;
+  height: 50px;
   border-radius: 999px;
 }
 
 .landing-template-root .text-wrapper-143 {
-  top: 5890px;
-  left: 134px;
+  top: 5908px;
+  left: 141px;
 }
 
 .landing-template-root .text-wrapper-144 {
-  top: 5890px;
+  top: 5907px;
   left: 836px;
 }
 
 .landing-template-root .next-page-2 {
-  top: 5892px;
-  left: 316px;
+  top: 5908px;
+  left: 339px;
   width: 22px;
-  height: 14px;
+  height: 21px;
 }
 
 .landing-template-root .next-page {
-  top: 5892px;
-  left: 1048px;
+  top: 5907px;
+  left: 1027px;
   width: 22px;
-  height: 14px;
+  height: 21px;
 }
 
 .landing-template-root .container-35,
@@ -571,7 +630,7 @@
 @supports not (zoom: 1) {
   .landing-template-root .main-landing-page {
     width: calc(var(--page-design-width) * 1px);
-    min-height: calc(var(--page-design-height) * 1px);
+    min-height: 10415px;
     transform: scale(var(--landing-scale));
     transform-origin: top center;
     max-width: 100vw;

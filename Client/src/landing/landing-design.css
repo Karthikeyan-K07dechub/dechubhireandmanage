@@ -109,7 +109,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding: 0px 0px 0px 20px;
+  padding: 0px 0px 0px 0px;
   position: relative;
   align-self: stretch;
   width: 100%;
@@ -328,7 +328,7 @@
 }
 
 .main-landing-page .what-people-say {
-  margin-left: 514.5px;
+  margin-left: 485.5px;
   width: 129px;
   height: 18px;
   margin-top: 1px;
@@ -2030,8 +2030,9 @@
 }
 
 .main-landing-page .tracks {
+
   position: absolute;
-  top: 6726px;
+  top: 6100px;
   left: -1px;
   width: 1450px;
   height: 781px;
@@ -3247,7 +3248,7 @@
 }
 
 .main-landing-page .button-3 {
-  margin-left: 49.5px;
+  margin-left: 47.5px;
   width: 421px;
   height: 54px;
   margin-top: 36px;
