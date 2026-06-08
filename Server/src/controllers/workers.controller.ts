@@ -25,6 +25,113 @@ const DEFAULT_MARKETPLACE_BIOS = new Set([
   'Self-signup freelancer profile',
 ]);
 
+const DEFAULT_RESPONSE_TIME_HOURS = 2;
+
+const DEFAULT_SERVICE_PACKAGES = [
+  {
+    name: 'Basic',
+    price: 0,
+    description: 'Share a simple starter package for companies browsing your profile.',
+    deliveryDays: 5,
+    revisions: 1,
+    features: ['Scope outline', 'Starter delivery'],
+  },
+  {
+    name: 'Standard',
+    price: 0,
+    description: 'Describe your most common package and what clients typically receive.',
+    deliveryDays: 7,
+    revisions: 2,
+    features: ['Expanded scope', 'Progress updates'],
+  },
+  {
+    name: 'Premium',
+    price: 0,
+    description: 'Use this for your most complete offer with your best turnaround.',
+    deliveryDays: 14,
+    revisions: 3,
+    features: ['Full delivery', 'Priority collaboration'],
+  },
+];
+
+function normalizeStringList(values: unknown, limit = 30): string[] {
+  if (!Array.isArray(values)) return [];
+  return Array.from(
+    new Set(
+      values
+        .map((value) => (typeof value === 'string' ? value.trim() : ''))
+        .filter(Boolean),
+    ),
+  ).slice(0, limit);
+}
+
+function normalizePortfolioProjects(values: unknown) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((item) => {
+      const project = item as Record<string, unknown>;
+      const title = typeof project?.title === 'string' ? project.title.trim() : '';
+      const description = typeof project?.description === 'string' ? project.description.trim() : '';
+      const imageUrl = typeof project?.imageUrl === 'string' ? project.imageUrl.trim() : '';
+      const tags = normalizeStringList(project?.tags, 8);
+
+      if (!title || !description || !imageUrl) {
+        return null;
+      }
+
+      return { title, description, imageUrl, tags };
+    })
+    .filter(Boolean);
+}
+
+function normalizeServicePackages(values: unknown) {
+  if (!Array.isArray(values)) return DEFAULT_SERVICE_PACKAGES;
+  const packages = values
+    .map((item, index) => {
+      const current = item as Record<string, unknown>;
+      const fallback = DEFAULT_SERVICE_PACKAGES[index] ?? DEFAULT_SERVICE_PACKAGES[DEFAULT_SERVICE_PACKAGES.length - 1];
+      const name = typeof current?.name === 'string' ? current.name.trim() : fallback.name;
+      const description = typeof current?.description === 'string' ? current.description.trim() : fallback.description;
+      const price = typeof current?.price === 'number' ? current.price : Number(current?.price ?? fallback.price);
+      const deliveryDays = typeof current?.deliveryDays === 'number'
+        ? current.deliveryDays
+        : Number(current?.deliveryDays ?? fallback.deliveryDays);
+      const revisions = typeof current?.revisions === 'number'
+        ? current.revisions
+        : Number(current?.revisions ?? fallback.revisions);
+      const features = normalizeStringList(current?.features, 12);
+
+      if (!name || !description) {
+        return null;
+      }
+
+      return {
+        name,
+        price: Number.isFinite(price) ? price : fallback.price,
+        description,
+        deliveryDays: Number.isFinite(deliveryDays) ? deliveryDays : fallback.deliveryDays,
+        revisions: Number.isFinite(revisions) ? revisions : fallback.revisions,
+        features: features.length ? features : fallback.features,
+      };
+    })
+    .filter(Boolean);
+
+  return packages.length ? packages.slice(0, 3) : DEFAULT_SERVICE_PACKAGES;
+}
+
+function normalizeFaqItems(values: unknown) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((item) => {
+      const faq = item as Record<string, unknown>;
+      const question = typeof faq?.question === 'string' ? faq.question.trim() : '';
+      const answer = typeof faq?.answer === 'string' ? faq.answer.trim() : '';
+      if (!question || !answer) return null;
+      return { question, answer };
+    })
+    .filter(Boolean);
+}
+
 // ─── Email transporter ────────────────────────────────────────────────────────
 
 const transporter = nodemailer.createTransport({
@@ -152,6 +259,37 @@ function mapWorkerToMarketplaceTalent(worker: any) {
       worker.contractorProfile?.marketplaceBio?.trim()
       || worker.scopeOfWork?.trim()
       || 'Freelancer profile is being completed.',
+    profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
+    bannerImageUrl: worker.contractorProfile?.bannerImageUrl ?? '',
+  };
+}
+
+function mapWorkerToMarketplaceTalentDetail(worker: any) {
+  const baseProfile = mapWorkerToMarketplaceTalent(worker);
+  const languages = normalizeStringList(worker.contractorProfile?.languages, 8);
+  const portfolioProjects = normalizePortfolioProjects(worker.contractorProfile?.portfolioProjects);
+  const servicePackages = normalizeServicePackages(worker.contractorProfile?.servicePackages);
+  const faqItems = normalizeFaqItems(worker.contractorProfile?.faqItems);
+
+  return {
+    ...baseProfile,
+    email: worker.email,
+    responseTimeHours:
+      typeof worker.contractorProfile?.responseTimeHours === 'number' && worker.contractorProfile.responseTimeHours > 0
+        ? worker.contractorProfile.responseTimeHours
+        : DEFAULT_RESPONSE_TIME_HOURS,
+    languages,
+    profileOverview:
+      worker.contractorProfile?.profileOverview?.trim()
+      || worker.contractorProfile?.marketplaceBio?.trim()
+      || worker.scopeOfWork?.trim()
+      || 'Profile overview is being completed.',
+    profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
+    bannerImageUrl: worker.contractorProfile?.bannerImageUrl ?? '',
+    portfolioProjects,
+    servicePackages,
+    faqItems,
+    memberSince: worker.createdAt instanceof Date ? worker.createdAt.toISOString() : new Date(worker.createdAt).toISOString(),
   };
 }
 
@@ -225,8 +363,6 @@ export async function listWorkers(req: Request, res: Response, next: NextFunctio
 
 export async function getMarketplaceTalent(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    await getCompanyForUser(req.user!.sub);
-
     const workers = await Worker.find({
       workerType: 'contractor',
       status: { $nin: ['invited', 'terminated'] },
@@ -240,6 +376,24 @@ export async function getMarketplaceTalent(req: Request, res: Response, next: Ne
         .filter((worker) => hasCompletedMarketplaceProfile(worker))
         .map((worker) => mapWorkerToMarketplaceTalent(worker)),
     );
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getMarketplaceTalentProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const worker = await Worker.findOne({
+      _id: req.params.id,
+      workerType: 'contractor',
+      status: { $nin: ['invited', 'terminated'] },
+    }).lean();
+
+    if (!worker || !hasCompletedMarketplaceProfile(worker)) {
+      throw Errors.NotFound('Marketplace profile');
+    }
+
+    ok(res, mapWorkerToMarketplaceTalentDetail(worker));
   } catch (err) {
     next(err);
   }

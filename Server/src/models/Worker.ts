@@ -66,6 +66,29 @@ export interface IWorker extends Document {
     };
     taxId: string;
     skills: string[];
+    responseTimeHours?: number;
+    languages?: string[];
+    profilePhotoUrl?: string;
+    bannerImageUrl?: string;
+    profileOverview?: string;
+    portfolioProjects?: Array<{
+      title: string;
+      description: string;
+      imageUrl: string;
+      tags: string[];
+    }>;
+    servicePackages?: Array<{
+      name: string;
+      price: number;
+      description: string;
+      deliveryDays: number;
+      revisions: number;
+      features: string[];
+    }>;
+    faqItems?: Array<{
+      question: string;
+      answer: string;
+    }>;
   } | null;
   kycData: {
     idType: string;

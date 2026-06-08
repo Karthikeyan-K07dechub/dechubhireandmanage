@@ -31,7 +31,133 @@ const MARKETPLACE_AVAILABILITY_LABELS = {
   not_available: 'Not available',
 } as const;
 
+const DEFAULT_RESPONSE_TIME_HOURS = 2;
+
+const DEFAULT_SERVICE_PACKAGES = [
+  {
+    name: 'Basic',
+    price: 0,
+    description: 'Share a simple starter package for companies browsing your profile.',
+    deliveryDays: 5,
+    revisions: 1,
+    features: ['Scope outline', 'Starter delivery'],
+  },
+  {
+    name: 'Standard',
+    price: 0,
+    description: 'Describe your most common package and what clients typically receive.',
+    deliveryDays: 7,
+    revisions: 2,
+    features: ['Expanded scope', 'Progress updates'],
+  },
+  {
+    name: 'Premium',
+    price: 0,
+    description: 'Use this for your most complete offer with your best turnaround.',
+    deliveryDays: 14,
+    revisions: 3,
+    features: ['Full delivery', 'Priority collaboration'],
+  },
+];
+
+function normalizeStringList(values: unknown, limit = 30): string[] {
+  if (!Array.isArray(values)) return [];
+  return Array.from(
+    new Set(
+      values
+        .map((value) => (typeof value === 'string' ? value.trim() : ''))
+        .filter(Boolean),
+    ),
+  ).slice(0, limit);
+}
+
+function normalizePortfolioProjects(values: unknown) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((item) => {
+      const project = item as Record<string, unknown>;
+      const title = typeof project?.title === 'string' ? project.title.trim() : '';
+      const description = typeof project?.description === 'string' ? project.description.trim() : '';
+      const imageUrl = typeof project?.imageUrl === 'string' ? project.imageUrl.trim() : '';
+      const tags = normalizeStringList(project?.tags, 8);
+
+      if (!title || !description || !imageUrl) {
+        return null;
+      }
+
+      return { title, description, imageUrl, tags };
+    })
+    .filter(Boolean) as Array<{ title: string; description: string; imageUrl: string; tags: string[] }>;
+}
+
+function normalizeServicePackages(values: unknown) {
+  if (!Array.isArray(values)) {
+    return DEFAULT_SERVICE_PACKAGES;
+  }
+
+  const packages = values
+    .map((item, index) => {
+      const current = item as Record<string, unknown>;
+      const fallback = DEFAULT_SERVICE_PACKAGES[index] ?? DEFAULT_SERVICE_PACKAGES[DEFAULT_SERVICE_PACKAGES.length - 1];
+      const name = typeof current?.name === 'string' ? current.name.trim() : fallback.name;
+      const description = typeof current?.description === 'string' ? current.description.trim() : fallback.description;
+      const price = typeof current?.price === 'number' ? current.price : Number(current?.price ?? fallback.price);
+      const deliveryDays = typeof current?.deliveryDays === 'number'
+        ? current.deliveryDays
+        : Number(current?.deliveryDays ?? fallback.deliveryDays);
+      const revisions = typeof current?.revisions === 'number'
+        ? current.revisions
+        : Number(current?.revisions ?? fallback.revisions);
+      const features = normalizeStringList(current?.features, 12);
+
+      if (!name || !description) {
+        return null;
+      }
+
+      return {
+        name,
+        price: Number.isFinite(price) ? price : fallback.price,
+        description,
+        deliveryDays: Number.isFinite(deliveryDays) ? deliveryDays : fallback.deliveryDays,
+        revisions: Number.isFinite(revisions) ? revisions : fallback.revisions,
+        features: features.length ? features : fallback.features,
+      };
+    })
+    .filter(Boolean) as Array<{
+      name: string;
+      price: number;
+      description: string;
+      deliveryDays: number;
+      revisions: number;
+      features: string[];
+    }>;
+
+  return packages.length ? packages.slice(0, 3) : DEFAULT_SERVICE_PACKAGES;
+}
+
+function normalizeFaqItems(values: unknown) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map((item) => {
+      const faq = item as Record<string, unknown>;
+      const question = typeof faq?.question === 'string' ? faq.question.trim() : '';
+      const answer = typeof faq?.answer === 'string' ? faq.answer.trim() : '';
+
+      if (!question || !answer) {
+        return null;
+      }
+
+      return { question, answer };
+    })
+    .filter(Boolean) as Array<{ question: string; answer: string }>;
+}
+
 function getMarketplaceProfile(worker: InstanceType<typeof Worker>) {
+  const languages = normalizeStringList(worker.contractorProfile?.languages, 8);
+  const portfolioProjects = normalizePortfolioProjects(worker.contractorProfile?.portfolioProjects);
+  const servicePackages = normalizeServicePackages(worker.contractorProfile?.servicePackages);
+  const faqItems = normalizeFaqItems(worker.contractorProfile?.faqItems);
+
   return {
     marketplaceTitle: worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer',
     marketplaceBio:
@@ -51,6 +177,21 @@ function getMarketplaceProfile(worker: InstanceType<typeof Worker>) {
       || worker.country
       || '',
     skills: worker.contractorProfile?.skills ?? [],
+    responseTimeHours:
+      typeof worker.contractorProfile?.responseTimeHours === 'number' && worker.contractorProfile.responseTimeHours > 0
+        ? worker.contractorProfile.responseTimeHours
+        : DEFAULT_RESPONSE_TIME_HOURS,
+    languages,
+    profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
+    bannerImageUrl: worker.contractorProfile?.bannerImageUrl ?? '',
+    profileOverview:
+      worker.contractorProfile?.profileOverview?.trim()
+      || worker.contractorProfile?.marketplaceBio?.trim()
+      || worker.scopeOfWork?.trim()
+      || '',
+    portfolioProjects,
+    servicePackages,
+    faqItems,
   };
 }
 
@@ -270,6 +411,12 @@ export async function selfSignup(req: Request, res: Response, next: NextFunction
         },
         taxId: '',
         skills: [],
+        responseTimeHours: DEFAULT_RESPONSE_TIME_HOURS,
+        languages: [],
+        profileOverview: '',
+        portfolioProjects: [],
+        servicePackages: DEFAULT_SERVICE_PACKAGES,
+        faqItems: [],
       },
     });
 
@@ -318,6 +465,27 @@ const skillsSchema = z.object({
   skills: z.array(z.string().trim().min(1).max(50)).max(30),
 });
 
+const portfolioProjectSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  description: z.string().trim().min(1).max(400),
+  imageUrl: z.string().trim().url(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(8),
+});
+
+const servicePackageSchema = z.object({
+  name: z.string().trim().min(1).max(40),
+  price: z.number().min(0).max(1000000),
+  description: z.string().trim().min(1).max(300),
+  deliveryDays: z.number().int().min(1).max(365),
+  revisions: z.number().int().min(0).max(100),
+  features: z.array(z.string().trim().min(1).max(80)).max(12),
+});
+
+const faqItemSchema = z.object({
+  question: z.string().trim().min(1).max(160),
+  answer: z.string().trim().min(1).max(500),
+});
+
 const profileUpdateSchema = z.object({
   firstName: z.string().trim().min(1).max(50),
   lastName: z.string().trim().min(1).max(50),
@@ -327,7 +495,15 @@ const profileUpdateSchema = z.object({
   marketplaceRate: z.number().min(0).max(100000),
   city: z.string().trim().min(1).max(80),
   country: z.string().trim().min(1).max(80),
+  responseTimeHours: z.number().int().min(1).max(168),
   skills: z.array(z.string().trim().min(1).max(50)).max(30),
+  languages: z.array(z.string().trim().min(1).max(50)).max(8),
+  profilePhotoUrl: z.string().trim().optional(),
+  bannerImageUrl: z.string().trim().optional(),
+  profileOverview: z.string().trim().min(2).max(2000),
+  portfolioProjects: z.array(portfolioProjectSchema).max(12),
+  servicePackages: z.array(servicePackageSchema).min(1).max(3),
+  faqItems: z.array(faqItemSchema).max(12),
 });
 
 export async function savePersonalDetails(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -354,6 +530,12 @@ export async function savePersonalDetails(req: Request, res: Response, next: Nex
       },
       taxId: data.taxId,
       skills: worker.contractorProfile?.skills ?? [],
+      responseTimeHours: worker.contractorProfile?.responseTimeHours ?? DEFAULT_RESPONSE_TIME_HOURS,
+      languages: normalizeStringList(worker.contractorProfile?.languages, 8),
+      profileOverview: worker.contractorProfile?.profileOverview ?? '',
+      portfolioProjects: normalizePortfolioProjects(worker.contractorProfile?.portfolioProjects),
+      servicePackages: normalizeServicePackages(worker.contractorProfile?.servicePackages),
+      faqItems: normalizeFaqItems(worker.contractorProfile?.faqItems),
     };
 
     worker.contractorProfile = profile;
@@ -465,6 +647,12 @@ export async function updateSkills(req: Request, res: Response, next: NextFuncti
       },
       taxId: worker.contractorProfile?.taxId ?? '',
       skills: cleanedSkills,
+      responseTimeHours: worker.contractorProfile?.responseTimeHours ?? DEFAULT_RESPONSE_TIME_HOURS,
+      languages: normalizeStringList(worker.contractorProfile?.languages, 8),
+      profileOverview: worker.contractorProfile?.profileOverview ?? '',
+      portfolioProjects: normalizePortfolioProjects(worker.contractorProfile?.portfolioProjects),
+      servicePackages: normalizeServicePackages(worker.contractorProfile?.servicePackages),
+      faqItems: normalizeFaqItems(worker.contractorProfile?.faqItems),
     };
 
     await worker.save();
@@ -490,6 +678,13 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
     worker.lastName = data.lastName;
     worker.country = data.country;
 
+    const profilePhotoUrl = typeof data.profilePhotoUrl === 'string' && data.profilePhotoUrl.trim()
+      ? data.profilePhotoUrl.trim()
+      : worker.contractorProfile?.profilePhotoUrl ?? '';
+    const bannerImageUrl = typeof data.bannerImageUrl === 'string' && data.bannerImageUrl.trim()
+      ? data.bannerImageUrl.trim()
+      : worker.contractorProfile?.bannerImageUrl ?? '';
+
     worker.contractorProfile = {
       dateOfBirth: worker.contractorProfile?.dateOfBirth ?? new Date('2000-01-01'),
       nationality: worker.contractorProfile?.nationality ?? '',
@@ -498,6 +693,8 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       marketplaceAvailability: data.marketplaceAvailability,
       marketplaceRate: data.marketplaceRate,
       city: data.city,
+      profilePhotoUrl,
+      bannerImageUrl,
       address: {
         line1: worker.contractorProfile?.address?.line1 ?? '',
         line2: worker.contractorProfile?.address?.line2 ?? '',
@@ -508,6 +705,12 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       },
       taxId: worker.contractorProfile?.taxId ?? '',
       skills: cleanedSkills,
+      responseTimeHours: data.responseTimeHours,
+      languages: normalizeStringList(data.languages, 8),
+      profileOverview: data.profileOverview.trim(),
+      portfolioProjects: normalizePortfolioProjects(data.portfolioProjects),
+      servicePackages: normalizeServicePackages(data.servicePackages),
+      faqItems: normalizeFaqItems(data.faqItems),
     };
 
     await worker.save();
@@ -536,6 +739,14 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       marketplaceRate: marketplaceProfile.marketplaceRate,
       city: marketplaceProfile.city,
       country: marketplaceProfile.country,
+      responseTimeHours: marketplaceProfile.responseTimeHours,
+      languages: marketplaceProfile.languages,
+      profilePhotoUrl: marketplaceProfile.profilePhotoUrl,
+      bannerImageUrl: marketplaceProfile.bannerImageUrl,
+      profileOverview: marketplaceProfile.profileOverview,
+      portfolioProjects: marketplaceProfile.portfolioProjects,
+      servicePackages: marketplaceProfile.servicePackages,
+      faqItems: marketplaceProfile.faqItems,
     });
   } catch (err) {
     next(err);
@@ -681,6 +892,14 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
       marketplaceRate: marketplaceProfile.marketplaceRate,
       city: marketplaceProfile.city,
       country: marketplaceProfile.country,
+      responseTimeHours: marketplaceProfile.responseTimeHours,
+      languages: marketplaceProfile.languages,
+      profilePhotoUrl: marketplaceProfile.profilePhotoUrl,
+      bannerImageUrl: marketplaceProfile.bannerImageUrl,
+      profileOverview: marketplaceProfile.profileOverview,
+      portfolioProjects: marketplaceProfile.portfolioProjects,
+      servicePackages: marketplaceProfile.servicePackages,
+      faqItems: marketplaceProfile.faqItems,
       onboardingStep:0,
     });
   } catch (err) { next(err); }

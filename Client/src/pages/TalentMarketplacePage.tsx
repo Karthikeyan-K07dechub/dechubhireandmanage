@@ -4,8 +4,10 @@ import { getMarketplaceTalent, type MarketplaceTalentProfile } from '../api/mark
 import type { ApiError } from '../api/client';
 
 interface TalentMarketplacePageProps {
+  initialQuery: string;
   isAuthenticated: boolean;
   userName: string;
+  onOpenProfile: (workerId: string) => void;
   onLogout: () => void;
 }
 
@@ -40,11 +42,13 @@ function isCompletedMarketplaceProfile(profile: MarketplaceTalentProfile): boole
 }
 
 export default function TalentMarketplacePage({
+  initialQuery,
   isAuthenticated,
   userName,
+  onOpenProfile,
   onLogout,
 }: TalentMarketplacePageProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [availability, setAvailability] = useState('All');
   const [talentPool, setTalentPool] = useState<MarketplaceTalentProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,11 +67,15 @@ export default function TalentMarketplacePage({
       });
   }, []);
 
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+
   const filteredTalent = useMemo(() => {
     return talentPool.filter((talent) => {
       const matchesQuery =
         !query.trim()
-        || `${talent.name} ${talent.role} ${talent.location} ${talent.skills.join(' ')} ${talent.blurb}`
+        || `${talent.role} ${talent.skills.join(' ')}`
           .toLowerCase()
           .includes(query.toLowerCase());
 
@@ -159,31 +167,67 @@ export default function TalentMarketplacePage({
         {!loading && !error && filteredTalent.length > 0 && (
           <section className="tmp-grid">
             {filteredTalent.map((talent) => (
-              <article key={talent.id} className="tmp-card">
-                <div className="tmp-card-head">
-                  <div>
-                    <h2>{talent.name}</h2>
-                    <p>{talent.role}</p>
+              <article
+                key={talent.id}
+                className="tmp-card tmp-card-clickable"
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenProfile(talent.workerId)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onOpenProfile(talent.workerId);
+                  }
+                }}
+              >
+                {(talent.bannerImageUrl || talent.profilePhotoUrl) && (
+                  <div className="tmp-card-media" style={{ background: talent.bannerImageUrl ? 'transparent' : '#f8fafc' }}>
+                    {talent.bannerImageUrl && (
+                      <img
+                        className="tmp-card-banner"
+                        src={talent.bannerImageUrl}
+                        alt="Banner"
+                      />
+                    )}
+                    {talent.profilePhotoUrl && (
+                      <img
+                        className="tmp-card-avatar"
+                        src={talent.profilePhotoUrl}
+                        alt={talent.name}
+                      />
+                    )}
                   </div>
-                  <span>{talent.location}</span>
-                </div>
+                )}
 
-                <div className="tmp-badges">
-                  <span className="tmp-badge tmp-badge-strong">{formatRate(talent.rate, talent.currency)}</span>
-                  <span className="tmp-badge">{talent.availabilityLabel}</span>
-                </div>
+                <div className="tmp-card-content">
+                  <div className="tmp-card-head">
+                    <div>
+                      <h2>{talent.name}</h2>
+                      <p>{talent.role}</p>
+                    </div>
+                    <span>{talent.location}</span>
+                  </div>
 
-                <p className="tmp-blurb">{talent.blurb}</p>
+                  <div className="tmp-badges">
+                    <span className="tmp-badge tmp-badge-strong">{formatRate(talent.rate, talent.currency)}</span>
+                    <span className="tmp-badge">{talent.availabilityLabel}</span>
+                  </div>
 
-                <div className="tmp-skills">
-                  {talent.skills.length > 0 ? talent.skills.map((skill) => (
-                    <span key={skill}>{skill}</span>
-                  )) : <span>No skills added yet</span>}
-                </div>
+                  <p className="tmp-blurb">{talent.blurb}</p>
 
-                <div className="tmp-actions">
-                  <button className="tmp-primary">View profile</button>
-                  <button className="tmp-secondary">Invite to interview</button>
+                  <div className="tmp-skills">
+                    {talent.skills.length > 0 ? talent.skills.map((skill) => (
+                      <span key={skill}>{skill}</span>
+                    )) : <span>No skills added yet</span>}
+                  </div>
+
+                  <div className="tmp-actions">
+                    <button className="tmp-primary" onClick={(event) => {
+                      event.stopPropagation();
+                      onOpenProfile(talent.workerId);
+                    }}>View profile</button>
+                    <button className="tmp-secondary" onClick={(event) => event.stopPropagation()}>Invite to interview</button>
+                  </div>
                 </div>
               </article>
             ))}

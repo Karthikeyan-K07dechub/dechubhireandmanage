@@ -627,6 +627,15 @@
   white-space: nowrap;
 }
 
+.landing-template-root .service-chip-row .a,
+.landing-template-root .service-chip-row .a-erinr,
+.landing-template-root .service-chip-row .div-gwtp-wrapper,
+.landing-template-root .service-chip-row .text-wrapper-164,
+.landing-template-root .service-chip-row .vector-wrapper,
+.landing-template-root .service-chip-row .vector-10 {
+  cursor: pointer;
+}
+
 @supports not (zoom: 1) {
   .landing-template-root .main-landing-page {
     width: calc(var(--page-design-width) * 1px);

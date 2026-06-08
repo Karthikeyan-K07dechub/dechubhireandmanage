@@ -116,6 +116,27 @@ export interface SubmitInvoicePayload {
 
 export type ContractorPage = 'dashboard' | 'invoices' | 'contract' | 'profile';
 
+export interface ContractorPortfolioProject {
+  title: string;
+  description: string;
+  imageUrl: string;
+  tags: string[];
+}
+
+export interface ContractorServicePackage {
+  name: string;
+  price: number;
+  description: string;
+  deliveryDays: number;
+  revisions: number;
+  features: string[];
+}
+
+export interface ContractorFaqItem {
+  question: string;
+  answer: string;
+}
+
 export interface ContractorProfile {
   workerId: string;
   firstName: string;
@@ -136,5 +157,13 @@ export interface ContractorProfile {
   marketplaceRate: number;
   city: string;
   country: string;
+  responseTimeHours: number;
+  languages: string[];
+  profilePhotoUrl?: string;
+  bannerImageUrl?: string;
+  profileOverview: string;
+  portfolioProjects: ContractorPortfolioProject[];
+  servicePackages: ContractorServicePackage[];
+  faqItems: ContractorFaqItem[];
   onboardingStep: number;
 }

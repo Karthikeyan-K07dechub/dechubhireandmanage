@@ -332,7 +332,15 @@ export async function updateContractorProfile(data: {
   marketplaceRate: number;
   city: string;
   country: string;
+  responseTimeHours: number;
   skills: string[];
+  languages: string[];
+  profilePhotoUrl?: string;
+  bannerImageUrl?: string;
+  profileOverview: string;
+  portfolioProjects: ContractorProfile['portfolioProjects'];
+  servicePackages: ContractorProfile['servicePackages'];
+  faqItems: ContractorProfile['faqItems'];
 }): Promise<ContractorProfile> {
   try {
     const res = await contractorApi.put<{ success: boolean; data: ContractorProfile }>('/me/profile', data);

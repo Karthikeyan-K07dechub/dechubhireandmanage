@@ -5,6 +5,7 @@ import CompanyAuthPage from './pages/CompanyAuthPage';
 import CompanyChoicePage from './pages/CompanyChoicePage';
 import CompanyOnboardingPage from './pages/CompanyOnboardingPage';
 import TalentMarketplacePage from './pages/TalentMarketplacePage';
+import MarketplaceTalentProfilePage from './pages/MarketplaceTalentProfilePage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
 import FreelancerSignupPage from './pages/FreelancerSignupPage';
@@ -25,7 +26,8 @@ type AppPage =
   | 'freelancer-signup'
   | 'freelancer-success'
   | 'freelancer-dashboard'
-  | 'marketplace';
+  | 'marketplace'
+  | 'marketplace-profile';
 
 type AuthMode = 'login' | 'signup';
 type CompanyDestination = 'marketplace' | 'dashboard';
@@ -79,7 +81,24 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
     return { page: 'marketplace', mode: 'login' };
   }
 
+  if (normalizedPath.startsWith('/marketplace/')) {
+    return { page: 'marketplace-profile', mode: 'login' };
+  }
+
   return { page: 'landing', mode: 'login' };
+}
+
+function getMarketplaceQueryFromUrl(): string {
+  return new URLSearchParams(window.location.search).get('q')?.trim() ?? '';
+}
+
+function getMarketplaceProfileIdFromUrl(): string {
+  const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (!normalizedPath.startsWith('/marketplace/')) {
+    return '';
+  }
+
+  return decodeURIComponent(normalizedPath.slice('/marketplace/'.length)).trim();
 }
 
 function getUserNameFromToken(): string {
@@ -120,12 +139,16 @@ export default function App() {
   const [userName, setUserName] = useState<string>(() => getUserNameFromToken());
   const [freelancerFirstName, setFreelancerFirstName] = useState('');
   const [companyOnboardingStep, setCompanyOnboardingStep] = useState<Step>(1);
+  const [marketplaceQuery, setMarketplaceQuery] = useState<string>(() => getMarketplaceQueryFromUrl());
+  const [selectedMarketplaceProfileId, setSelectedMarketplaceProfileId] = useState<string>(() => getMarketplaceProfileIdFromUrl());
 
   useEffect(() => {
     const handlePopState = () => {
       const next = getRouteState(window.location.pathname);
       setPage(next.page);
       setAuthMode(next.mode);
+      setMarketplaceQuery(getMarketplaceQueryFromUrl());
+      setSelectedMarketplaceProfileId(getMarketplaceProfileIdFromUrl());
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -173,7 +196,9 @@ export default function App() {
         : page === 'company-onboarding'
         ? '/company/onboarding'
         : page === 'marketplace'
-        ? '/marketplace'
+        ? `/marketplace${marketplaceQuery ? `?q=${encodeURIComponent(marketplaceQuery)}` : ''}`
+        : page === 'marketplace-profile'
+        ? `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}`
         : page === 'freelancer-login'
         ? '/freelancer/login'
         : page === 'freelancer-signup'
@@ -186,11 +211,11 @@ export default function App() {
         ? '/company/signup'
         : '/company/login';
 
-    const currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
+    const currentPath = `${window.location.pathname.replace(/\/+$/, '') || '/'}${window.location.search}`;
     if (currentPath !== targetPath) {
       window.history.pushState({}, '', targetPath);
     }
-  }, [authMode, page]);
+  }, [authMode, marketplaceQuery, page, selectedMarketplaceProfileId]);
 
   const handleAuthSuccess = (result: { signupStep?: number }) => {
     setUserName(getUserNameFromToken());
@@ -224,6 +249,13 @@ export default function App() {
         }}
         onGetStarted={() => {
           setCompanyDestination('marketplace');
+          setMarketplaceQuery('');
+          setPage('marketplace');
+        }}
+        onMarketplaceSearch={(query) => {
+          setCompanyDestination('marketplace');
+          setMarketplaceQuery(query.trim());
+          setSelectedMarketplaceProfileId('');
           setPage('marketplace');
         }}
         onDemo={() => window.open('mailto:demo@dechub.in')}
@@ -251,6 +283,8 @@ export default function App() {
         onBack={() => setPage('role-select')}
         onMarketplace={() => {
           setCompanyDestination('marketplace');
+          setMarketplaceQuery('');
+          setSelectedMarketplaceProfileId('');
           setPage('marketplace');
         }}
         onDashboard={() => {
@@ -351,10 +385,27 @@ export default function App() {
   }
 
   return (
-    <TalentMarketplacePage
-      isAuthenticated={Boolean(tokenStore.getAccess())}
-      userName={userName}
-      onLogout={handleLogout}
-    />
+    page === 'marketplace-profile' ? (
+      <MarketplaceTalentProfilePage
+        workerId={selectedMarketplaceProfileId}
+        isAuthenticated={Boolean(tokenStore.getAccess())}
+        userName={userName}
+        onBack={() => {
+          setPage('marketplace');
+        }}
+        onLogout={handleLogout}
+      />
+    ) : (
+      <TalentMarketplacePage
+        initialQuery={marketplaceQuery}
+        isAuthenticated={Boolean(tokenStore.getAccess())}
+        userName={userName}
+        onLogout={handleLogout}
+        onOpenProfile={(workerId) => {
+          setSelectedMarketplaceProfileId(workerId);
+          setPage('marketplace-profile');
+        }}
+      />
+    )
   );
 }

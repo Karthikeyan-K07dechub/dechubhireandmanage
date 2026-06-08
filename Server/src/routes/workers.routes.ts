@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   listWorkers,
   getMarketplaceTalent,
+  getMarketplaceTalentProfile,
   inviteWorker,
   getWorker,
   terminateWorker,
@@ -13,9 +14,6 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-// All routes require auth
-router.use(requireAuth);
-
 const inviteLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour
   max: 30,
@@ -24,6 +22,9 @@ const inviteLimiter = rateLimit({
 
 // ── Workers ────────────────────────────────────────────────────────────────────
 router.get  ('/marketplace',      getMarketplaceTalent);
+router.get  ('/marketplace/:id',   getMarketplaceTalentProfile);
+// All routes below this point require auth.
+router.use(requireAuth);
 router.get  ('/',                listWorkers);
 router.post ('/', inviteLimiter, inviteWorker);
 router.get  ('/:id',             getWorker);

@@ -1,4 +1,4 @@
-import { Fragment, createElement, useMemo, type ReactNode } from 'react';
+import { Fragment, createElement, useCallback, useMemo, useState, type ReactNode } from 'react';
 import landingTemplate from '../landing/landing-template.html?raw';
 import heroBackground from '../landing/assets/back_img.png';
 import heroLaptop from '../landing/assets/laptop.png';
@@ -11,6 +11,7 @@ import '../landing/landing-overrides.css';
 interface LandingPageProps {
   onLogin: () => void;
   onGetStarted: () => void;
+  onMarketplaceSearch: (query: string) => void;
   onDemo?: () => void;
 }
 
@@ -121,132 +122,207 @@ function buildLandingMarkup(): string {
     );
 }
 
-function toReactNodeList(
-  html: string,
-  props: LandingPageProps,
-): ReactNode[] {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  let keyIndex = 0;
-
-  const createKey = () => `landing-node-${keyIndex++}`;
-
-  const getActionProps = (element: Element): Record<string, unknown> => {
-    const classList = element.classList;
-
-    if (classList.contains('frame-12')) {
-      return {
-        role: 'button',
-        tabIndex: 0,
-        onClick: props.onLogin,
-      };
+export default function LandingPage(props: LandingPageProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const markup = useMemo(() => buildLandingMarkup(), []);
+  const parser = useMemo(() => new DOMParser(), []);
+  const submitMarketplaceSearch = useCallback(() => {
+    const normalizedQuery = searchQuery.trim();
+    if (!normalizedQuery) {
+      return;
     }
 
-    if (
-      classList.contains('frame-13') ||
-      classList.contains('button') ||
-      classList.contains('button-3') ||
-      classList.contains('button-4') ||
-      classList.contains('component')
-    ) {
-      return {
-        role: 'button',
-        tabIndex: 0,
-        onClick: props.onGetStarted,
-      };
-    }
+    props.onMarketplaceSearch(normalizedQuery);
+  }, [props, searchQuery]);
+  const contentWithSearch = useMemo(() => {
+    const doc = parser.parseFromString(markup, 'text/html');
+    let keyIndex = 0;
 
-    if (classList.contains('button-2')) {
-      return {
-        onClick: () =>
-          (props.onDemo ?? (() => window.open('mailto:demo@dechub.in', '_blank', 'noopener,noreferrer')))(),
-      };
-    }
+    const createKey = () => `landing-node-${keyIndex++}`;
 
-    if (classList.contains('image-5')) {
-      return {
-        role: 'button',
-        tabIndex: 0,
-        onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
-      };
-    }
+    const getActionProps = (element: Element): Record<string, unknown> => {
+      const classList = element.classList;
+      const textContent = element.textContent?.trim() ?? '';
 
-    if (classList.contains('text-wrapper-160')) {
-      return {
-        role: 'button',
-        tabIndex: 0,
-        onClick: () => {
-          const label = element.textContent?.trim() ?? '';
-          const selector = SECTION_SELECTORS[label];
-          const target = selector ? document.querySelector(selector) : null;
+      if (classList.contains('frame-12')) {
+        return {
+          role: 'button',
+          tabIndex: 0,
+          onClick: props.onLogin,
+        };
+      }
 
-          if (!(target instanceof HTMLElement)) {
-            return;
-          }
+      if (
+        classList.contains('frame-13') ||
+        classList.contains('button') ||
+        classList.contains('button-3') ||
+        classList.contains('button-4') ||
+        classList.contains('component')
+      ) {
+        return {
+          role: 'button',
+          tabIndex: 0,
+          onClick: props.onGetStarted,
+        };
+      }
 
-          const top = target.getBoundingClientRect().top + window.scrollY - 24;
-          window.scrollTo({ top, behavior: 'smooth' });
-        },
-      };
-    }
+      if (classList.contains('button-2')) {
+        return {
+          onClick: () =>
+            (props.onDemo ?? (() => window.open('mailto:demo@dechub.in', '_blank', 'noopener,noreferrer')))(),
+        };
+      }
 
-    if (element.tagName === 'A' && element.getAttribute('href') === '#') {
-      return {
-        href: '#',
-        onClick: (event: MouseEvent) => {
-          event.preventDefault();
-          props.onGetStarted();
-        },
-      };
-    }
+      if (classList.contains('image-5')) {
+        return {
+          role: 'button',
+          tabIndex: 0,
+          onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+        };
+      }
 
-    return {};
-  };
+      if (classList.contains('text-wrapper-160')) {
+        return {
+          role: 'button',
+          tabIndex: 0,
+          onClick: () => {
+            const label = element.textContent?.trim() ?? '';
+            const selector = SECTION_SELECTORS[label];
+            const target = selector ? document.querySelector(selector) : null;
 
-  const renderNode = (node: ChildNode): ReactNode => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      return node.textContent;
-    }
+            if (!(target instanceof HTMLElement)) {
+              return;
+            }
 
-    if (node.nodeType !== Node.ELEMENT_NODE) {
-      return null;
-    }
+            const top = target.getBoundingClientRect().top + window.scrollY - 24;
+            window.scrollTo({ top, behavior: 'smooth' });
+          },
+        };
+      }
 
-    const element = node as Element;
-    const tagName = element.tagName.toLowerCase();
-    const reactProps: Record<string, unknown> = {
-      key: createKey(),
-      ...getActionProps(element),
+      if (classList.contains('form-search-form')) {
+        return {
+          action: undefined,
+          method: undefined,
+          target: undefined,
+          rel: undefined,
+          onSubmit: (event: Event) => {
+            event.preventDefault();
+            submitMarketplaceSearch();
+          },
+        };
+      }
+
+      if (classList.contains('input-long')) {
+        return {
+          value: searchQuery,
+          placeholder: 'Search for any service...',
+          onChange: (event: Event) => {
+            const target = event.target as HTMLInputElement;
+            setSearchQuery(target.value);
+          },
+          onKeyDown: (event: KeyboardEvent) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              submitMarketplaceSearch();
+            }
+          },
+        };
+      }
+
+      if (classList.contains('text-wrapper-164') && textContent) {
+        return {
+          role: 'button',
+          tabIndex: 0,
+          onClick: (event: Event) => {
+            event.preventDefault();
+            setSearchQuery(textContent);
+            props.onMarketplaceSearch(textContent);
+          },
+        };
+      }
+
+      if (element.tagName === 'A' && element.getAttribute('href') === '#') {
+        return {
+          href: '#',
+          onClick: (event: MouseEvent) => {
+            event.preventDefault();
+            props.onGetStarted();
+          },
+        };
+      }
+
+      if (element.tagName === 'A' && element.closest('.service-chip-row')) {
+        return {
+          href: '#',
+          onClick: (event: MouseEvent) => {
+            event.preventDefault();
+            if (textContent) {
+              setSearchQuery(textContent);
+              props.onMarketplaceSearch(textContent);
+            }
+          },
+        };
+      }
+
+      return {};
     };
 
-    for (const attribute of Array.from(element.attributes)) {
-      if (attribute.name === 'class') {
-        reactProps.className = attribute.value;
-        continue;
+    const renderNode = (node: ChildNode): ReactNode => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent;
       }
 
-      if (attribute.name === 'style') {
-        continue;
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return null;
       }
 
-      reactProps[attribute.name] = attribute.value;
-    }
+      const element = node as Element;
+      const tagName = element.tagName.toLowerCase();
+      const reactProps: Record<string, unknown> = {
+        key: createKey(),
+        ...getActionProps(element),
+      };
 
-    const children = Array.from(element.childNodes)
+      for (const attribute of Array.from(element.attributes)) {
+        if (attribute.name === 'class') {
+          reactProps.className = attribute.value;
+          continue;
+        }
+
+        if (
+          attribute.name === 'style'
+          || (classListContains(element, 'form-search-form') && ['action', 'method', 'target', 'rel'].includes(attribute.name))
+        ) {
+          continue;
+        }
+
+        if (classListContains(element, 'input-long') && ['value', 'placeholder'].includes(attribute.name)) {
+          continue;
+        }
+
+        if (element.tagName === 'A' && element.closest('.service-chip-row') && attribute.name === 'href') {
+          continue;
+        }
+
+        reactProps[attribute.name] = attribute.value;
+      }
+
+      const children = Array.from(element.childNodes)
+        .map(renderNode)
+        .filter((child) => child !== null);
+
+      return createElement(tagName, reactProps, ...children);
+    };
+
+    return Array.from(doc.body.childNodes)
       .map(renderNode)
       .filter((child) => child !== null);
+  }, [markup, parser, props, searchQuery, submitMarketplaceSearch]);
 
-    return createElement(tagName, reactProps, ...children);
-  };
-
-  return Array.from(doc.body.childNodes)
-    .map(renderNode)
-    .filter((child) => child !== null);
+  return <div className="landing-template-root"><Fragment>{contentWithSearch}</Fragment></div>;
 }
 
-export default function LandingPage(props: LandingPageProps) {
-  const markup = useMemo(() => buildLandingMarkup(), []);
-  const content = useMemo(() => toReactNodeList(markup, props), [markup, props]);
-
-  return <div className="landing-template-root"><Fragment>{content}</Fragment></div>;
+function classListContains(element: Element, className: string): boolean {
+  return element.classList.contains(className);
 }
