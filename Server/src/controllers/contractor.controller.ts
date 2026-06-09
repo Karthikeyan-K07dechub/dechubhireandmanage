@@ -661,6 +661,20 @@ export async function updateSkills(req: Request, res: Response, next: NextFuncti
   } catch (err) { next(err); }
 }
 
+export async function uploadProfileAsset(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.file) {
+      throw new AppError('Image file is required', 400, 'VALIDATION_ERROR');
+    }
+
+    const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+    ok(res, { url: publicUrl });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = profileUpdateSchema.parse(req.body);

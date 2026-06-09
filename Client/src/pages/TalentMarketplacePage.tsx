@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import './talent-marketplace.css';
 import { getMarketplaceTalent, type MarketplaceTalentProfile } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 interface TalentMarketplacePageProps {
   initialQuery: string;
@@ -180,20 +181,13 @@ export default function TalentMarketplacePage({
                   }
                 }}
               >
-                {(talent.bannerImageUrl || talent.profilePhotoUrl) && (
+                {(talent.bannerImageUrl) && (
                   <div className="tmp-card-media" style={{ background: talent.bannerImageUrl ? 'transparent' : '#f8fafc' }}>
                     {talent.bannerImageUrl && (
                       <img
                         className="tmp-card-banner"
-                        src={talent.bannerImageUrl}
+                        src={resolveImageUrl(talent.bannerImageUrl)}
                         alt="Banner"
-                      />
-                    )}
-                    {talent.profilePhotoUrl && (
-                      <img
-                        className="tmp-card-avatar"
-                        src={talent.profilePhotoUrl}
-                        alt={talent.name}
                       />
                     )}
                   </div>
@@ -201,10 +195,18 @@ export default function TalentMarketplacePage({
 
                 <div className="tmp-card-content">
                   <div className="tmp-card-head">
-                    <div>
-                      <h2>{talent.name}</h2>
-                      <p>{talent.role}</p>
-                    </div>
+                      <div>
+                        {talent.profilePhotoUrl ? (
+                          <img className="tmp-head-avatar" src={resolveImageUrl(talent.profilePhotoUrl)} alt={talent.name} />
+                        ) : (
+                          <div className="tmp-head-avatar-fallback">{(talent.name || '').split(' ').map((p) => p[0] ?? '').join('').slice(0,2).toUpperCase()}</div>
+                        )}
+
+                        <div>
+                          <h2>{talent.name}</h2>
+                          <p>{talent.role}</p>
+                        </div>
+                      </div>
                     <span>{talent.location}</span>
                   </div>
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { requireContractorAuth } from '../middleware/contractorAuth.middleware';
+import { profileImageUpload } from '../middleware/upload.middleware';
 import {
   verifyToken,
   setPassword,
@@ -10,6 +11,7 @@ import {
   uploadKyc,
   saveBankDetails,
   updateSkills,
+  uploadProfileAsset,
   updateProfile,
   getMyContract,
   getSigningUrl,
@@ -65,6 +67,7 @@ router.post('/onboarding/personal-details', savePersonalDetails);
 router.post('/onboarding/kyc',              kycUpload, uploadKyc);
 router.post('/onboarding/bank-details',     saveBankDetails);
 router.put ('/me/skills',                   updateSkills);
+router.post('/me/profile/assets',           profileImageUpload.single('image'), uploadProfileAsset);
 router.put ('/me/profile',                  updateProfile);
 
 // Contract + signing

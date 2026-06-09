@@ -1,4 +1,5 @@
 import { api, ApiResponse, normalizeError, unwrapApiData } from './client';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 export interface MarketplaceTalentProfile {
   id: string;
@@ -15,6 +16,7 @@ export interface MarketplaceTalentProfile {
   availabilityLabel: string;
   blurb: string;
   profilePhotoUrl?: string;
+  bannerImageUrl?: string;
 }
 
 export interface MarketplacePortfolioProject {
@@ -51,12 +53,28 @@ export interface MarketplaceTalentProfileDetail extends MarketplaceTalentProfile
   memberSince: string;
 }
 
+function normalizeMarketplaceProfile<T extends MarketplaceTalentProfile>(profile: T): T {
+  return {
+    ...profile,
+    profilePhotoUrl: resolveImageUrl(profile.profilePhotoUrl),
+    bannerImageUrl: resolveImageUrl(profile.bannerImageUrl),
+    ...('portfolioProjects' in profile && Array.isArray(profile.portfolioProjects)
+      ? {
+          portfolioProjects: profile.portfolioProjects.map((project) => ({
+            ...project,
+            imageUrl: resolveImageUrl(project.imageUrl),
+          })),
+        }
+      : {}),
+  };
+}
+
 export async function getMarketplaceTalent(): Promise<MarketplaceTalentProfile[]> {
   try {
     const res = await api.get<ApiResponse<MarketplaceTalentProfile[]>>('/workers/marketplace', {
       headers: { Authorization: undefined },
     });
-    return unwrapApiData(res.data);
+    return unwrapApiData(res.data).map(normalizeMarketplaceProfile);
   } catch (err) {
     throw normalizeError(err);
   }
@@ -67,7 +85,7 @@ export async function getMarketplaceTalentProfile(workerId: string): Promise<Mar
     const res = await api.get<ApiResponse<MarketplaceTalentProfileDetail>>(`/workers/marketplace/${workerId}`, {
       headers: { Authorization: undefined },
     });
-    return unwrapApiData(res.data);
+    return normalizeMarketplaceProfile(unwrapApiData(res.data));
   } catch (err) {
     throw normalizeError(err);
   }

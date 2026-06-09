@@ -120,6 +120,7 @@ export interface ContractorPortfolioProject {
   title: string;
   description: string;
   imageUrl: string;
+  projectLink: string;
   tags: string[];
 }
 

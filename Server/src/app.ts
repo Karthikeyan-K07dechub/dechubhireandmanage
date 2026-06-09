@@ -41,8 +41,8 @@ app.use(cors({
 }));
 
 // ─── Body parsing ─────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── HTTP request logging ─────────────────────────────────────────────────────
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev', {
@@ -52,7 +52,10 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev', {
 // ─── Static file serving for uploaded KYB docs ───────────────────────────────
 // Served only for internal/admin use — never exposed to end users directly.
 // In production, use S3 signed URLs instead.
-app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.resolve(env.UPLOAD_DIR)));
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
@@ -101,6 +104,14 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     return res.status(err.statusCode).json({
       success: false,
       error: { code: err.code, message: err.message },
+    });
+  }
+
+  // Express/body-parser payload size error
+  if (err && typeof err === 'object' && 'type' in err && err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large' },
     });
   }
 

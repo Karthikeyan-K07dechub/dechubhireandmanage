@@ -7,6 +7,7 @@ import {
   type MarketplaceTalentProfileDetail,
 } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
+import { imageBackground, resolveImageUrl } from '../utils/imageUrl';
 
 interface MarketplaceTalentProfilePageProps {
   workerId: string;
@@ -154,12 +155,12 @@ export default function MarketplaceTalentProfilePage({
             <section className="mpp-main">
               <div className="mpp-hero-card">
                 {profile.bannerImageUrl ? (
-                  <div className="mpp-hero-banner" style={{ backgroundImage: `url(${profile.bannerImageUrl})` }} />
+                  <div className="mpp-hero-banner" style={{ backgroundImage: imageBackground(profile.bannerImageUrl) }} />
                 ) : null}
                 <div className="mpp-hero-head">
                   <div className="mpp-avatar">
                     {profile.profilePhotoUrl ? (
-                      <img src={profile.profilePhotoUrl} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
+                      <img src={resolveImageUrl(profile.profilePhotoUrl)} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
                     ) : getInitials(profile)}
                   </div>
                   <div>
@@ -211,7 +212,7 @@ export default function MarketplaceTalentProfilePage({
                   <div className="mpp-portfolio-list">
                     {profile.portfolioProjects.map((project) => (
                       <article key={`${project.title}-${project.imageUrl}`} className="mpp-portfolio-card">
-                        <img src={project.imageUrl} alt={project.title} />
+                        <img src={resolveImageUrl(project.imageUrl)} alt={project.title} />
                         <div>
                           <h3>{project.title}</h3>
                           <p>{project.description}</p>

@@ -14,7 +14,9 @@ import {
   getMyInvoices,
   submitInvoice,
   updateContractorProfile,
+  uploadContractorProfileImage,
 } from './api/contractor.api';
+import { imageBackground, resolveImageUrl } from '../utils/imageUrl';
 
 interface ContractorDashboardProps {
   previewProfile?: ContractorProfile | null;
@@ -48,7 +50,7 @@ const DEFAULT_MARKETPLACE_SUMMARIES = new Set([
 
 const DEFAULT_PACKAGE_PRESETS: ContractorProfile['servicePackages'] = [
   {
-    name: 'Basic',
+    name: 'Basics',
     price: 0,
     description: 'Share a simple starter package for companies browsing your profile.',
     deliveryDays: 5,
@@ -73,35 +75,43 @@ const DEFAULT_PACKAGE_PRESETS: ContractorProfile['servicePackages'] = [
   },
 ];
 
-async function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve(reader.result as string);
-    };
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'));
-    };
-    reader.readAsDataURL(file);
-  });
-}
+function FileUploadControl({
+  value,
+  accept = 'image/*',
+  onFile,
+  buttonLabel = 'Choose file',
+  placeholder = 'No file chosen',
+}: {
+  value: string;
+  accept?: string;
+  onFile: (file: File) => void;
+  buttonLabel?: string;
+  placeholder?: string;
+}) {
+  const displayText = value
+    ? value.startsWith('http')
+        ? value.replace(/^https?:\/\/(www\.)?/, '')
+        : value
+    : placeholder;
 
-function serializeFaqItems(items: ContractorProfile['faqItems']): string {
-  return items
-    .map((item) => `${item.question} | ${item.answer}`)
-    .join('\n');
-}
-
-function parseFaqItems(value: string): ContractorProfile['faqItems'] {
-  return value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [question = '', answer = ''] = line.split('|').map((part) => part.trim());
-      return { question, answer };
-    })
-    .filter((item) => item.question && item.answer);
+  return (
+    <label className="cp-file-picker">
+      <div className="cp-file-picker-main">
+        <input
+          type="file"
+          accept={accept}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            onFile(file);
+            event.currentTarget.value = '';
+          }}
+        />
+        <span className="cp-file-picker-button">{buttonLabel}</span>
+        <span className="cp-file-picker-filename">{displayText}</span>
+      </div>
+    </label>
+  );
 }
 
 function normalizeContractorProfile(profile: Partial<ContractorProfile>): ContractorProfile {
@@ -139,6 +149,7 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
           title: project.title ?? '',
           description: project.description ?? '',
           imageUrl: project.imageUrl ?? '',
+          projectLink: project.projectLink ?? '',
           tags: Array.isArray(project.tags) ? project.tags : [],
         }))
       : [],
@@ -783,10 +794,14 @@ function ProfilePage({
       title: project.title ?? '',
       description: project.description ?? '',
       imageUrl: project.imageUrl ?? '',
+      projectLink: project.projectLink ?? '',
       tags: Array.isArray(project.tags) ? project.tags : [],
     })) : [],
-    faqInput: serializeFaqItems(Array.isArray(profile.faqItems) ? profile.faqItems : []),
-    servicePackages: Array.isArray(profile.servicePackages) && profile.servicePackages.length ? profile.servicePackages : DEFAULT_PACKAGE_PRESETS,
+    faqItems: Array.isArray(profile.faqItems) ? profile.faqItems.map((item) => ({ question: item.question ?? '', answer: item.answer ?? '' })) : [],
+    servicePackages: (Array.isArray(profile.servicePackages) && profile.servicePackages.length ? profile.servicePackages : DEFAULT_PACKAGE_PRESETS).map((pkg, index) => ({
+      ...pkg,
+      name: DEFAULT_PACKAGE_PRESETS[index]?.name ?? pkg.name,
+    })),
   }), [profile]);
 
   const [form, setForm] = useState(buildFormState);
@@ -794,6 +809,9 @@ function ProfilePage({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState('');
+  const [bannerImagePreview, setBannerImagePreview] = useState('');
+  const [projectImagePreviews, setProjectImagePreviews] = useState<Record<number, string>>({});
 
   const fullName = `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() || 'Not added yet';
   const domainValue =
@@ -830,7 +848,36 @@ function ProfilePage({
 
   useEffect(() => {
     setForm(buildFormState());
+    setProfilePhotoPreview('');
+    setBannerImagePreview('');
+    setProjectImagePreviews({});
   }, [buildFormState]);
+
+  useEffect(() => {
+    return () => {
+      if (profilePhotoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(profilePhotoPreview);
+      }
+    };
+  }, [profilePhotoPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (bannerImagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(bannerImagePreview);
+      }
+    };
+  }, [bannerImagePreview]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(projectImagePreviews).forEach((previewUrl) => {
+        if (previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrl);
+        }
+      });
+    };
+  }, [projectImagePreviews]);
 
   useEffect(() => {
     if (!message) return;
@@ -867,19 +914,24 @@ function ProfilePage({
             title: project.title.trim(),
             description: project.description.trim(),
             imageUrl: project.imageUrl.trim(),
+            projectLink: project.projectLink.trim(),
             tags: Array.from(new Set((Array.isArray(project.tags) ? project.tags : []).map((tag) => tag.trim()).filter(Boolean))),
           }))
           .filter((project) => project.title && project.description && project.imageUrl)
       : [];
-    const faqItems = parseFaqItems(form.faqInput);
-    const servicePackages = form.servicePackages.map((pkg) => ({
+    const faqItems = Array.isArray(form.faqItems)
+      ? form.faqItems
+          .map((item) => ({ question: item.question.trim(), answer: item.answer.trim() }))
+          .filter((item) => item.question && item.answer)
+      : [];
+    const servicePackages = form.servicePackages.map((pkg, index) => ({
       ...pkg,
-      name: pkg.name.trim(),
+      name: DEFAULT_PACKAGE_PRESETS[index]?.name ?? pkg.name.trim(),
       description: pkg.description.trim(),
       price: Number(pkg.price) || 0,
       deliveryDays: Number(pkg.deliveryDays) || 1,
       revisions: Number(pkg.revisions) || 0,
-      features: Array.from(new Set(pkg.features.map((feature) => feature.trim()).filter(Boolean))),
+      features: Array.from(new Set((Array.isArray(pkg.features) ? pkg.features : []).map((feature) => feature.trim()).filter(Boolean))),
     }));
 
     setSaving(true);
@@ -946,7 +998,7 @@ function ProfilePage({
           {profile.bannerImageUrl ? (
             <div
               className="cd-profile-banner"
-              style={{ backgroundImage: `url(${profile.bannerImageUrl})` }}
+              style={{ backgroundImage: imageBackground(profile.bannerImageUrl) }}
             />
           ) : null}
 
@@ -969,7 +1021,7 @@ function ProfilePage({
               {profile.profilePhotoUrl ? (
                 <img
                   className="cd-profile-avatar-image"
-                  src={profile.profilePhotoUrl}
+                  src={resolveImageUrl(profile.profilePhotoUrl)}
                   alt={fullName || 'Profile photo'}
                 />
               ) : (
@@ -1075,10 +1127,15 @@ function ProfilePage({
               <div style={{ display: 'grid', gap: 12 }}>
                 {profile.portfolioProjects.slice(0, 3).map((project) => (
                   <div key={`${project.title}-${project.imageUrl}`} style={{ border: '1px solid #edf2f7', borderRadius: 18, padding: 16, display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, alignItems: 'center' }}>
-                    <img src={project.imageUrl} alt={project.title} style={{ width: '100%', height: 84, objectFit: 'cover', borderRadius: 12, background: '#f8fafc' }} />
+                    <img src={resolveImageUrl(project.imageUrl)} alt={project.title} style={{ width: '100%', height: 84, objectFit: 'cover', borderRadius: 12, background: '#f8fafc' }} />
                     <div>
                       <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>{project.title}</div>
-                      <div style={{ color: '#475569', fontSize: 13, lineHeight: 1.6 }}>{project.description}</div>
+                      <div style={{ color: '#475569', fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>{project.description}</div>
+                      {project.projectLink ? (
+                        <a href={project.projectLink} rel="noreferrer noopener" target="_blank" style={{ color: '#2563eb', fontSize: 13, textDecoration: 'underline' }}>
+                          View hosted project
+                        </a>
+                      ) : null}
                     </div>
                   </div>
                 ))}
@@ -1126,60 +1183,66 @@ function ProfilePage({
           <input className="cp-input" value={form.marketplaceTitle} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceTitle: e.target.value }))} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div className="cp-profile-upload-grid">
           <div className="cp-field">
             <label className="cp-label">Profile photo</label>
-            <input
-              className="cp-input"
-              type="file"
-              accept="image/*"
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                try {
-                  const imageUrl = await readFileAsDataUrl(file);
-                  setForm((prev) => ({ ...prev, profilePhotoUrl: imageUrl }));
-                } catch {
-                  setError('Unable to read selected profile photo.');
-                }
-              }}
-            />
-            {form.profilePhotoUrl ? (
-              <img
-                src={form.profilePhotoUrl}
-                alt="Profile preview"
-                style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 14, marginTop: 12, border: '1px solid #e2e8f0' }}
+            <div className="cp-profile-upload-row">
+              <FileUploadControl
+                value={form.profilePhotoUrl}
+                buttonLabel="Upload photo"
+                placeholder="No photo selected"
+                onFile={async (file) => {
+                  const previewUrl = URL.createObjectURL(file);
+                  setProfilePhotoPreview((previousUrl) => {
+                    if (previousUrl.startsWith('blob:')) URL.revokeObjectURL(previousUrl);
+                    return previewUrl;
+                  });
+                  try {
+                    const imageUrl = await uploadContractorProfileImage(file);
+                    setForm((prev) => ({ ...prev, profilePhotoUrl: imageUrl }));
+                  } catch {
+                    setError('Unable to upload selected profile photo.');
+                  }
+                }}
               />
-            ) : (
-              <div style={{ marginTop: 12, color: '#64748b', fontSize: 12 }}>This image will appear on your marketplace listing.</div>
-            )}
+              <div className="cp-profile-image-preview">
+                {profilePhotoPreview || resolveImageUrl(form.profilePhotoUrl) ? (
+                  <img src={profilePhotoPreview || resolveImageUrl(form.profilePhotoUrl)} alt="Profile preview" />
+                ) : (
+                  'Preview'
+                )}
+              </div>
+            </div>
           </div>
           <div className="cp-field">
             <label className="cp-label">Marketplace banner</label>
-            <input
-              className="cp-input"
-              type="file"
-              accept="image/*"
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                try {
-                  const imageUrl = await readFileAsDataUrl(file);
-                  setForm((prev) => ({ ...prev, bannerImageUrl: imageUrl }));
-                } catch {
-                  setError('Unable to read selected banner image.');
-                }
-              }}
-            />
-            {form.bannerImageUrl ? (
-              <img
-                src={form.bannerImageUrl}
-                alt="Banner preview"
-                style={{ width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: 14, marginTop: 12, border: '1px solid #e2e8f0' }}
+            <div className="cp-profile-upload-row cp-profile-upload-row--banner">
+              <FileUploadControl
+                value={form.bannerImageUrl}
+                buttonLabel="Upload banner"
+                placeholder="No banner selected"
+                onFile={async (file) => {
+                  const previewUrl = URL.createObjectURL(file);
+                  setBannerImagePreview((previousUrl) => {
+                    if (previousUrl.startsWith('blob:')) URL.revokeObjectURL(previousUrl);
+                    return previewUrl;
+                  });
+                  try {
+                    const imageUrl = await uploadContractorProfileImage(file);
+                    setForm((prev) => ({ ...prev, bannerImageUrl: imageUrl }));
+                  } catch {
+                    setError('Unable to upload selected banner image.');
+                  }
+                }}
               />
-            ) : (
-              <div style={{ marginTop: 12, color: '#64748b', fontSize: 12 }}>This banner will appear as the top image on your public profile.</div>
-            )}
+              <div className="cp-profile-image-preview">
+                {bannerImagePreview || resolveImageUrl(form.bannerImageUrl) ? (
+                  <img src={bannerImagePreview || resolveImageUrl(form.bannerImageUrl)} alt="Banner preview" />
+                ) : (
+                  'Preview'
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1253,7 +1316,7 @@ function ProfilePage({
           <label className="cp-label">Detailed public overview</label>
           <textarea
             className="cp-textarea"
-            style={{ height: 140 }}
+            style={{ minHeight: 140 }}
             value={form.profileOverview}
             onChange={(e) => setForm((prev) => ({ ...prev, profileOverview: e.target.value }))}
             placeholder="Write a fuller introduction that companies will see on your public profile page."
@@ -1269,15 +1332,30 @@ function ProfilePage({
           ) : null}
           <div style={{ display: 'grid', gap: 18 }}>
             {form.portfolioProjects.map((project, projectIndex) => (
-              <div key={`${project.title}-${projectIndex}`} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
+              <div key={projectIndex} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
                   <div style={{ fontWeight: 700, color: '#0f172a' }}>Project {projectIndex + 1}</div>
                   <button
                     type="button"
-                    onClick={() => setForm((prev) => ({
-                      ...prev,
-                      portfolioProjects: prev.portfolioProjects.filter((_, index) => index !== projectIndex),
-                    }))}
+                    onClick={() => {
+                      setProjectImagePreviews((previousPreviews) => {
+                        const previousUrl = previousPreviews[projectIndex];
+                        if (previousUrl?.startsWith('blob:')) URL.revokeObjectURL(previousUrl);
+
+                        return Object.fromEntries(
+                          Object.entries(previousPreviews)
+                            .filter(([index]) => Number(index) !== projectIndex)
+                            .map(([index, previewUrl]) => {
+                              const numericIndex = Number(index);
+                              return [numericIndex > projectIndex ? numericIndex - 1 : numericIndex, previewUrl];
+                            }),
+                        );
+                      });
+                      setForm((prev) => ({
+                        ...prev,
+                        portfolioProjects: prev.portfolioProjects.filter((_, index) => index !== projectIndex),
+                      }));
+                    }}
                     style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}
                   >
                     Remove
@@ -1309,40 +1387,53 @@ function ProfilePage({
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div className="cp-field">
-                    <label className="cp-label">Image URL</label>
-                    <input
-                      className="cp-input"
+                <div className="cp-field">
+                  <label className="cp-label">Project image</label>
+                  <div className="cp-project-image-row">
+                    <FileUploadControl
                       value={project.imageUrl}
-                      onChange={(e) => setForm((prev) => ({
-                        ...prev,
-                        portfolioProjects: prev.portfolioProjects.map((item, index) => index === projectIndex ? { ...item, imageUrl: e.target.value } : item),
-                      }))}
-                      placeholder="https://..."
-                    />
-                  </div>
-                  <div className="cp-field">
-                    <label className="cp-label">Upload image</label>
-                    <input
-                      className="cp-input"
-                      type="file"
-                      accept="image/*"
-                      onChange={async (event) => {
-                        const file = event.target.files?.[0];
-                        if (!file) return;
+                      buttonLabel="Upload image"
+                      placeholder="No image selected"
+                      onFile={async (file) => {
+                        const previewUrl = URL.createObjectURL(file);
+                        setProjectImagePreviews((previousPreviews) => {
+                          const previousUrl = previousPreviews[projectIndex];
+                          if (previousUrl?.startsWith('blob:')) URL.revokeObjectURL(previousUrl);
+                          return { ...previousPreviews, [projectIndex]: previewUrl };
+                        });
                         try {
-                          const imageUrl = await readFileAsDataUrl(file);
+                          const imageUrl = await uploadContractorProfileImage(file);
                           setForm((prev) => ({
                             ...prev,
                             portfolioProjects: prev.portfolioProjects.map((item, index) => index === projectIndex ? { ...item, imageUrl } : item),
                           }));
                         } catch {
-                          setError('Unable to read selected project image.');
+                          setError('Unable to upload selected project image.');
                         }
                       }}
                     />
+                    <div className="cp-project-image-preview">
+                      {projectImagePreviews[projectIndex] || resolveImageUrl(project.imageUrl) ? (
+                        <img src={projectImagePreviews[projectIndex] || resolveImageUrl(project.imageUrl)} alt="Project preview" />
+                      ) : (
+                        <span>No preview</span>
+                      )}
+                    </div>
                   </div>
+                </div>
+
+                <div className="cp-field">
+                  <label className="cp-label">Project link</label>
+                  <input
+                    className="cp-input"
+                    type="url"
+                    value={project.projectLink}
+                    onChange={(e) => setForm((prev) => ({
+                      ...prev,
+                      portfolioProjects: prev.portfolioProjects.map((item, index) => index === projectIndex ? { ...item, projectLink: e.target.value } : item),
+                    }))}
+                    placeholder="https://your-project-host.com"
+                  />
                 </div>
 
                 <div className="cp-field">
@@ -1367,7 +1458,7 @@ function ProfilePage({
               ...prev,
               portfolioProjects: [
                 ...prev.portfolioProjects,
-                { title: '', description: '', imageUrl: '', tags: [] },
+                { title: '', description: '', imageUrl: '', projectLink: '', tags: [] },
               ],
             }))}
             style={{ marginTop: 12, width: 'auto', minWidth: 150, padding: '0 18px', height: 42, borderRadius: 12, border: '1px solid #d7dfeb', background: '#fff', color: '#111827', cursor: 'pointer', fontWeight: 700 }}
@@ -1375,7 +1466,7 @@ function ProfilePage({
             Add portfolio project
           </button>
           <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
-            Add a title, description, image, and tags for each portfolio project. You can use an uploaded image or paste an image URL.
+            Add a title, description, an uploaded image, a hosted project link, and tags for each portfolio project.
           </div>
         </div>
 
@@ -1384,10 +1475,10 @@ function ProfilePage({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
             {form.servicePackages.map((pkg, index) => (
               <div key={`${pkg.name}-${index}`} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
-                <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>Package {index + 1}</div>
+                <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>{pkg.name}</div>
                 <div className="cp-field">
                   <label className="cp-label">Name</label>
-                  <input className="cp-input" value={pkg.name} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, name: e.target.value } : item) }))} />
+                  <input className="cp-input" value={pkg.name} disabled style={{ background: '#f8fafc', cursor: 'not-allowed' }} />
                 </div>
                 <div className="cp-field">
                   <label className="cp-label">Price ({profile.payCurrency})</label>
@@ -1418,15 +1509,67 @@ function ProfilePage({
 
         <div className="cp-field" style={{ marginBottom: 10 }}>
           <label className="cp-label">FAQ</label>
-          <textarea
-            className="cp-textarea"
-            style={{ height: 120 }}
-            value={form.faqInput}
-            onChange={(e) => setForm((prev) => ({ ...prev, faqInput: e.target.value }))}
-            placeholder="What do you need to get started? | Share your content, references, and timeline."
-          />
+          {form.faqItems.length === 0 ? (
+            <div style={{ marginBottom: 12, color: '#64748b', fontSize: 13 }}>
+              Add FAQ entries one at a time below.
+            </div>
+          ) : null}
+          <div style={{ display: 'grid', gap: 16 }}>
+            {form.faqItems.map((item, faqIndex) => (
+              <div key={faqIndex} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a' }}>FAQ {faqIndex + 1}</div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({
+                      ...prev,
+                      faqItems: prev.faqItems.filter((_, index) => index !== faqIndex),
+                    }))}
+                    style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="cp-field">
+                  <label className="cp-label">Question</label>
+                  <input
+                    className="cp-input"
+                    value={item.question}
+                    onChange={(e) => setForm((prev) => ({
+                      ...prev,
+                      faqItems: prev.faqItems.map((faqItem, index) => index === faqIndex ? { ...faqItem, question: e.target.value } : faqItem),
+                    }))}
+                    placeholder="What do companies need to know?"
+                  />
+                </div>
+                <div className="cp-field">
+                  <label className="cp-label">Answer</label>
+                  <textarea
+                    className="cp-textarea"
+                    style={{ minHeight: 90 }}
+                    value={item.answer}
+                    onChange={(e) => setForm((prev) => ({
+                      ...prev,
+                      faqItems: prev.faqItems.map((faqItem, index) => index === faqIndex ? { ...faqItem, answer: e.target.value } : faqItem),
+                    }))}
+                    placeholder="Provide a concise, helpful answer."
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm((prev) => ({
+              ...prev,
+              faqItems: [...prev.faqItems, { question: '', answer: '' }],
+            }))}
+            style={{ marginTop: 12, width: 'auto', minWidth: 150, padding: '0 18px', height: 42, borderRadius: 12, border: '1px solid #d7dfeb', background: '#fff', color: '#111827', cursor: 'pointer', fontWeight: 700 }}
+          >
+            Add FAQ item
+          </button>
           <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
-            Add one FAQ per line using: question | answer
+            Add one FAQ item per block above. Each entry appears separately on your marketplace profile.
           </div>
         </div>
 

@@ -12,6 +12,12 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
 ]);
 
+const ALLOWED_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
 const MAX_BYTES = Number(env.MAX_FILE_SIZE_MB) * 1024 * 1024;
 
 // Ensure upload directory exists
@@ -43,6 +49,18 @@ function fileFilter(
   }
 }
 
+function imageFileFilter(
+  _req: Request,
+  file: Express.Multer.File,
+  cb: FileFilterCallback,
+): void {
+  if (ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(Errors.InvalidFileType() as unknown as null, false);
+  }
+}
+
 export const kybUpload = multer({
   storage,
   fileFilter,
@@ -53,6 +71,12 @@ export const kybUpload = multer({
   { name: 'doc3', maxCount: 1 },  // Owner ID
   { name: 'doc4', maxCount: 1 },  // Proof of address
 ]);
+
+export const profileImageUpload = multer({
+  storage,
+  fileFilter: imageFileFilter,
+  limits: { fileSize: MAX_BYTES },
+});
 
 /**
  * Helper to safely get uploaded files from req.files (multer fields)

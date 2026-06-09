@@ -89,13 +89,17 @@
   padding: 28px;
 }
 
+.mpp-hero-card {
+  padding: 20px;
+}
+
 .mpp-hero-banner {
   width: 100%;
-  min-height: 180px;
-  border-radius: 24px 24px 0 0;
+  min-height: 160px;
+  border-radius: 16px 16px 0 0;
   background-size: cover;
   background-position: center;
-  margin: -28px -28px 18px;
+  margin: 0 0 12px;
 }
 
 .mpp-state-card {
@@ -113,23 +117,23 @@
 
 .mpp-hero-head {
   display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
 }
 
 .mpp-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 24px;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #111827, #7c3aed);
   color: #ffffff;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -0.8px;
 }
 
 .mpp-title {

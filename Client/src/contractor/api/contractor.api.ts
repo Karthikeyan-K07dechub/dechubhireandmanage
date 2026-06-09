@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { api } from '../../api/client';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import type {
   ContractorTokenInfo,
   ContractorContract,
@@ -9,6 +10,20 @@ import type {
 } from '../types/contractor.types';
 
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+
+function normalizeContractorProfileImages(profile: ContractorProfile): ContractorProfile {
+  return {
+    ...profile,
+    profilePhotoUrl: resolveImageUrl(profile.profilePhotoUrl),
+    bannerImageUrl: resolveImageUrl(profile.bannerImageUrl),
+    portfolioProjects: Array.isArray(profile.portfolioProjects)
+      ? profile.portfolioProjects.map((project) => ({
+          ...project,
+          imageUrl: resolveImageUrl(project.imageUrl),
+        }))
+      : [],
+  };
+}
 
 // ─── Token store for contractor JWT ──────────────────────────────────────────
 
@@ -310,7 +325,7 @@ export async function signContractForMvp(): Promise<ContractorContract | null> {
 export async function getContractorProfile(): Promise<ContractorProfile> {
   try {
     const res = await contractorApi.get<{ success: boolean; data: ContractorProfile }>('/me');
-    return res.data.data;
+    return normalizeContractorProfileImages(res.data.data);
   } catch (err) { throw normalizeError(err); }
 }
 
@@ -344,11 +359,24 @@ export async function updateContractorProfile(data: {
 }): Promise<ContractorProfile> {
   try {
     const res = await contractorApi.put<{ success: boolean; data: ContractorProfile }>('/me/profile', data);
-    return res.data.data;
+    return normalizeContractorProfileImages(res.data.data);
   } catch (err) { throw normalizeError(err); }
 }
 
 // ─── Invoices — contractor side ───────────────────────────────────────────────
+
+export async function uploadContractorProfileImage(file: File): Promise<string> {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const res = await contractorApi.post<{ success: boolean; data: { url: string } }>(
+      '/me/profile/assets',
+      formData,
+    );
+    return resolveImageUrl(res.data.data.url);
+  } catch (err) { throw normalizeError(err); }
+}
 
 export async function getMyInvoices(): Promise<ContractorInvoice[]> {
   try {
