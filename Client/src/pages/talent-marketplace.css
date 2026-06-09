@@ -183,6 +183,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+  align-items: stretch;
 }
 
 .tmp-state-card {
@@ -206,15 +207,16 @@
   padding: 0;
   border-radius: 22px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 180px 1fr;
   background: #ffffff;
+  min-height: 100%;
 }
 
 .tmp-card-media {
   position: relative;
   width: 100%;
-  min-height: 140px;
+  height: 180px;
   background: linear-gradient(135deg, #eef2ff, #f8fafc);
   overflow: hidden;
 }
@@ -227,12 +229,18 @@
   filter: none;
 }
 
+.tmp-card-banner-fallback {
+  background:
+    radial-gradient(circle at top left, rgba(124, 58, 237, 0.18), transparent 34%),
+    linear-gradient(135deg, #eef2ff 0%, #f8fafc 55%, #ede9fe 100%);
+}
+
 .tmp-card-content {
-  padding: 12px 16px 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 18px 20px 20px;
+  display: grid;
+  grid-template-rows: 104px 40px 96px 88px auto;
+  row-gap: 16px;
+  min-height: 0;
 }
 
 .tmp-card-clickable {
@@ -245,40 +253,53 @@
 }
 
 .tmp-card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  display: block;
+  min-height: 104px;
 }
 
-.tmp-card-head > div {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.tmp-card-identity {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.tmp-card-title-group {
+display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    height: 100%;
+    justify-content: space-between;
 }
 
 .tmp-card-head h2 {
-  margin-bottom: 4px;
+  margin: 0;
   color: #111827;
   font-size: 20px;
   font-weight: 800;
+  line-height: 1.1;
   letter-spacing: -0.7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tmp-head-avatar {
   width: 72px;
   height: 72px;
-  border-radius: 14px;
+  flex: 0 0 72px;
+  border-radius: 50%;
   object-fit: cover;
   background: #f8fafc;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  align-self: flex-start;
 }
 
 .tmp-head-avatar-fallback {
   width: 72px;
   height: 72px;
+  flex: 0 0 72px;
   border-radius: 14px;
   display: inline-flex;
   align-items: center;
@@ -287,21 +308,41 @@
   color: #374151;
   font-weight: 800;
   font-size: 20px;
+  align-self: flex-start;
 }
-
-.tmp-card-head span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  color: #6b7280;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
+/* .tmp-card-role
+{
+  color: red;
+} */
 .tmp-card-head p,
-.tmp-card-head span {
+.tmp-card-location {
+  margin: 0;
   color: #6b7280;
   font-size: 13px;
+  line-height: 1.45;
+}
+
+.tmp-card-head p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* max-height: 26px; */
+}
+
+.tmp-card-role
+{
+  color: red;
+}
+
+.tmp-card-location {
+  display: block;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  /* min-height: 26px;
+  max-height: 26px; */
 }
 
 .tmp-badges,
@@ -313,7 +354,10 @@
 }
 
 .tmp-badges {
-  margin-bottom: 14px;
+  align-items: flex-start;
+  align-content: flex-start;
+  min-height: 40px;
+  margin: 0;
 }
 
 .tmp-badge {
@@ -333,14 +377,20 @@
 }
 
 .tmp-blurb {
-  margin-bottom: 16px;
+  margin: 0;
   color: #374151;
   font-size: 14px;
   line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .tmp-skills {
-  margin-bottom: 18px;
+  align-content: flex-start;
+  overflow: hidden;
+  min-height: 88px;
 }
 
 .tmp-skills span {
@@ -359,6 +409,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: end;
 }
 
 .tmp-primary,
@@ -368,6 +419,8 @@
   border-radius: 12px;
   font-size: 13px;
   font-weight: 700;
+  flex: 1 1 0;
+  justify-content: center;
 }
 
 .tmp-primary {
@@ -413,5 +466,28 @@
   .tmp-hero-copy h1 {
     font-size: 32px;
     letter-spacing: -1.2px;
+  }
+
+  .tmp-card {
+    padding: 0;
+    grid-template-rows: 180px 1fr;
+  }
+
+  .tmp-card-content {
+    padding: 18px;
+    grid-template-rows: auto auto auto auto auto;
+  }
+
+  .tmp-card-head {
+    min-height: unset;
+  }
+
+  .tmp-card-title-group {
+    grid-template-rows: auto auto auto;
+  }
+
+  .tmp-card-location {
+    min-height: unset;
+    max-height: none;
   }
 }

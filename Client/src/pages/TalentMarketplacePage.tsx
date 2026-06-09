@@ -181,33 +181,33 @@ export default function TalentMarketplacePage({
                   }
                 }}
               >
-                {(talent.bannerImageUrl) && (
-                  <div className="tmp-card-media" style={{ background: talent.bannerImageUrl ? 'transparent' : '#f8fafc' }}>
-                    {talent.bannerImageUrl && (
-                      <img
-                        className="tmp-card-banner"
-                        src={resolveImageUrl(talent.bannerImageUrl)}
-                        alt="Banner"
-                      />
-                    )}
-                  </div>
-                )}
+                <div className="tmp-card-media" style={{ background: talent.bannerImageUrl ? 'transparent' : '#f8fafc' }}>
+                  {talent.bannerImageUrl ? (
+                    <img
+                      className="tmp-card-banner"
+                      src={resolveImageUrl(talent.bannerImageUrl)}
+                      alt={`${talent.name} banner`}
+                    />
+                  ) : (
+                    <div className="tmp-card-banner tmp-card-banner-fallback" aria-hidden="true" />
+                  )}
+                </div>
 
                 <div className="tmp-card-content">
                   <div className="tmp-card-head">
-                      <div>
-                        {talent.profilePhotoUrl ? (
-                          <img className="tmp-head-avatar" src={resolveImageUrl(talent.profilePhotoUrl)} alt={talent.name} />
-                        ) : (
-                          <div className="tmp-head-avatar-fallback">{(talent.name || '').split(' ').map((p) => p[0] ?? '').join('').slice(0,2).toUpperCase()}</div>
-                        )}
+                    <div className="tmp-card-identity">
+                      {talent.profilePhotoUrl ? (
+                        <img className="tmp-head-avatar" src={resolveImageUrl(talent.profilePhotoUrl)} alt={talent.name} />
+                      ) : (
+                        <div className="tmp-head-avatar-fallback">{(talent.name || '').split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase()}</div>
+                      )}
 
-                        <div>
-                          <h2>{talent.name}</h2>
-                          <p>{talent.role}</p>
-                        </div>
+                      <div className="tmp-card-title-group">
+                        <h2 title={talent.name}>{talent.name}</h2>
+                        <p className="tmp-card-role" title={talent.role}>{talent.role}</p>
+                        <p className="tmp-card-location" title={talent.location}>{talent.location}</p>
                       </div>
-                    <span>{talent.location}</span>
+                    </div>
                   </div>
 
                   <div className="tmp-badges">
