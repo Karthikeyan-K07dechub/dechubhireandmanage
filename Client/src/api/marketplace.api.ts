@@ -17,6 +17,7 @@ export interface MarketplaceTalentProfile {
   blurb: string;
   profilePhotoUrl?: string;
   bannerImageUrl?: string;
+  servicePackages?: MarketplaceServicePackage[];
 }
 
 export interface MarketplacePortfolioProject {

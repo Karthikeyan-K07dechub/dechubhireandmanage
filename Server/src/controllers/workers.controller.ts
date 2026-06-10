@@ -85,14 +85,23 @@ function normalizePortfolioProjects(values: unknown) {
 }
 
 function normalizeServicePackages(values: unknown) {
-  if (!Array.isArray(values)) return DEFAULT_SERVICE_PACKAGES;
+  if (!Array.isArray(values) || values.length === 0) {
+    return [];
+  }
+
   const packages = values
     .map((item, index) => {
       const current = item as Record<string, unknown>;
       const fallback = DEFAULT_SERVICE_PACKAGES[index] ?? DEFAULT_SERVICE_PACKAGES[DEFAULT_SERVICE_PACKAGES.length - 1];
-      const name = typeof current?.name === 'string' ? current.name.trim() : fallback.name;
-      const description = typeof current?.description === 'string' ? current.description.trim() : fallback.description;
-      const price = typeof current?.price === 'number' ? current.price : Number(current?.price ?? fallback.price);
+      
+      // Use provided values if present, otherwise fall back for missing non-price fields only
+      const name = typeof current?.name === 'string' && current.name.trim()
+        ? current.name.trim()
+        : fallback.name;
+      const description = typeof current?.description === 'string' && current.description.trim()
+        ? current.description.trim()
+        : fallback.description;
+      const price = typeof current?.price === 'number' ? current.price : Number(current?.price ?? NaN);
       const deliveryDays = typeof current?.deliveryDays === 'number'
         ? current.deliveryDays
         : Number(current?.deliveryDays ?? fallback.deliveryDays);
@@ -100,10 +109,6 @@ function normalizeServicePackages(values: unknown) {
         ? current.revisions
         : Number(current?.revisions ?? fallback.revisions);
       const features = normalizeStringList(current?.features, 12);
-
-      if (!name || !description) {
-        return null;
-      }
 
       return {
         name,
@@ -114,9 +119,9 @@ function normalizeServicePackages(values: unknown) {
         features: features.length ? features : fallback.features,
       };
     })
-    .filter(Boolean);
+    .slice(0, 3);
 
-  return packages.length ? packages.slice(0, 3) : DEFAULT_SERVICE_PACKAGES;
+  return packages;
 }
 
 function normalizeFaqItems(values: unknown) {
@@ -241,6 +246,10 @@ function mapWorkerToMarketplaceTalent(worker: any) {
   const skills = worker.contractorProfile?.skills ?? [];
   const city = worker.contractorProfile?.city?.trim() || worker.contractorProfile?.address?.city?.trim() || '';
   const country = worker.contractorProfile?.address?.country?.trim() || worker.country || '';
+  const servicePackages = normalizeServicePackages(worker.contractorProfile?.servicePackages);
+  const basicPackage = servicePackages.find((pkg) => pkg.name.trim().toLowerCase().includes('basic'))
+    ?? servicePackages.find((pkg) => pkg.price > 0)
+    ?? servicePackages[0];
 
   return {
     id: worker._id,
@@ -251,7 +260,9 @@ function mapWorkerToMarketplaceTalent(worker: any) {
     city,
     country,
     skills,
-    rate: worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0,
+    rate: basicPackage?.price && basicPackage.price > 0
+      ? basicPackage.price
+      : worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0,
     currency: worker.payCurrency ?? 'USD',
     availability,
     availabilityLabel: MARKETPLACE_AVAILABILITY_LABELS[availability],
@@ -261,6 +272,7 @@ function mapWorkerToMarketplaceTalent(worker: any) {
       || 'Freelancer profile is being completed.',
     profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
     bannerImageUrl: worker.contractorProfile?.bannerImageUrl ?? '',
+    servicePackages,
   };
 }
 
@@ -300,6 +312,10 @@ function hasCompletedMarketplaceProfile(worker: any): boolean {
   const city = worker.contractorProfile?.city?.trim() || worker.contractorProfile?.address?.city?.trim() || '';
   const country = worker.contractorProfile?.address?.country?.trim() || worker.country?.trim() || '';
   const skills = Array.isArray(worker.contractorProfile?.skills) ? worker.contractorProfile.skills : [];
+  const servicePackages = Array.isArray(worker.contractorProfile?.servicePackages) 
+    ? worker.contractorProfile.servicePackages 
+    : [];
+  const hasServicePackagePrice = servicePackages.some((pkg) => pkg?.price && Number(pkg.price) > 0);
 
   return Boolean(
     title
@@ -310,7 +326,8 @@ function hasCompletedMarketplaceProfile(worker: any): boolean {
     && city
     && country
     && country.toLowerCase() !== 'unknown'
-    && skills.length > 0,
+    && skills.length > 0
+    && hasServicePackagePrice,
   );
 }
 

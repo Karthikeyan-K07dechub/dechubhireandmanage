@@ -25,6 +25,31 @@ function formatRate(rate: number, currency: string): string {
   return `${currency} ${rate}/hr`;
 }
 
+function formatPackagePrice(price: number, currency: string): string {
+  if (!price || price <= 0) return 'Rate on request';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(price);
+}
+
+function getMarketplaceCardPrice(profile: MarketplaceTalentProfile): string {
+  const packageList = profile.servicePackages ?? [];
+  const basicPackage = packageList.find((pkg) => pkg.name.trim().toLowerCase().includes('basic'))
+    ?? packageList.find((pkg) => pkg.price > 0)
+    ?? packageList[0];
+
+  if (basicPackage?.price && basicPackage.price > 0) {
+    return formatPackagePrice(basicPackage.price, profile.currency);
+  }
+
+  return formatRate(profile.rate, profile.currency);
+}
+
+function getMarketplaceCardSkills(skills: string[]) {
+  const maxVisibleSkills = 5;
+  const visibleSkills = skills.slice(0, maxVisibleSkills);
+  const remainingCount = Math.max(0, skills.length - visibleSkills.length);
+  return { visibleSkills, remainingCount };
+}
+
 function isCompletedMarketplaceProfile(profile: MarketplaceTalentProfile): boolean {
   const normalizedRole = profile.role.trim().toLowerCase();
   const normalizedBlurb = profile.blurb.trim();
@@ -211,24 +236,38 @@ export default function TalentMarketplacePage({
                   </div>
 
                   <div className="tmp-badges">
-                    <span className="tmp-badge tmp-badge-strong">{formatRate(talent.rate, talent.currency)}</span>
+                    {/* <span className="tmp-badge tmp-badge-strong">{formatRate(talent.rate, talent.currency)}</span> */}
                     <span className="tmp-badge">{talent.availabilityLabel}</span>
                   </div>
 
                   <p className="tmp-blurb">{talent.blurb}</p>
 
                   <div className="tmp-skills">
-                    {talent.skills.length > 0 ? talent.skills.map((skill) => (
-                      <span key={skill}>{skill}</span>
-                    )) : <span>No skills added yet</span>}
+                    {talent.skills.length > 0 ? (() => {
+                      const { visibleSkills, remainingCount } = getMarketplaceCardSkills(talent.skills);
+                      return (
+                        <>
+                          {visibleSkills.map((skill) => (
+                            <span key={skill}>{skill}</span>
+                          ))}
+                          {remainingCount > 0 && (
+                            <span className="tmp-skill-more">+{remainingCount} more</span>
+                          )}
+                        </>
+                      );
+                    })() : <span>No skills added yet</span>}
                   </div>
 
-                  <div className="tmp-actions">
+                  {/* <div className="tmp-actions">
                     <button className="tmp-primary" onClick={(event) => {
                       event.stopPropagation();
                       onOpenProfile(talent.workerId);
                     }}>View profile</button>
                     <button className="tmp-secondary" onClick={(event) => event.stopPropagation()}>Invite to interview</button>
+                  </div> */}
+                  <div className="tmp-badges">
+                    <span className="tmp-badge tmp-badge-strong">From {getMarketplaceCardPrice(talent)}</span>
+                    {/* <span className="tmp-badge">{talent.availabilityLabel}</span> */}
                   </div>
                 </div>
               </article>

@@ -27,6 +27,19 @@ function formatPackagePrice(price: number, currency: string): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(price);
 }
 
+function getBasicPackagePrice(profile: MarketplaceTalentProfileDetail): string {
+  const packageList = profile.servicePackages ?? [];
+  const basicPackage = packageList.find((pkg) => pkg.name.trim().toLowerCase().includes('basic'))
+    ?? packageList.find((pkg) => pkg.price > 0)
+    ?? packageList[0];
+
+  if (basicPackage?.price && basicPackage.price > 0) {
+    return formatPackagePrice(basicPackage.price, profile.currency);
+  }
+
+  return formatRate(profile.rate, profile.currency);
+}
+
 function formatMemberSince(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -160,17 +173,17 @@ export default function MarketplaceTalentProfilePage({
                 <div className="mpp-hero-head">
                   <div className="mpp-avatar">
                     {profile.profilePhotoUrl ? (
-                      <img src={resolveImageUrl(profile.profilePhotoUrl)} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }} />
+                      <img src={resolveImageUrl(profile.profilePhotoUrl)} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: "50%" }} />
                     ) : getInitials(profile)}
                   </div>
                   <div>
-                    <div className="mpp-title">{profile.role}</div>
+                    {/* <div className="mpp-title">{profile.role}</div> */}
                     <h1>{profile.name}</h1>
-                    <div className="mpp-subline">
+                    {/* <div className="mpp-subline">
                       <span>{profile.location}</span>
                       <span>{profile.availabilityLabel}</span>
-                      <span>{formatRate(profile.rate, profile.currency)}</span>
-                    </div>
+                      <span>{getBasicPackagePrice(profile)}</span>
+                    </div> */}
                   </div>
                 </div>
                 <p className="mpp-hero-summary">{profile.blurb}</p>
