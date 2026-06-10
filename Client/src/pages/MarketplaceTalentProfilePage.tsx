@@ -27,19 +27,6 @@ function formatPackagePrice(price: number, currency: string): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(price);
 }
 
-function getBasicPackagePrice(profile: MarketplaceTalentProfileDetail): string {
-  const packageList = profile.servicePackages ?? [];
-  const basicPackage = packageList.find((pkg) => pkg.name.trim().toLowerCase().includes('basic'))
-    ?? packageList.find((pkg) => pkg.price > 0)
-    ?? packageList[0];
-
-  if (basicPackage?.price && basicPackage.price > 0) {
-    return formatPackagePrice(basicPackage.price, profile.currency);
-  }
-
-  return formatRate(profile.rate, profile.currency);
-}
-
 function formatMemberSince(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -113,6 +100,7 @@ export default function MarketplaceTalentProfilePage({
   const [profile, setProfile] = useState<MarketplaceTalentProfileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedPackageIndex, setSelectedPackageIndex] = useState(0);
 
   useEffect(() => {
     if (!workerId) {
@@ -179,17 +167,9 @@ export default function MarketplaceTalentProfilePage({
                   <div>
                     {/* <div className="mpp-title">{profile.role}</div> */}
                     <h1>{profile.name}</h1>
-                    {/* <div className="mpp-subline">
-                      <span>{profile.location}</span>
-                      <span>{profile.availabilityLabel}</span>
-                      <span>{getBasicPackagePrice(profile)}</span>
-                    </div> */}
                   </div>
                 </div>
                 <p className="mpp-hero-summary">{profile.blurb}</p>
-                <div className="mpp-skill-cloud">
-                  {profile.skills.map((skill) => <span key={skill}>{skill}</span>)}
-                </div>
               </div>
 
               <section className="mpp-section-card">
@@ -215,6 +195,15 @@ export default function MarketplaceTalentProfilePage({
                   <div>
                     <span>Languages</span>
                     <strong>{profile.languages.length ? profile.languages.join(', ') : 'Not added yet'}</strong>
+                  </div>
+                </div>
+
+                <div className="mpp-skill-panel">
+                  <span className="mpp-skill-panel-label">Skills</span>
+                  <div className="mpp-skill-cloud mpp-skill-cloud-know">
+                    {profile.skills.length > 0 ? profile.skills.map((skill) => (
+                      <span key={skill}>{skill}</span>
+                    )) : <span>No skills added yet</span>}
                   </div>
                 </div>
               </section>
@@ -245,7 +234,7 @@ export default function MarketplaceTalentProfilePage({
                 <h2>Compare packages</h2>
                 <div className="mpp-compare-table">
                   <div className="mpp-compare-header">
-                    <span>Package</span>
+                    <div className="mpp-compare-package-text">Package</div>
                     {profile.servicePackages.map((pkg) => (
                       <div key={`${pkg.name}-header`}>
                         <strong>{formatPackagePrice(pkg.price, profile.currency)}</strong>
@@ -273,9 +262,54 @@ export default function MarketplaceTalentProfilePage({
             <aside className="mpp-sidebar">
               <div className="mpp-sticky">
                 <div className="mpp-sidebar-card">
-                  {profile.servicePackages.map((pkg) => (
-                    <PackageCard key={`${pkg.name}-${pkg.price}`} pkg={pkg} currency={profile.currency} />
-                  ))}
+                  <div className="mpp-package-card mpp-package-card-tabbed">
+                    <div className="mpp-package-tabs" role="tablist">
+                      {profile.servicePackages.map((pkg, index) => (
+                        <button
+                          key={pkg.name}
+                          type="button"
+                          role="tab"
+                          aria-selected={selectedPackageIndex === index}
+                          className={`mpp-package-tab ${selectedPackageIndex === index ? 'active' : ''}`}
+                          onClick={() => setSelectedPackageIndex(index)}
+                        >
+                          {pkg.name}
+                        </button>
+                      ))}
+                    </div>
+                    {profile.servicePackages[selectedPackageIndex] ? (
+                      <div className="mpp-package-body">
+                        <div className="mpp-package-tier">{profile.servicePackages[selectedPackageIndex].name}</div>
+                        <div className="mpp-package-price">
+                          {formatPackagePrice(profile.servicePackages[selectedPackageIndex].price, profile.currency)}
+                        </div>
+                        <p className="mpp-package-description">
+                          {profile.servicePackages[selectedPackageIndex].description}
+                        </p>
+                        <div className="mpp-package-meta">
+                          <span>{profile.servicePackages[selectedPackageIndex].deliveryDays} day delivery</span>
+                          <span>{profile.servicePackages[selectedPackageIndex].revisions} revisions</span>
+                        </div>
+                        <div className="mpp-package-feature-list">
+                          {profile.servicePackages[selectedPackageIndex].features.map((feature) => (
+                            <span key={`${profile.servicePackages[selectedPackageIndex].name}-${feature}`}>
+                              <span className="mpp-feature-check">✓</span>
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
+                        <button className="mpp-primary-action">Continue</button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="mpp-sidebar-card">
+                  <div className="mpp-contact-card">
+                    <button type="button" className="mpp-secondary-action mpp-contact-action">
+                      Contact me
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mpp-sidebar-card">
