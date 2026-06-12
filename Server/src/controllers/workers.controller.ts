@@ -5,6 +5,7 @@ import { Worker } from '../models/Worker';
 import { Company } from '../models/Company';
 import { CompanyAuth } from '../models/CompanyAuth';
 import { Contract } from '../models/Contract';
+import { MarketplaceOrderDraft } from '../models/MarketplaceOrderDraft';
 import { ok, created, Errors, AppError } from '../utils/response';
 import { logger } from '../utils/logger';
 import nodemailer from 'nodemailer';
@@ -124,6 +125,13 @@ function normalizeServicePackages(values: unknown) {
   return packages;
 }
 
+function createMarketplaceOrderNumber(): string {
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const suffix = crypto.randomBytes(3).toString('hex').toUpperCase();
+  return `MKT-${stamp}-${suffix}`;
+}
+
 function normalizeFaqItems(values: unknown) {
   if (!Array.isArray(values)) return [];
   return values
@@ -229,6 +237,27 @@ const inviteSchema = z.object({
   scopeOfWork:      z.string().min(1),
 });
 
+const marketplaceOrderDraftSchema = z.object({
+  packageSnapshot: z.object({
+    name: z.string().trim().min(1).max(50),
+    price: z.number().min(0).max(1_000_000),
+    description: z.string().trim().min(1).max(300),
+    deliveryDays: z.number().int().min(1).max(365),
+    revisions: z.number().int().min(0).max(100),
+    features: z.array(z.string().trim().min(1).max(100)).min(1).max(20),
+  }),
+  clientDetails: z.object({
+    firstName: z.string().trim().min(1).max(80),
+    lastName: z.string().trim().min(1).max(80),
+    countryCode: z.string().trim().min(2).max(12),
+    phoneNumber: z.string().trim().min(6).max(20),
+    workEmail: z.string().trim().email(),
+    projectType: z.string().trim().min(1).max(100),
+    budget: z.string().trim().min(1).max(100),
+    projectDescription: z.string().trim().min(150).max(3000),
+  }),
+});
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function getCompanyForUser(userId: string) {
@@ -315,7 +344,9 @@ function hasCompletedMarketplaceProfile(worker: any): boolean {
   const servicePackages = Array.isArray(worker.contractorProfile?.servicePackages) 
     ? worker.contractorProfile.servicePackages 
     : [];
-  const hasServicePackagePrice = servicePackages.some((pkg) => pkg?.price && Number(pkg.price) > 0);
+  const hasServicePackagePrice = servicePackages.some((pkg: { price?: number | string } | null | undefined) => (
+    pkg?.price !== undefined && Number(pkg.price) > 0
+  ));
 
   return Boolean(
     title
@@ -411,6 +442,49 @@ export async function getMarketplaceTalentProfile(req: Request, res: Response, n
     }
 
     ok(res, mapWorkerToMarketplaceTalentDetail(worker));
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createMarketplaceOrderDraft(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = marketplaceOrderDraftSchema.parse(req.body);
+    const worker = await Worker.findOne({
+      _id: req.params.id,
+      workerType: 'contractor',
+      status: { $nin: ['invited', 'terminated'] },
+    });
+
+    if (!worker || !hasCompletedMarketplaceProfile(worker)) {
+      throw Errors.NotFound('Marketplace profile');
+    }
+
+    const draft = await MarketplaceOrderDraft.create({
+      workerId: worker._id,
+      companyId: null,
+      orderNumber: createMarketplaceOrderNumber(),
+      workerName: `${worker.firstName} ${worker.lastName}`.trim(),
+      workerRole: worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer',
+      packageSnapshot: data.packageSnapshot,
+      clientDetails: data.clientDetails,
+      status: 'draft',
+      paymentStatus: 'pending',
+      source: 'marketplace_consultation',
+    });
+
+    created(res, {
+      id: draft._id,
+      orderNumber: draft.orderNumber,
+      workerId: worker._id,
+      workerName: draft.workerName,
+      workerRole: draft.workerRole,
+      packageSnapshot: draft.packageSnapshot,
+      clientDetails: draft.clientDetails,
+      status: draft.status,
+      paymentStatus: draft.paymentStatus,
+      createdAt: draft.createdAt,
+    });
   } catch (err) {
     next(err);
   }

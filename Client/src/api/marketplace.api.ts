@@ -36,6 +36,15 @@ export interface MarketplaceServicePackage {
   features: string[];
 }
 
+export interface MarketplaceCheckoutSelection {
+  workerId: string;
+  workerName: string;
+  workerRole: string;
+  workerAvatarUrl?: string;
+  currency: string;
+  package: MarketplaceServicePackage;
+}
+
 export interface MarketplaceFaqItem {
   question: string;
   answer: string;
@@ -52,6 +61,35 @@ export interface MarketplaceTalentProfileDetail extends MarketplaceTalentProfile
   servicePackages: MarketplaceServicePackage[];
   faqItems: MarketplaceFaqItem[];
   memberSince: string;
+}
+
+export interface MarketplaceOrderDraftClientDetails {
+  firstName: string;
+  lastName: string;
+  countryCode: string;
+  phoneNumber: string;
+  workEmail: string;
+  projectType: string;
+  budget: string;
+  projectDescription: string;
+}
+
+export interface MarketplaceOrderDraftPayload {
+  packageSnapshot: MarketplaceServicePackage;
+  clientDetails: MarketplaceOrderDraftClientDetails;
+}
+
+export interface MarketplaceOrderDraft {
+  id: string;
+  orderNumber: string;
+  workerId: string;
+  workerName: string;
+  workerRole: string;
+  packageSnapshot: MarketplaceServicePackage;
+  clientDetails: MarketplaceOrderDraftClientDetails;
+  status: 'draft' | 'pending_payment';
+  paymentStatus: 'pending' | 'paid';
+  createdAt: string;
 }
 
 function normalizeMarketplaceProfile<T extends MarketplaceTalentProfile>(profile: T): T {
@@ -87,6 +125,21 @@ export async function getMarketplaceTalentProfile(workerId: string): Promise<Mar
       headers: { Authorization: undefined },
     });
     return normalizeMarketplaceProfile(unwrapApiData(res.data));
+  } catch (err) {
+    throw normalizeError(err);
+  }
+}
+
+export async function createMarketplaceOrderDraft(
+  workerId: string,
+  payload: MarketplaceOrderDraftPayload,
+): Promise<MarketplaceOrderDraft> {
+  try {
+    const res = await api.post<ApiResponse<MarketplaceOrderDraft>>(
+      `/workers/marketplace/${workerId}/order-drafts`,
+      payload,
+    );
+    return unwrapApiData(res.data);
   } catch (err) {
     throw normalizeError(err);
   }

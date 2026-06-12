@@ -6,6 +6,8 @@ import CompanyChoicePage from './pages/CompanyChoicePage';
 import CompanyOnboardingPage from './pages/CompanyOnboardingPage';
 import TalentMarketplacePage from './pages/TalentMarketplacePage';
 import MarketplaceTalentProfilePage from './pages/MarketplaceTalentProfilePage';
+import MarketplaceProjectConsultationPage from './pages/MarketplaceProjectConsultationPage';
+import MarketplacePaymentPage from './pages/MarketplacePaymentPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
 import FreelancerSignupPage from './pages/FreelancerSignupPage';
@@ -14,6 +16,7 @@ import { tokenStore } from './api/client';
 import { handleGoogleCallback } from './api/auth.api';
 import { contractorTokenStore } from './contractor/api/contractor.api';
 import type { Step } from './types/signup';
+import type { MarketplaceCheckoutSelection, MarketplaceOrderDraft } from './api/marketplace.api';
 
 type AppPage =
   | 'landing'
@@ -27,15 +30,50 @@ type AppPage =
   | 'freelancer-success'
   | 'freelancer-dashboard'
   | 'marketplace'
-  | 'marketplace-profile';
+  | 'marketplace-profile'
+  | 'marketplace-consultation'
+  | 'marketplace-payment';
 
 type AuthMode = 'login' | 'signup';
 type CompanyDestination = 'marketplace' | 'dashboard';
 
 const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
+const MARKETPLACE_CHECKOUT_SELECTION_KEY = 'dechub_marketplace_checkout_selection';
+const MARKETPLACE_ORDER_DRAFT_KEY = 'dechub_marketplace_order_draft';
+
+function readSessionJson<T>(key: string): T | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionJson<T>(key: string, value: T | null): void {
+  if (value === null) {
+    sessionStorage.removeItem(key);
+    return;
+  }
+
+  sessionStorage.setItem(key, JSON.stringify(value));
+}
 
 function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+  const marketplaceMatch = normalizedPath.match(/^\/marketplace\/([^/]+)(?:\/(consultation|payment))?$/);
+
+  if (marketplaceMatch) {
+    if (marketplaceMatch[2] === 'consultation') {
+      return { page: 'marketplace-consultation', mode: 'login' };
+    }
+
+    if (marketplaceMatch[2] === 'payment') {
+      return { page: 'marketplace-payment', mode: 'login' };
+    }
+
+    return { page: 'marketplace-profile', mode: 'login' };
+  }
 
   if (normalizedPath === '/get-started') {
     return { page: 'role-select', mode: 'login' };
@@ -80,11 +118,6 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   if (normalizedPath === '/marketplace') {
     return { page: 'marketplace', mode: 'login' };
   }
-
-  if (normalizedPath.startsWith('/marketplace/')) {
-    return { page: 'marketplace-profile', mode: 'login' };
-  }
-
   return { page: 'landing', mode: 'login' };
 }
 
@@ -98,7 +131,9 @@ function getMarketplaceProfileIdFromUrl(): string {
     return '';
   }
 
-  return decodeURIComponent(normalizedPath.slice('/marketplace/'.length)).trim();
+  const segments = normalizedPath.split('/').filter(Boolean);
+  const workerId = segments[1] ?? '';
+  return decodeURIComponent(workerId).trim();
 }
 
 function getUserNameFromToken(): string {
@@ -141,6 +176,12 @@ export default function App() {
   const [companyOnboardingStep, setCompanyOnboardingStep] = useState<Step>(1);
   const [marketplaceQuery, setMarketplaceQuery] = useState<string>(() => getMarketplaceQueryFromUrl());
   const [selectedMarketplaceProfileId, setSelectedMarketplaceProfileId] = useState<string>(() => getMarketplaceProfileIdFromUrl());
+  const [selectedMarketplacePackage, setSelectedMarketplacePackage] = useState<MarketplaceCheckoutSelection | null>(
+    () => readSessionJson<MarketplaceCheckoutSelection>(MARKETPLACE_CHECKOUT_SELECTION_KEY),
+  );
+  const [marketplaceOrderDraft, setMarketplaceOrderDraft] = useState<MarketplaceOrderDraft | null>(
+    () => readSessionJson<MarketplaceOrderDraft>(MARKETPLACE_ORDER_DRAFT_KEY),
+  );
 
   useEffect(() => {
     const handlePopState = () => {
@@ -197,6 +238,10 @@ export default function App() {
         ? '/company/onboarding'
         : page === 'marketplace'
         ? `/marketplace${marketplaceQuery ? `?q=${encodeURIComponent(marketplaceQuery)}` : ''}`
+        : page === 'marketplace-consultation'
+        ? `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}/consultation`
+        : page === 'marketplace-payment'
+        ? `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}/payment`
         : page === 'marketplace-profile'
         ? `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}`
         : page === 'freelancer-login'
@@ -239,6 +284,21 @@ export default function App() {
     setUserName('Company User');
     setAuthMode('login');
     setPage('landing');
+  };
+
+  const handleMarketplaceCheckoutSelection = (selection: MarketplaceCheckoutSelection) => {
+    setSelectedMarketplaceProfileId(selection.workerId);
+    setSelectedMarketplacePackage(selection);
+    setMarketplaceOrderDraft(null);
+    writeSessionJson(MARKETPLACE_CHECKOUT_SELECTION_KEY, selection);
+    writeSessionJson(MARKETPLACE_ORDER_DRAFT_KEY, null);
+    setPage('marketplace-consultation');
+  };
+
+  const handleMarketplaceOrderDraftSuccess = (draft: MarketplaceOrderDraft) => {
+    setMarketplaceOrderDraft(draft);
+    writeSessionJson(MARKETPLACE_ORDER_DRAFT_KEY, draft);
+    setPage('marketplace-payment');
   };
 
   if (page === 'landing') {
@@ -384,12 +444,39 @@ export default function App() {
     return null;
   }
 
+  if (page === 'marketplace-consultation') {
+    return (
+      <MarketplaceProjectConsultationPage
+        selection={selectedMarketplacePackage}
+        isAuthenticated={Boolean(tokenStore.getAccess())}
+        userName={userName}
+        onBack={() => setPage('marketplace-profile')}
+        onLogout={handleLogout}
+        onSubmitSuccess={handleMarketplaceOrderDraftSuccess}
+      />
+    );
+  }
+
+  if (page === 'marketplace-payment') {
+    return (
+      <MarketplacePaymentPage
+        selection={selectedMarketplacePackage}
+        orderDraft={marketplaceOrderDraft}
+        isAuthenticated={Boolean(tokenStore.getAccess())}
+        userName={userName}
+        onBack={() => setPage('marketplace-consultation')}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   return (
     page === 'marketplace-profile' ? (
       <MarketplaceTalentProfilePage
         workerId={selectedMarketplaceProfileId}
         isAuthenticated={Boolean(tokenStore.getAccess())}
         userName={userName}
+        onContinueToConsultation={handleMarketplaceCheckoutSelection}
         onBack={() => {
           setPage('marketplace');
         }}

@@ -3,6 +3,7 @@ import {
   listWorkers,
   getMarketplaceTalent,
   getMarketplaceTalentProfile,
+  createMarketplaceOrderDraft,
   inviteWorker,
   getWorker,
   terminateWorker,
@@ -23,6 +24,7 @@ const inviteLimiter = rateLimit({
 // ── Workers ────────────────────────────────────────────────────────────────────
 router.get  ('/marketplace',      getMarketplaceTalent);
 router.get  ('/marketplace/:id',   getMarketplaceTalentProfile);
+router.post ('/marketplace/:id/order-drafts', createMarketplaceOrderDraft);
 // All routes below this point require auth.
 router.use(requireAuth);
 router.get  ('/',                listWorkers);

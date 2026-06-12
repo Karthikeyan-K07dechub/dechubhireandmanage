@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import './marketplace-talent-profile.css';
 import {
   getMarketplaceTalentProfile,
+  type MarketplaceCheckoutSelection,
   type MarketplaceFaqItem,
   type MarketplaceServicePackage,
   type MarketplaceTalentProfileDetail,
@@ -13,6 +14,7 @@ interface MarketplaceTalentProfilePageProps {
   workerId: string;
   isAuthenticated: boolean;
   userName: string;
+  onContinueToConsultation: (selection: MarketplaceCheckoutSelection) => void;
   onBack: () => void;
   onLogout: () => void;
 }
@@ -45,26 +47,6 @@ function getInitials(profile: MarketplaceTalentProfileDetail): string {
     .toUpperCase();
 }
 
-function PackageCard({ pkg, currency }: { pkg: MarketplaceServicePackage; currency: string }) {
-  return (
-    <article className="mpp-package-card">
-      <div className="mpp-package-tier">{pkg.name}</div>
-      <div className="mpp-package-price">{formatPackagePrice(pkg.price, currency)}</div>
-      <p className="mpp-package-description">{pkg.description}</p>
-      <div className="mpp-package-meta">
-        <span>{pkg.deliveryDays} day delivery</span>
-        <span>{pkg.revisions} revisions</span>
-      </div>
-      <div className="mpp-package-feature-list">
-        {pkg.features.map((feature) => (
-          <span key={`${pkg.name}-${feature}`}>{feature}</span>
-        ))}
-      </div>
-      <button className="mpp-primary-action">Continue</button>
-    </article>
-  );
-}
-
 function FaqList({ items }: { items: MarketplaceFaqItem[] }) {
   const [openIndex, setOpenIndex] = useState(0);
 
@@ -94,6 +76,7 @@ export default function MarketplaceTalentProfilePage({
   workerId,
   isAuthenticated,
   userName,
+  onContinueToConsultation,
   onBack,
   onLogout,
 }: MarketplaceTalentProfilePageProps) {
@@ -136,6 +119,19 @@ export default function MarketplaceTalentProfilePage({
       values: profile.servicePackages.map((pkg) => pkg.features.includes(feature)),
     }));
   }, [profile]);
+
+  const buildCheckoutSelection = (pkg: MarketplaceServicePackage): MarketplaceCheckoutSelection | null => {
+    if (!profile) return null;
+
+    return {
+      workerId,
+      workerName: profile.name,
+      workerRole: profile.role,
+      workerAvatarUrl: profile.profilePhotoUrl,
+      currency: profile.currency,
+      package: pkg,
+    };
+  };
 
   return (
     <div className="mpp-root">
@@ -298,7 +294,16 @@ export default function MarketplaceTalentProfilePage({
                             </span>
                           ))}
                         </div>
-                        <button className="mpp-primary-action">Continue</button>
+                        <button
+                          type="button"
+                          className="mpp-primary-action"
+                          onClick={() => {
+                            const selection = buildCheckoutSelection(profile.servicePackages[selectedPackageIndex]);
+                            if (selection) onContinueToConsultation(selection);
+                          }}
+                        >
+                          Continue
+                        </button>
                       </div>
                     ) : null}
                   </div>
