@@ -4,7 +4,7 @@ import ActionButton from '../common/ActionButton';
 import { ArrowIcon } from '../common/Icons';
 import Tooltip from '../common/Tooltip';
 
-export default function Step2CompanyIdentity({ state, handlers }: { state: AppState; handlers: AppHandlers }) {
+export default function Step2CompanyIdentity({ state, handlers, initialStep = 1, completeAfterStep1 = false }: { state: AppState; handlers: AppHandlers; initialStep?: number; completeAfterStep1?: boolean }) {
   const { formData, errors, loadingAction } = state;
   const { handleInputChange, goToStep } = handlers;
 
@@ -77,7 +77,9 @@ export default function Step2CompanyIdentity({ state, handlers }: { state: AppSt
       </div>
 
       <div className="btn-row">
-        <button type="button" className="btn-secondary" onClick={handlers.goBack}>← Back</button>
+        {!((initialStep > 1 || completeAfterStep1)) ? (
+          <button type="button" className="btn-secondary" onClick={handlers.goBack}>← Back</button>
+        ) : null}
         <ActionButton loading={loadingAction === 'step-3'} onClick={() => goToStep(3)}>
           Continue <ArrowIcon />
         </ActionButton>

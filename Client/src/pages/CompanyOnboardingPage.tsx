@@ -508,7 +508,7 @@ export default function CompanyOnboardingPage({
   const stepContent = state.currentStep === 1
     ? <Step1Account state={state} handlers={handlers} />
     : state.currentStep === 2
-    ? <Step2CompanyIdentity state={state} handlers={handlers} />
+    ? <Step2CompanyIdentity state={state} handlers={handlers} initialStep={initialStep} completeAfterStep1={completeAfterStep1} />
     : state.currentStep === 3
     ? <Step3BusinessDetails state={state} handlers={handlers} />
     : state.currentStep === 4
@@ -567,8 +567,9 @@ export default function CompanyOnboardingPage({
           {!(hideProgress && state.currentStep === 1) ? (
             <div className="progress-wrap">
               <div className="progress-top">
-                <button className="rsp-back" onClick={onBack}>Back</button>
-                <div className="progress-step">Step {state.currentStep} of 6</div>
+                {!( (initialStep > 1 || completeAfterStep1) && state.currentStep === 2 ) ? (
+                  <button className="rsp-back" onClick={onBack}>Back</button>
+                ) : null}
               </div>
               <div className="progress-label">{progress?.label ?? 'Company setup'}</div>
               <div className="progress-bar">

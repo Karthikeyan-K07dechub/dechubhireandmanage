@@ -15,6 +15,7 @@ import FreelancerSignupPage from './pages/FreelancerSignupPage';
 import FreelancerSignupSuccessPage from './pages/FreelancerSignupSuccessPage';
 import { tokenStore } from './api/client';
 import { handleGoogleCallback } from './api/auth.api';
+import { getMyCompany } from './api/company.api';
 import { contractorTokenStore } from './contractor/api/contractor.api';
 import type { Step } from './types/signup';
 import type { MarketplaceCheckoutSelection, MarketplaceOrderDraft } from './api/marketplace.api';
@@ -158,6 +159,28 @@ function getUserNameFromToken(): string {
   }
 }
 
+function getSignupStepFromToken(): number | null {
+  const accessToken = tokenStore.getAccess();
+  if (!accessToken) return null;
+
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1] ?? '')) as Record<string, unknown>;
+    const raw = payload.signupStep ?? payload.signup_step;
+    if (typeof raw === 'number') return raw;
+    if (typeof raw === 'string' && /^\\d+$/.test(raw)) return Number(raw);
+    return null;
+  } catch {
+    return null;
+  }
+}
+async function getSignupStepFromServer(): Promise<number | null> {
+  try {
+    const data = await getMyCompany();
+    return typeof data.user?.signupStep === 'number' ? data.user.signupStep : null;
+  } catch {
+    return null;
+  }
+}
 function setCompanyDestination(destination: CompanyDestination): void {
   sessionStorage.setItem(COMPANY_DESTINATION_KEY, destination);
 }
@@ -387,11 +410,21 @@ export default function App() {
           setSelectedMarketplaceProfileId('');
           setPage('marketplace');
         }}
-        onDashboard={() => {
+        onDashboard={async () => {
           if (tokenStore.getAccess()) {
+            const signupStep = (await getSignupStepFromServer()) ?? getSignupStepFromToken();
+            if (signupStep !== null && signupStep < 7) {
+              setCompanyDestination('dashboard');
+              setCompanyOnboardingFromMarketplace(false);
+              setCompanyOnboardingStep(getNextCompanyStep(signupStep));
+              setPage('company-onboarding');
+              return;
+            }
+
             window.location.replace('/dashboard');
             return;
           }
+
           setCompanyDestination('dashboard');
           setPage('company-dashboard-auth');
         }}

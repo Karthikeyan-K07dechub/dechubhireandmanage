@@ -3,10 +3,11 @@ import bcrypt from 'bcryptjs';
 import { env } from '../config/env';
 
 export interface AccessTokenPayload {
-  sub:       string;   // userId
-  email:     string;
-  role:      string;
-  companyId: string | null;
+  sub:        string;   // userId
+  email:      string;
+  role:       string;
+  companyId:  string | null;
+  signupStep?: number;
 }
 
 export interface RefreshTokenPayload {

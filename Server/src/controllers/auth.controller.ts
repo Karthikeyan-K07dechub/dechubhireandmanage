@@ -77,10 +77,11 @@ function buildTokenPair(user: InstanceType<typeof CompanyAuth>): {
   const companyId = user.companyId?.toString() ?? null;
   return {
     accessToken: signAccessToken({
-      sub:       user._id.toString(),
-      email:     user.email,
-      role:      user.role,
+      sub: user._id.toString(),
+      email: user.email,
+      role: user.role,
       companyId,
+      signupStep: user.signupStep,
     }),
     refreshToken: signRefreshToken({ sub: user._id.toString() }),
   };

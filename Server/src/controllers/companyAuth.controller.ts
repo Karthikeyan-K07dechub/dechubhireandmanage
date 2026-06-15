@@ -41,6 +41,7 @@ function buildTokenPair(account: InstanceType<typeof CompanyAuth>): {
       email: account.email,
       role: account.role,
       companyId,
+      signupStep: account.signupStep,
     }),
     refreshToken: signRefreshToken({ sub: account._id.toString() }),
   };
