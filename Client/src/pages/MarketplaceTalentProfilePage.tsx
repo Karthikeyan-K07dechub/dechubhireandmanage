@@ -9,6 +9,7 @@ import {
 } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
 import { imageBackground, resolveImageUrl } from '../utils/imageUrl';
+import UserMenu from '../components/common/UserMenu';
 
 interface MarketplaceTalentProfilePageProps {
   workerId: string;
@@ -17,6 +18,8 @@ interface MarketplaceTalentProfilePageProps {
   onContinueToConsultation: (selection: MarketplaceCheckoutSelection) => void;
   onBack: () => void;
   onLogout: () => void;
+  onNotifications: () => void;
+  onLogin: () => void;
 }
 
 function formatRate(rate: number, currency: string): string {
@@ -79,6 +82,8 @@ export default function MarketplaceTalentProfilePage({
   onContinueToConsultation,
   onBack,
   onLogout,
+  onNotifications,
+  onLogin,
 }: MarketplaceTalentProfilePageProps) {
   const [profile, setProfile] = useState<MarketplaceTalentProfileDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,8 +143,16 @@ export default function MarketplaceTalentProfilePage({
       <header className="mpp-topbar">
         <button className="mpp-back" onClick={onBack}>← Back to marketplace</button>
         <div className="mpp-user">
-          <span>{isAuthenticated ? userName : 'Guest company'}</span>
-          {isAuthenticated ? <button onClick={onLogout}>Logout</button> : null}
+          {isAuthenticated ? (
+            <UserMenu userName={userName} onLogout={onLogout} onNotifications={onNotifications} />
+          ) : (
+            <>
+              <span>Guest company</span>
+              <button type="button" className="mpp-login-button" onClick={onLogin}>
+                Login
+              </button>
+            </>
+          )}
         </div>
       </header>
 

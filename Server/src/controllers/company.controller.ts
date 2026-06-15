@@ -152,7 +152,22 @@ async function autoApproveKybForMvp(company: InstanceType<typeof Company>): Prom
 export async function getMyCompany(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const company = await getCompanyForUser(req.user!.sub);
-    ok(res, company);
+    const account = await CompanyAuth.findById(req.user!.sub).select('firstName lastName email phone signupStep isEmailVerified');
+    if (!account) {
+      throw Errors.NotFound('Company account');
+    }
+
+    ok(res, {
+      user: {
+        firstName: account.firstName,
+        lastName: account.lastName,
+        email: account.email,
+        phone: account.phone,
+        signupStep: account.signupStep,
+        isEmailVerified: account.isEmailVerified,
+      },
+      company,
+    });
   } catch (err) {
     next(err);
   }

@@ -6,6 +6,17 @@ export default function Step1Account({ state, handlers }: { state: AppState; han
   const { formData, errors, showPassword, passwordScore, passwordStrength, loadingAction } = state;
   const { handleInputChange, setShowPassword, goToStep, validateEmail, googleSignup, goToLogin } = handlers;
 
+  // Extra safety check - should not reach here due to parent guard, but handle gracefully
+  if (!formData || typeof formData !== 'object') {
+    return (
+      <section className="card screen active">
+        <div className="card-icon bg-indigo">🏢</div>
+        <h2 className="card-title">Loading...</h2>
+        <p className="card-sub">Preparing your signup form...</p>
+      </section>
+    );
+  }
+
   return (
     <section className="card screen active">
       <div className="card-icon bg-indigo">🏢</div>

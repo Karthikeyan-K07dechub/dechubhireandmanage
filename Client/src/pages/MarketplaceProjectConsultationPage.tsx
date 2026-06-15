@@ -7,6 +7,7 @@ import {
   type MarketplaceOrderDraft,
 } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
+import UserMenu from '../components/common/UserMenu';
 
 interface MarketplaceProjectConsultationPageProps {
   selection: MarketplaceCheckoutSelection | null;
@@ -14,6 +15,8 @@ interface MarketplaceProjectConsultationPageProps {
   userName: string;
   onBack: () => void;
   onLogout: () => void;
+  onNotifications: () => void;
+  onLogin: () => void;
   onSubmitSuccess: (draft: MarketplaceOrderDraft) => void;
 }
 
@@ -121,6 +124,8 @@ export default function MarketplaceProjectConsultationPage({
   userName,
   onBack,
   onLogout,
+  onNotifications,
+  onLogin,
   onSubmitSuccess,
 }: MarketplaceProjectConsultationPageProps) {
   const [submitError, setSubmitError] = useState('');
@@ -201,12 +206,16 @@ export default function MarketplaceProjectConsultationPage({
             ← Back to service details
           </button>
           <div className="mpc-user">
-            <span>{isAuthenticated ? userName : 'Guest company'}</span>
             {isAuthenticated ? (
-              <button type="button" onClick={onLogout} className="mpc-logout">
-                Logout
-              </button>
-            ) : null}
+              <UserMenu userName={userName} onLogout={onLogout} onNotifications={onNotifications} />
+            ) : (
+              <>
+                <span>Guest company</span>
+                <button type="button" className="mpc-login-button" onClick={onLogin}>
+                  Login
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>

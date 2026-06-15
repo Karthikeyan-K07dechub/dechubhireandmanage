@@ -11,6 +11,7 @@ import '../landing/landing-overrides.css';
 interface LandingPageProps {
   onLogin: () => void;
   onGetStarted: () => void;
+  onMarketplace: () => void;
   onMarketplaceSearch: (query: string) => void;
   onDemo?: () => void;
 }
@@ -148,7 +149,7 @@ export default function LandingPage(props: LandingPageProps) {
         return {
           role: 'button',
           tabIndex: 0,
-          onClick: props.onLogin,
+          onClick: props.onMarketplace,
         };
       }
 

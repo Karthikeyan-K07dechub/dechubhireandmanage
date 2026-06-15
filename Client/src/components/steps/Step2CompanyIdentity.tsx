@@ -77,7 +77,7 @@ export default function Step2CompanyIdentity({ state, handlers }: { state: AppSt
       </div>
 
       <div className="btn-row">
-        <button type="button" className="btn-secondary" onClick={() => goToStep(1)}>← Back</button>
+        <button type="button" className="btn-secondary" onClick={handlers.goBack}>← Back</button>
         <ActionButton loading={loadingAction === 'step-3'} onClick={() => goToStep(3)}>
           Continue <ArrowIcon />
         </ActionButton>

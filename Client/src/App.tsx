@@ -8,6 +8,7 @@ import TalentMarketplacePage from './pages/TalentMarketplacePage';
 import MarketplaceTalentProfilePage from './pages/MarketplaceTalentProfilePage';
 import MarketplaceProjectConsultationPage from './pages/MarketplaceProjectConsultationPage';
 import MarketplacePaymentPage from './pages/MarketplacePaymentPage';
+import NotificationPage from './pages/NotificationPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
 import FreelancerSignupPage from './pages/FreelancerSignupPage';
@@ -32,7 +33,8 @@ type AppPage =
   | 'marketplace'
   | 'marketplace-profile'
   | 'marketplace-consultation'
-  | 'marketplace-payment';
+  | 'marketplace-payment'
+  | 'notifications';
 
 type AuthMode = 'login' | 'signup';
 type CompanyDestination = 'marketplace' | 'dashboard';
@@ -118,6 +120,11 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   if (normalizedPath === '/marketplace') {
     return { page: 'marketplace', mode: 'login' };
   }
+
+  if (normalizedPath === '/notifications') {
+    return { page: 'notifications', mode: 'login' };
+  }
+
   return { page: 'landing', mode: 'login' };
 }
 
@@ -174,6 +181,7 @@ export default function App() {
   const [userName, setUserName] = useState<string>(() => getUserNameFromToken());
   const [freelancerFirstName, setFreelancerFirstName] = useState('');
   const [companyOnboardingStep, setCompanyOnboardingStep] = useState<Step>(1);
+  const [companyOnboardingFromMarketplace, setCompanyOnboardingFromMarketplace] = useState(false);
   const [marketplaceQuery, setMarketplaceQuery] = useState<string>(() => getMarketplaceQueryFromUrl());
   const [selectedMarketplaceProfileId, setSelectedMarketplaceProfileId] = useState<string>(() => getMarketplaceProfileIdFromUrl());
   const [selectedMarketplacePackage, setSelectedMarketplacePackage] = useState<MarketplaceCheckoutSelection | null>(
@@ -210,14 +218,22 @@ export default function App() {
 
     setUserName(getUserNameFromToken());
 
-    if (getCompanyDestination() === 'dashboard') {
-      const nextStep = getNextCompanyStep(result.signupStep);
+    const signupStep = typeof result.signupStep === 'number' ? result.signupStep : 1;
+
+    if (signupStep < 7) {
+      const nextStep = getNextCompanyStep(signupStep);
       if (nextStep) {
         setCompanyOnboardingStep(nextStep);
         setPage('company-onboarding');
       } else {
         window.location.replace('/dashboard');
       }
+      return;
+    }
+
+    // completed onboarding: go to destination (dashboard or marketplace)
+    if (getCompanyDestination() === 'dashboard') {
+      window.location.replace('/dashboard');
       return;
     }
 
@@ -238,6 +254,8 @@ export default function App() {
         ? '/company/onboarding'
         : page === 'marketplace'
         ? `/marketplace${marketplaceQuery ? `?q=${encodeURIComponent(marketplaceQuery)}` : ''}`
+        : page === 'notifications'
+        ? '/notifications'
         : page === 'marketplace-consultation'
         ? `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}/consultation`
         : page === 'marketplace-payment'
@@ -264,15 +282,24 @@ export default function App() {
 
   const handleAuthSuccess = (result: { signupStep?: number }) => {
     setUserName(getUserNameFromToken());
+    setCompanyOnboardingFromMarketplace(getCompanyDestination() === 'marketplace');
 
-    if (getCompanyDestination() === 'dashboard') {
-      const nextStep = getNextCompanyStep(result.signupStep ?? 1);
+    const signupStep = typeof result.signupStep === 'number' ? result.signupStep : 1;
+
+    if (signupStep < 7) {
+      const nextStep = getNextCompanyStep(signupStep);
       if (nextStep) {
         setCompanyOnboardingStep(nextStep);
         setPage('company-onboarding');
       } else {
         window.location.replace('/dashboard');
       }
+      return;
+    }
+
+    // completed onboarding: route to chosen destination
+    if (getCompanyDestination() === 'dashboard') {
+      window.location.replace('/dashboard');
       return;
     }
 
@@ -284,6 +311,15 @@ export default function App() {
     setUserName('Company User');
     setAuthMode('login');
     setPage('landing');
+  };
+
+  const handleCompanyOnboardingComplete = () => {
+    if (companyOnboardingFromMarketplace || getCompanyDestination() === 'marketplace') {
+      window.location.replace('/marketplace');
+      return;
+    }
+
+    window.location.replace('/dashboard');
   };
 
   const handleMarketplaceCheckoutSelection = (selection: MarketplaceCheckoutSelection) => {
@@ -308,8 +344,12 @@ export default function App() {
           setPage('role-select');
         }}
         onGetStarted={() => {
+          setPage('role-select');
+        }}
+        onMarketplace={() => {
           setCompanyDestination('marketplace');
           setMarketplaceQuery('');
+          setSelectedMarketplaceProfileId('');
           setPage('marketplace');
         }}
         onMarketplaceSearch={(query) => {
@@ -348,6 +388,10 @@ export default function App() {
           setPage('marketplace');
         }}
         onDashboard={() => {
+          if (tokenStore.getAccess()) {
+            window.location.replace('/dashboard');
+            return;
+          }
           setCompanyDestination('dashboard');
           setPage('company-dashboard-auth');
         }}
@@ -366,7 +410,7 @@ export default function App() {
         }}
         onSignUp={() => {
           tokenStore.clear();
-          setCompanyDestination('dashboard');
+          setCompanyOnboardingFromMarketplace(getCompanyDestination() === 'marketplace');
           setCompanyOnboardingStep(1);
           setPage('company-onboarding');
         }}
@@ -389,10 +433,10 @@ export default function App() {
     return (
       <CompanyOnboardingPage
         initialStep={companyOnboardingStep}
+        hideProgress={companyOnboardingFromMarketplace}
+        completeAfterStep1={companyOnboardingFromMarketplace}
         onBack={() => setPage('company-dashboard-auth')}
-        onComplete={() => {
-          window.location.replace('/dashboard');
-        }}
+        onComplete={handleCompanyOnboardingComplete}
       />
     );
   }
@@ -403,6 +447,10 @@ export default function App() {
         initialRole="contractor"
         allowedRoles={['contractor']}
         onCompanyLogin={() => {
+          if (tokenStore.getAccess()) {
+            window.location.replace('/dashboard');
+            return;
+          }
           setPage('company-dashboard-auth');
         }}
         onContractorLogin={() => {
@@ -452,6 +500,17 @@ export default function App() {
         userName={userName}
         onBack={() => setPage('marketplace-profile')}
         onLogout={handleLogout}
+        onNotifications={() => setPage('notifications')}
+        onLogin={() => {
+          if (tokenStore.getAccess()) {
+            // already logged in: go to marketplace immediately
+            setCompanyDestination('marketplace');
+            setPage('marketplace');
+            return;
+          }
+          setCompanyDestination('marketplace');
+          setPage('company-dashboard-auth');
+        }}
         onSubmitSuccess={handleMarketplaceOrderDraftSuccess}
       />
     );
@@ -466,8 +525,22 @@ export default function App() {
         userName={userName}
         onBack={() => setPage('marketplace-consultation')}
         onLogout={handleLogout}
+        onNotifications={() => setPage('notifications')}
+        onLogin={() => {
+          if (tokenStore.getAccess()) {
+            setCompanyDestination('marketplace');
+            setPage('marketplace');
+            return;
+          }
+          setCompanyDestination('marketplace');
+          setPage('company-dashboard-auth');
+        }}
       />
     );
+  }
+
+  if (page === 'notifications') {
+    return <NotificationPage onBack={() => setPage('marketplace')} />;
   }
 
   return (
@@ -481,6 +554,16 @@ export default function App() {
           setPage('marketplace');
         }}
         onLogout={handleLogout}
+        onNotifications={() => setPage('notifications')}
+        onLogin={() => {
+          if (tokenStore.getAccess()) {
+            setCompanyDestination('marketplace');
+            setPage('marketplace');
+            return;
+          }
+          setCompanyDestination('marketplace');
+          setPage('company-dashboard-auth');
+        }}
       />
     ) : (
       <TalentMarketplacePage
@@ -488,6 +571,11 @@ export default function App() {
         isAuthenticated={Boolean(tokenStore.getAccess())}
         userName={userName}
         onLogout={handleLogout}
+        onNotifications={() => setPage('notifications')}
+        onLogin={() => {
+          setCompanyDestination('marketplace');
+          setPage('company-dashboard-auth');
+        }}
         onOpenProfile={(workerId) => {
           setSelectedMarketplaceProfileId(workerId);
           setPage('marketplace-profile');

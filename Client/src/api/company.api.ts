@@ -150,14 +150,14 @@ export async function saveBilling(payload: BillingPayload): Promise<StepResult> 
   try {
     const billingEmail = payload.billingEmail?.trim();
     const isDummyPayment = !payload.paymentMethodId || payload.paymentMethodId === 'pm_mvp_dummy';
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       billCurrency: payload.billCurrency,
-      billingEmail,
       paymentProvider: isDummyPayment ? 'dummy' : 'stripe',
       ...(isDummyPayment
         ? { dummyPaymentId: payload.paymentMethodId || 'pm_mvp_dummy' }
         : { stripePaymentMethodId: payload.paymentMethodId }),
     };
+    if (billingEmail) requestBody.billingEmail = billingEmail;
     const res = await api.post<ApiResponse<StepResult>>('/company/billing', requestBody);
     return unwrapApiData(res.data);
   } catch (err) {

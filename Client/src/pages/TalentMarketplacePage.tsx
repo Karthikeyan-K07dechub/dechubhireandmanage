@@ -3,6 +3,7 @@ import './talent-marketplace.css';
 import { getMarketplaceTalent, type MarketplaceTalentProfile } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
 import { resolveImageUrl } from '../utils/imageUrl';
+import UserMenu from '../components/common/UserMenu';
 
 interface TalentMarketplacePageProps {
   initialQuery: string;
@@ -10,6 +11,8 @@ interface TalentMarketplacePageProps {
   userName: string;
   onOpenProfile: (workerId: string) => void;
   onLogout: () => void;
+  onNotifications: () => void;
+  onLogin: () => void;
 }
 
 const DEFAULT_MARKETPLACE_BLURBS = new Set([
@@ -73,6 +76,8 @@ export default function TalentMarketplacePage({
   userName,
   onOpenProfile,
   onLogout,
+  onNotifications,
+  onLogin,
 }: TalentMarketplacePageProps) {
   const [query, setQuery] = useState(initialQuery);
   const [availability, setAvailability] = useState('All');
@@ -129,8 +134,16 @@ export default function TalentMarketplacePage({
         </div>
 
         <div className="tmp-user">
-          <span>{isAuthenticated ? userName : 'Guest company'}</span>
-          {isAuthenticated ? <button onClick={onLogout}>Logout</button> : null}
+          {isAuthenticated ? (
+            <UserMenu userName={userName} onLogout={onLogout} onNotifications={onNotifications} />
+          ) : (
+            <>
+              <span>Guest company</span>
+              <button type="button" className="tmp-login-button" onClick={onLogin}>
+                Login
+              </button>
+            </>
+          )}
         </div>
       </header>
 

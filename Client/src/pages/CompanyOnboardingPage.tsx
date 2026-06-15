@@ -24,6 +24,8 @@ import { validateEmail, validateStep } from '../utils/validators';
 
 interface CompanyOnboardingPageProps {
   initialStep?: Step;
+  hideProgress?: boolean;
+  completeAfterStep1?: boolean;
   onBack: () => void;
   onComplete: () => void;
 }
@@ -57,16 +59,18 @@ function getPasswordStrength(password: string): { score: number; label: string; 
 }
 
 function mergeCompanyData(state: AppState, data: MyCompanyData): AppState {
-  const company = data.company as Record<string, unknown>;
+  // Defensive checks for API response structure
+  const user = data?.user ?? {};
+  const company = (data?.company ?? {}) as Record<string, unknown>;
 
   return {
     ...state,
     formData: {
       ...state.formData,
-      firstName: data.user.firstName || state.formData.firstName,
-      lastName: data.user.lastName || state.formData.lastName,
-      workEmail: data.user.email || state.formData.workEmail,
-      phone: data.user.phone || state.formData.phone,
+      firstName: (typeof user.firstName === 'string' ? user.firstName : '') || state.formData.firstName,
+      lastName: (typeof user.lastName === 'string' ? user.lastName : '') || state.formData.lastName,
+      workEmail: (typeof user.email === 'string' ? user.email : '') || state.formData.workEmail,
+      phone: (typeof user.phone === 'string' ? user.phone : '') || state.formData.phone,
       companyName: typeof company.companyName === 'string' ? company.companyName : state.formData.companyName,
       companyCountry: typeof company.companyCountry === 'string' ? company.companyCountry : state.formData.companyCountry,
       companyType: typeof company.companyType === 'string' ? company.companyType : state.formData.companyType,
@@ -110,6 +114,8 @@ function getReadableApiMessage(apiError: ApiError, fallback: string): string {
 
 export default function CompanyOnboardingPage({
   initialStep = 1,
+  hideProgress = false,
+  completeAfterStep1 = false,
   onBack,
   onComplete,
 }: CompanyOnboardingPageProps) {
@@ -146,18 +152,22 @@ export default function CompanyOnboardingPage({
         if (cancelled) return;
         setState((prev) => {
           const merged = mergeCompanyData(prev, data);
-          if (initialStep !== 1) {
-            return merged;
-          }
 
-          if (data.user.signupStep >= 7) {
+          // Check if onboarding is complete
+          const signupStep = typeof data.user?.signupStep === 'number' ? data.user.signupStep : 1;
+          if (signupStep >= 7) {
             onComplete();
             return merged;
           }
 
-          const resumedStep = Math.min(Math.max(data.user.signupStep + 1, 1), 6) as Step;
-          return { ...merged, currentStep: resumedStep };
+          // Always ensure currentStep matches the initialStep passed from App.tsx
+          // Merging ensures form data is pre-populated from server
+          return { ...merged, currentStep: initialStep || 1 };
         });
+      })
+      .catch((err) => {
+        // API error - keep existing form data intact
+        console.error('Failed to load company data:', err);
       })
       .finally(() => {
         if (!cancelled) setBooting(false);
@@ -223,6 +233,16 @@ export default function CompanyOnboardingPage({
     setState((prev) => ({ ...prev, currentStep: step, errors: {}, serverError: null, loadingAction: null }));
   };
 
+  const goBack: AppHandlers['goBack'] = () => {
+    // If resumed from previous session (initialStep > 1), don't go back to step 1
+    if (initialStep > 1 && state.currentStep <= 2) {
+      onBack();
+      return;
+    }
+    const previousStep = (state.currentStep - 1) as Step;
+    switchStep(previousStep);
+  };
+
   const goToStep: AppHandlers['goToStep'] = async (step) => {
     if (step < state.currentStep) {
       switchStep(step);
@@ -238,6 +258,19 @@ export default function CompanyOnboardingPage({
     try {
       if (state.currentStep === 1 && step === 2) {
         setState((prev) => ({ ...prev, loadingAction: 'step-2' }));
+
+        if (tokenStore.getAccess() && initialStep > 1) {
+          // Resume flow: account already exists, skip registration and continue.
+          setState((prev) => ({
+            ...prev,
+            currentStep: 2,
+            loadingAction: null,
+            errors: {},
+            serverError: null,
+          }));
+          return;
+        }
+
         const normalizedPhone = state.formData.phone.trim();
         await register({
           firstName: state.formData.firstName.trim(),
@@ -246,6 +279,11 @@ export default function CompanyOnboardingPage({
           password: state.formData.password,
           phone: normalizedPhone,
         });
+
+        if (completeAfterStep1) {
+          onComplete();
+          return;
+        }
       }
 
       if (state.currentStep === 2 && step === 3) {
@@ -273,10 +311,26 @@ export default function CompanyOnboardingPage({
 
       if (state.currentStep === 5 && step === 6) {
         setState((prev) => ({ ...prev, loadingAction: 'step-6' }));
+        // Always use a valid billing email (fallback to workEmail if needed)
+        let billingEmail = state.formData.billingEmail?.trim() || state.formData.workEmail?.trim();
+        // If we still don't have an email, try fetching company data (may have been delayed)
+        if (!billingEmail && tokenStore.getAccess()) {
+          try {
+            const data = await getMyCompany();
+            billingEmail = (data?.user?.email as string) || billingEmail;
+            if (billingEmail) {
+              setState((prev) => ({ ...prev, formData: { ...prev.formData, workEmail: billingEmail } }));
+            }
+          } catch (e) {
+            // ignore - we'll let server validation surface if still missing
+          }
+        }
+        // Use dummy payment if no payment method selected yet
+        const paymentMethodId = state.formData.stripePaymentMethodId || 'pm_mvp_dummy';
         await saveBilling({
           billCurrency: state.formData.billCurrency,
-          billingEmail: state.formData.billingEmail.trim() || state.formData.workEmail.trim(),
-          paymentMethodId: state.formData.stripePaymentMethodId,
+          billingEmail,
+          paymentMethodId,
         });
       }
 
@@ -382,6 +436,7 @@ export default function CompanyOnboardingPage({
     submitKyb,
     goBillingAfterKyb,
     completeSignup,
+    goBack,
     handleFileInput: (docKey) => (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -423,6 +478,32 @@ export default function CompanyOnboardingPage({
     goToLogin: onBack,
     goToDashboard: onComplete,
   };
+
+  // Debug logging
+  console.log('CompanyOnboardingPage render', {
+    currentStep: state.currentStep,
+    hasFormData: !!state.formData,
+    hasUploadedDocs: !!state.uploadedDocs,
+    booting,
+  });
+
+  // Guard against invalid state BEFORE rendering any steps
+  if (!state.formData || !state.uploadedDocs) {
+    return (
+      <div className="app-shell">
+        <div className="app">
+          <main className="right" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+            <section className="card screen active">
+              <div className="card-icon bg-blue">⚠️</div>
+              <h2 className="card-title">Session Error</h2>
+              <p className="card-sub">Your session data is invalid. Please start over.</p>
+              <button onClick={onBack} style={{ marginTop: 20, padding: '10px 20px', cursor: 'pointer' }}>Go Back</button>
+            </section>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   const stepContent = state.currentStep === 1
     ? <Step1Account state={state} handlers={handlers} />
@@ -483,16 +564,18 @@ export default function CompanyOnboardingPage({
         </aside>
 
         <main className="right">
-          <div className="progress-wrap">
-            <div className="progress-top">
-              <button className="rsp-back" onClick={onBack}>Back</button>
-              <div className="progress-step">Step {state.currentStep} of 6</div>
+          {!(hideProgress && state.currentStep === 1) ? (
+            <div className="progress-wrap">
+              <div className="progress-top">
+                <button className="rsp-back" onClick={onBack}>Back</button>
+                <div className="progress-step">Step {state.currentStep} of 6</div>
+              </div>
+              <div className="progress-label">{progress?.label ?? 'Company setup'}</div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${progress?.pct ?? 0}%` }} />
+              </div>
             </div>
-            <div className="progress-label">{progress?.label ?? 'Company setup'}</div>
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: `${progress?.pct ?? 0}%` }} />
-            </div>
-          </div>
+          ) : null}
 
           {state.serverError ? (
             <div style={{

@@ -36,16 +36,16 @@
   cursor: pointer;
 }
 
-.landing-template-root .frame-12:focus-visible,
-.landing-template-root .frame-13:focus-visible,
-.landing-template-root .button-2:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 2px;
+.landing-template-root .navbar {
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
-.landing-template-root .frame-12:hover,
-.landing-template-root .frame-13:hover,
-.landing-template-root .button:hover,
+.landing-template-root .text-wrapper-160,
+.landing-template-root .text-wrapper-161,
+.landing-template-root .text-wrapper-162 {
+  white-space: nowrap;
+}
 .landing-template-root .button-2:hover,
 .landing-template-root .button-3:hover,
 .landing-template-root .button-4:hover,

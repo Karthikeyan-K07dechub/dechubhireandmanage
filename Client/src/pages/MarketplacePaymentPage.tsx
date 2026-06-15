@@ -1,4 +1,5 @@
 import type { MarketplaceCheckoutSelection, MarketplaceOrderDraft } from '../api/marketplace.api';
+import UserMenu from '../components/common/UserMenu';
 
 interface MarketplacePaymentPageProps {
   selection: MarketplaceCheckoutSelection | null;
@@ -7,6 +8,8 @@ interface MarketplacePaymentPageProps {
   userName: string;
   onBack: () => void;
   onLogout: () => void;
+  onNotifications: () => void;
+  onLogin: () => void;
 }
 
 function formatCurrency(amount: number, currency: string): string {
@@ -24,6 +27,8 @@ export default function MarketplacePaymentPage({
   userName,
   onBack,
   onLogout,
+  onNotifications,
+  onLogin,
 }: MarketplacePaymentPageProps) {
   if (!selection || !orderDraft) {
     return (
@@ -57,16 +62,16 @@ export default function MarketplacePaymentPage({
             ← Back to consultation
           </button>
           <div className="flex items-center gap-3 text-[14px] font-semibold text-[#4b5563]">
-            <span>{isAuthenticated ? userName : 'Guest company'}</span>
             {isAuthenticated ? (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="min-h-[38px] rounded-[10px] bg-[#111827] px-4 text-[13px] font-bold text-white"
-              >
-                Logout
-              </button>
-            ) : null}
+              <UserMenu userName={userName} onLogout={onLogout} onNotifications={onNotifications} />
+            ) : (
+              <>
+                <span>Guest company</span>
+                <button type="button" className="mpc-login-button" onClick={onLogin}>
+                  Login
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
