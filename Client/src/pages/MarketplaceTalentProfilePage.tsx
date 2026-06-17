@@ -311,6 +311,10 @@ export default function MarketplaceTalentProfilePage({
                           type="button"
                           className="mpp-primary-action"
                           onClick={() => {
+                            if (!isAuthenticated) {
+                              onLogin();
+                              return;
+                            }
                             const selection = buildCheckoutSelection(profile.servicePackages[selectedPackageIndex]);
                             if (selection) onContinueToConsultation(selection);
                           }}

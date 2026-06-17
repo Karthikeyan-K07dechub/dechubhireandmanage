@@ -10,7 +10,7 @@ import {
   resendInvite,
   getDashboardStats,
 } from '../controllers/workers.controller';
-import { requireAuth } from '../middleware/auth.middleware';
+import { requireAuth, softAuth } from '../middleware/auth.middleware';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -24,7 +24,7 @@ const inviteLimiter = rateLimit({
 // ── Workers ────────────────────────────────────────────────────────────────────
 router.get  ('/marketplace',      getMarketplaceTalent);
 router.get  ('/marketplace/:id',   getMarketplaceTalentProfile);
-router.post ('/marketplace/:id/order-drafts', createMarketplaceOrderDraft);
+router.post ('/marketplace/:id/order-drafts', softAuth, createMarketplaceOrderDraft);
 // All routes below this point require auth.
 router.use(requireAuth);
 router.get  ('/',                listWorkers);

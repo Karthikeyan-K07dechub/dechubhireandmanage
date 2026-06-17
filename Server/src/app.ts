@@ -12,6 +12,8 @@ import { env } from './config/env';
 import { logger } from './utils/logger';
 import workersRoutes, { dashboardRouter } from './routes/workers.routes';
 import contractorRoutes from './routes/contractor.routes';
+import adminRoutes from './routes/admin.routes';
+import debugRoutes from './routes/debug.routes';
 
 
 const app = express();
@@ -69,6 +71,8 @@ app.use('/api/company', companyRoutes);
 app.use('/api/workers',   workersRoutes);
 app.use('/api/contractor', contractorRoutes);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/admin', adminRoutes);
+app.use('/api/debug', debugRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

@@ -1,0 +1,10 @@
+.atr-root { padding:24px; font-family: 'DM Sans', Arial, sans-serif; }
+.atr-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px }
+.atr-badge { font-weight:700; background:#fff; padding:6px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06) }
+.atr-main { display:flex; gap:18px }
+.atr-list { flex:1 }
+.atr-details { width:420px; background:#fff; padding:16px; border-radius:12px; box-shadow:0 6px 18px rgba(12,16,40,0.06) }
+table { width:100%; border-collapse:collapse }
+th,td { padding:10px; border-bottom:1px solid #eef2f7; text-align:left }
+tr.unread { background: linear-gradient(90deg, rgba(250,250,255,1), rgba(245,244,255,1)); }
+.atr-status-actions { margin-top:12px }

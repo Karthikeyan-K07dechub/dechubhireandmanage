@@ -27,6 +27,8 @@ export interface ApiResponse<T> {
 
 const TOKEN_KEY   = 'dechub_access_token';
 const REFRESH_KEY = 'dechub_refresh_token';
+const ADMIN_TOKEN_KEY   = 'dechub_admin_access_token';
+const ADMIN_REFRESH_KEY = 'dechub_admin_refresh_token';
 
 export const tokenStore = {
   getAccess():  string | null { return localStorage.getItem(TOKEN_KEY); },
@@ -38,6 +40,19 @@ export const tokenStore = {
   clear(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
+  },
+};
+
+export const adminTokenStore = {
+  getAccess():  string | null { return localStorage.getItem(ADMIN_TOKEN_KEY); },
+  getRefresh(): string | null { return localStorage.getItem(ADMIN_REFRESH_KEY); },
+  set(access: string, refresh: string): void {
+    localStorage.setItem(ADMIN_TOKEN_KEY,   access);
+    localStorage.setItem(ADMIN_REFRESH_KEY, refresh);
+  },
+  clear(): void {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_REFRESH_KEY);
   },
 };
 
@@ -75,9 +90,12 @@ export function unwrapApiData<T>(payload: ApiResponse<T> | T): T {
 // ─── Request interceptor — attach access token ────────────────────────────────
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = tokenStore.getAccess();
+  const isAdminRoute = typeof config.url === 'string' && config.url.startsWith('/admin/');
   const isAuthRoute = typeof config.url === 'string'
     && (config.url.startsWith('/auth/') || config.url.startsWith('/company-auth/'));
+
+  // Determine which token to use based on the route
+  const token = isAdminRoute ? adminTokenStore.getAccess() : tokenStore.getAccess();
 
   if (isAuthRoute && config.headers) {
     config.headers.Authorization = undefined;
@@ -104,6 +122,7 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const isAdminRoute = typeof original.url === 'string' && original.url.startsWith('/admin/');
 
     if (
       error.response?.status === 401 &&
@@ -111,7 +130,9 @@ api.interceptors.response.use(
       !original.url?.includes('/auth/refresh') &&
       !original.url?.includes('/auth/login') &&
       !original.url?.includes('/company-auth/refresh') &&
-      !original.url?.includes('/company-auth/login')
+      !original.url?.includes('/company-auth/login') &&
+      !original.url?.includes('/admin/refresh') &&
+      !original.url?.includes('/admin/login')
     ) {
       original._retry = true;
 
@@ -128,27 +149,34 @@ api.interceptors.response.use(
       }
 
       isRefreshing = true;
-      const refreshToken = tokenStore.getRefresh();
+      
+      // Use the appropriate token store based on the route
+      const currentTokenStore = isAdminRoute ? adminTokenStore : tokenStore;
+      const refreshToken = currentTokenStore.getRefresh();
 
       if (!refreshToken) {
-        tokenStore.clear();
+        currentTokenStore.clear();
         isRefreshing = false;
         return Promise.reject(normalizeError(error));
       }
 
+      const refreshEndpoint = isAdminRoute ? '/admin/refresh' : '/company-auth/refresh';
+
       try {
         const res = await api.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
-          '/company-auth/refresh',
+          refreshEndpoint,
           { refreshToken },
           { headers: { Authorization: undefined } },
         );
         const { accessToken, refreshToken: newRefresh } = unwrapApiData(res.data);
-        tokenStore.set(accessToken, newRefresh);
+        currentTokenStore.set(accessToken, newRefresh);
         drainQueue(accessToken, null);
-        original.headers.Authorization = `Bearer ${accessToken}`;
+        if (original.headers) {
+          original.headers.Authorization = `Bearer ${accessToken}`;
+        }
         return api(original);
       } catch (refreshErr) {
-        tokenStore.clear();
+        currentTokenStore.clear();
         drainQueue(null, refreshErr);
         window.dispatchEvent(new Event('dechub:session-expired'));
         return Promise.reject(normalizeError(refreshErr as AxiosError));

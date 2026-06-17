@@ -1,13 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useForm, type FieldError, type UseFormRegisterReturn } from 'react-hook-form';
 import './marketplace-project-consultation.css';
-import {
-  createMarketplaceOrderDraft,
-  type MarketplaceCheckoutSelection,
-  type MarketplaceOrderDraft,
-} from '../api/marketplace.api';
+import { createMarketplaceOrderDraft, type MarketplaceCheckoutSelection } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
 import UserMenu from '../components/common/UserMenu';
+import SuccessModal from '../components/common/SuccessModal';
 
 interface MarketplaceProjectConsultationPageProps {
   selection: MarketplaceCheckoutSelection | null;
@@ -17,7 +14,6 @@ interface MarketplaceProjectConsultationPageProps {
   onLogout: () => void;
   onNotifications: () => void;
   onLogin: () => void;
-  onSubmitSuccess: (draft: MarketplaceOrderDraft) => void;
 }
 
 interface ConsultationFormValues {
@@ -126,10 +122,10 @@ export default function MarketplaceProjectConsultationPage({
   onLogout,
   onNotifications,
   onLogin,
-  onSubmitSuccess,
 }: MarketplaceProjectConsultationPageProps) {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const {
     register,
     handleSubmit,
@@ -162,7 +158,7 @@ export default function MarketplaceProjectConsultationPage({
     setSubmitError('');
 
     try {
-      const draft = await createMarketplaceOrderDraft(selection.workerId, {
+      await createMarketplaceOrderDraft(selection.workerId, {
         packageSnapshot: selection.package,
         clientDetails: {
           firstName: values.firstName.trim(),
@@ -176,8 +172,10 @@ export default function MarketplaceProjectConsultationPage({
         },
       });
 
+      // Persisted successfully — show success modal to user and then redirect to marketplace.
       setIsSubmitted(true);
-      window.setTimeout(() => onSubmitSuccess(draft), 450);
+      // Do NOT call onSubmitSuccess (which would navigate to payment). Instead show modal and redirect.
+      setShowSuccessModal(true);
     } catch (err) {
       const apiError = err as ApiError;
       setSubmitError(apiError.message ?? 'We could not save your project draft. Please try again.');
@@ -366,6 +364,18 @@ export default function MarketplaceProjectConsultationPage({
           </form>
         </section>
       </main>
+      {showSuccessModal ? (
+        <SuccessModal
+          title="Thank You!"
+          message={`Thank you for choosing this talent. Our team has received your request and will connect with you shortly to discuss your requirements and help you find the perfect match.`}
+          onClose={() => {
+            setShowSuccessModal(false);
+            // Redirect to marketplace preserving existing flow
+            window.location.replace('/marketplace');
+          }}
+        />
+      ) : null}
     </div>
   );
 }
+

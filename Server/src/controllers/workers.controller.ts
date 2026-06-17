@@ -6,6 +6,7 @@ import { Company } from '../models/Company';
 import { CompanyAuth } from '../models/CompanyAuth';
 import { Contract } from '../models/Contract';
 import { MarketplaceOrderDraft } from '../models/MarketplaceOrderDraft';
+import { TalentRequest } from '../models/TalentRequest';
 import { ok, created, Errors, AppError } from '../utils/response';
 import { logger } from '../utils/logger';
 import nodemailer from 'nodemailer';
@@ -472,6 +473,42 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
       paymentStatus: 'pending',
       source: 'marketplace_consultation',
     });
+    // Create a TalentRequest record for admin notification
+    let createdTalentRequestId: string | null = null;
+    try {
+      let companyName = data.clientDetails.workEmail || 'Guest Company';
+      if (req.user) {
+        try {
+          const { company } = await getCompanyForUser(req.user!.sub);
+          companyName = company.companyName ?? companyName;
+        } catch {
+          // ignore
+        }
+      }
+
+      const tr = await TalentRequest.create({
+        workerId: worker._id,
+        workerName: draft.workerName,
+        workerRole: draft.workerRole,
+        workerProfileUrl: `/marketplace/${worker._id}`,
+
+        companyName,
+        contactFirstName: data.clientDetails.firstName,
+        contactLastName: data.clientDetails.lastName,
+        phoneNumber: `${data.clientDetails.countryCode} ${data.clientDetails.phoneNumber}`,
+        email: data.clientDetails.workEmail,
+
+        projectType: data.clientDetails.projectType,
+        budget: data.clientDetails.budget,
+        projectDescription: data.clientDetails.projectDescription,
+      });
+
+      createdTalentRequestId = tr._id.toString();
+      logger.info(`TalentRequest created: ${createdTalentRequestId}`);
+    } catch (err) {
+      // non-fatal — log and continue
+      logger.warn('Failed to create talent request record', err);
+    }
 
     created(res, {
       id: draft._id,
@@ -484,6 +521,7 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
       status: draft.status,
       paymentStatus: draft.paymentStatus,
       createdAt: draft.createdAt,
+      talentRequestId: createdTalentRequestId,
     });
   } catch (err) {
     next(err);
