@@ -1,140 +1,160 @@
 import { useEffect, useState } from 'react';
-import { listTalentRequests, getTalentRequest, updateTalentRequestStatus, unreadCount, markAsRead } from '../../api/admin.api';
+import { listTalentRequests, unreadCount } from '../../api/admin.api';
 import './admin-talent-requests.css';
 
 interface TalentRequestsPageProps {
   onLogout: () => void;
+  onOpenRequest: (id: string) => void;
 }
 
-export default function TalentRequestsPage({ onLogout }: TalentRequestsPageProps) {
+export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRequestsPageProps) {
   const [items, setItems] = useState<any[]>([]);
-  const [selected, setSelected] = useState<any | null>(null);
   const [badge, setBadge] = useState(0);
+
+  const statusTone: Record<string, string> = {
+    new: 'new',
+    contacted: 'contacted',
+    in_discussion: 'discussion',
+    closed: 'closed',
+  };
 
   async function load() {
     try {
       const data = await listTalentRequests({ perPage: 50 });
       setItems(data.items || []);
-      const u = await unreadCount();
-      setBadge(u.unread || 0);
+      const unread = await unreadCount();
+      setBadge(unread.unread || 0);
     } catch (err) {
       // ignore
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const openDetails = async (id: string) => {
-    try {
-      const detail = await getTalentRequest(id);
-      setSelected(detail);
-      // reload badge
-      const u = await unreadCount();
-      setBadge(u.unread || 0);
-    } catch (err) {}
-  };
-
-  const changeStatus = async (id: string, status: string) => {
-    await updateTalentRequestStatus(id, status);
-    await load();
-    if (selected && selected._id === id) setSelected({ ...selected, status });
-  };
-
-  const markRead = async (id: string) => {
-    await markAsRead(id);
-    await load();
-  };
+  const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'Unknown');
+  const formatStatus = (value?: string) => (value ? value.replace(/_/g, ' ') : 'unknown');
+  const newCount = items.filter((item) => item.status === 'new').length;
+  const contactedCount = items.filter((item) => item.status === 'contacted').length;
+  const closedCount = items.filter((item) => item.status === 'closed').length;
 
   return (
     <div className="atr-root">
-      <header className="atr-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <h1>Talent Requests Admin</h1>
-          <button onClick={onLogout} style={{ 
-            marginLeft: 'auto', 
-            padding: '0.5rem 1rem',
-            backgroundColor: '#1a1a2e',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}>Logout</button>
+      <div className="atr-background" aria-hidden="true">
+        <span className="atr-orb atr-orb-one" />
+        <span className="atr-orb atr-orb-two" />
+        <span className="atr-grid" />
+      </div>
+
+      <header className="atr-hero">
+        <div className="atr-hero-copy">
+          <span className="atr-kicker">Admin cockpit</span>
+          <h1>Talent requests</h1>
+          <p>
+            Review incoming hiring demand, track pipeline movement, and respond quickly with a cleaner
+            premium workspace.
+          </p>
         </div>
-        <div className="atr-badge">🔔 {badge}</div>
+
+        <div className="atr-hero-actions">
+          <div className="atr-badge-card">
+            <span className="atr-badge-label">Unread queue</span>
+            <strong>{badge}</strong>
+          </div>
+          <button className="atr-logout" onClick={onLogout}>Logout</button>
+        </div>
       </header>
+
+      <section className="atr-stats" aria-label="Summary">
+        <article className="atr-stat-card">
+          <span>Total requests</span>
+          <strong>{items.length}</strong>
+          <small>Last 50 submissions</small>
+        </article>
+        <article className="atr-stat-card">
+          <span>New</span>
+          <strong>{newCount}</strong>
+          <small>Needs first response</small>
+        </article>
+        <article className="atr-stat-card">
+          <span>Contacted</span>
+          <strong>{contactedCount}</strong>
+          <small>Active conversations</small>
+        </article>
+        <article className="atr-stat-card">
+          <span>Closed</span>
+          <strong>{closedCount}</strong>
+          <small>Completed pipeline</small>
+        </article>
+      </section>
 
       <main className="atr-main">
         <section className="atr-list">
-          <table>
-            <thead>
-              <tr>
-                <th>Request ID</th>
-                <th>Talent</th>
-                <th>Company</th>
-                <th>Email</th>
-                <th>Budget</th>
-                <th>Submitted</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((it) => (
-                <tr key={it._id} className={it.unread ? 'unread' : ''}>
-                  <td>{it._id}</td>
-                  <td>{it.workerName}</td>
-                  <td>{it.companyName}</td>
-                  <td>{it.email}</td>
-                  <td>{it.budget}</td>
-                  <td>{new Date(it.createdAt).toLocaleString()}</td>
-                  <td>{it.status}</td>
-                  <td>
-                    <button onClick={() => openDetails(it._id)}>View</button>
-                    <button onClick={() => changeStatus(it._id, 'contacted')}>Mark Contacted</button>
-                    <button onClick={() => markRead(it._id)}>Mark Read</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <aside className="atr-details">
-          {selected ? (
+          <div className="atr-panel-header">
             <div>
-              <h2>{selected.workerName}</h2>
-              <p><strong>Role:</strong> {selected.workerRole}</p>
-              <p><strong>Profile:</strong> <a href={selected.workerProfileUrl}>{selected.workerProfileUrl}</a></p>
-
-              <h3>Company</h3>
-              <p><strong>{selected.companyName}</strong></p>
-              <p>{selected.contactFirstName} {selected.contactLastName}</p>
-              <p>{selected.phoneNumber}</p>
-              <p>{selected.email}</p>
-
-              <h3>Project</h3>
-              <p><strong>Type:</strong> {selected.projectType}</p>
-              <p><strong>Budget:</strong> {selected.budget}</p>
-              <p>{selected.projectDescription}</p>
-
-              <h4>Submission</h4>
-              <p>{new Date(selected.createdAt).toLocaleString()}</p>
-              <p><strong>ID:</strong> {selected._id}</p>
-
-              <div className="atr-status-actions">
-                <label>Status:</label>
-                <select value={selected.status} onChange={(e) => changeStatus(selected._id, e.target.value)}>
-                  <option value="new">New</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="in_discussion">In Discussion</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
+              <h2>Request stream</h2>
+              <p>Prioritize unread inquiries and keep status updates visible for the team.</p>
             </div>
-          ) : (
-            <div>Select a request to view details</div>
-          )}
-        </aside>
+          </div>
+
+          <div className="atr-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Request</th>
+                  <th>Talent</th>
+                  <th>Company</th>
+                  <th>Budget</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it) => (
+                  <tr
+                    key={it._id}
+                    className={it.unread ? 'unread' : ''}
+                  >
+                    <td>
+                      <div className="atr-request-cell">
+                        <button className="atr-request-trigger" onClick={() => onOpenRequest(it._id)}>
+                          {it._id.slice(-8)}
+                        </button>
+                        <span>{it.email}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="atr-person-cell">
+                        <strong>{it.workerName}</strong>
+                        <span>{it.workerRole || 'Talent profile'}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="atr-person-cell">
+                        <strong>{it.companyName}</strong>
+                        <span>{it.contactFirstName || 'Company contact'}</span>
+                      </div>
+                    </td>
+                    <td>{it.budget}</td>
+                    <td>{formatDate(it.createdAt)}</td>
+                    <td>
+                      <span className={`atr-status-pill ${statusTone[it.status] || 'new'}`}>
+                        {formatStatus(it.status)}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="atr-actions">
+                        <button className="atr-btn atr-btn-primary" onClick={() => onOpenRequest(it._id)}>View</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </main>
     </div>
   );

@@ -10,6 +10,7 @@ import MarketplaceProjectConsultationPage from './pages/MarketplaceProjectConsul
 import MarketplacePaymentPage from './pages/MarketplacePaymentPage';
 import NotificationPage from './pages/NotificationPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
+import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
 import AdminLoginPage from './pages/Admin/AdminLoginPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
@@ -39,10 +40,11 @@ type AppPage =
   | 'marketplace-payment'
   | 'admin-login'
   | 'admin-talent-requests'
+  | 'admin-talent-request-detail'
   | 'notifications';
 
 type AuthMode = 'login' | 'signup';
-type CompanyDestination = 'marketplace' | 'dashboard';
+type CompanyDestination = 'marketplace' | 'dashboard' | 'marketplace-profile';
 
 const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
 const MARKETPLACE_CHECKOUT_SELECTION_KEY = 'dechub_marketplace_checkout_selection';
@@ -134,6 +136,10 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
     return { page: 'admin-talent-requests', mode: 'login' };
   }
 
+  if (/^\/admin\/talent-requests\/[^/]+$/.test(normalizedPath)) {
+    return { page: 'admin-talent-request-detail', mode: 'login' };
+  }
+
   if (normalizedPath === '/notifications') {
     return { page: 'notifications', mode: 'login' };
   }
@@ -154,6 +160,12 @@ function getMarketplaceProfileIdFromUrl(): string {
   const segments = normalizedPath.split('/').filter(Boolean);
   const workerId = segments[1] ?? '';
   return decodeURIComponent(workerId).trim();
+}
+
+function getAdminRequestIdFromUrl(): string {
+  const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
+  const match = normalizedPath.match(/^\/admin\/talent-requests\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]).trim() : '';
 }
 
 function getUserNameFromToken(): string {
@@ -199,9 +211,8 @@ function setCompanyDestination(destination: CompanyDestination): void {
 }
 
 function getCompanyDestination(): CompanyDestination {
-  const dest = sessionStorage.getItem(COMPANY_DESTINATION_KEY) === 'dashboard'
-    ? 'dashboard'
-    : 'marketplace';
+  const raw = sessionStorage.getItem(COMPANY_DESTINATION_KEY);
+  const dest = raw === 'dashboard' || raw === 'marketplace-profile' ? raw : 'marketplace';
   console.log('[getCompanyDestination] Retrieved:', dest);
   return dest;
 }
@@ -217,12 +228,12 @@ export default function App() {
   const [page, setPage] = useState<AppPage>(initialRoute.page);
   const [authMode, setAuthMode] = useState<AuthMode>(initialRoute.mode);
   const [userName, setUserName] = useState<string>(() => getUserNameFromToken());
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => Boolean(adminTokenStore.getAccess()));
   const [freelancerFirstName, setFreelancerFirstName] = useState('');
   const [companyOnboardingStep, setCompanyOnboardingStep] = useState<Step>(1);
   const [companyOnboardingFromMarketplace, setCompanyOnboardingFromMarketplace] = useState(false);
   const [marketplaceQuery, setMarketplaceQuery] = useState<string>(() => getMarketplaceQueryFromUrl());
   const [selectedMarketplaceProfileId, setSelectedMarketplaceProfileId] = useState<string>(() => getMarketplaceProfileIdFromUrl());
+  const [selectedAdminRequestId, setSelectedAdminRequestId] = useState<string>(() => getAdminRequestIdFromUrl());
   const [selectedMarketplacePackage, setSelectedMarketplacePackage] = useState<MarketplaceCheckoutSelection | null>(
     () => readSessionJson<MarketplaceCheckoutSelection>(MARKETPLACE_CHECKOUT_SELECTION_KEY),
   );
@@ -237,6 +248,7 @@ export default function App() {
       setAuthMode(next.mode);
       setMarketplaceQuery(getMarketplaceQueryFromUrl());
       setSelectedMarketplaceProfileId(getMarketplaceProfileIdFromUrl());
+      setSelectedAdminRequestId(getAdminRequestIdFromUrl());
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -244,7 +256,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (page === 'admin-talent-requests' && !adminTokenStore.getAccess()) {
+    if ((page === 'admin-talent-requests' || page === 'admin-talent-request-detail') && !adminTokenStore.getAccess()) {
       setPage('admin-login');
     }
   }, [page]);
@@ -255,7 +267,7 @@ export default function App() {
     const hasCompanyToken = tokenStore.getAccess();
 
     // Define page access rules by role
-    const adminPages = new Set(['admin-login', 'admin-talent-requests']);
+    const adminPages = new Set(['admin-login', 'admin-talent-requests', 'admin-talent-request-detail']);
     // Pages that require an ACTIVE company login session (NOT the login page itself)
     const companyOnlyPages = new Set(['company-onboarding', 'marketplace-consultation', 'marketplace-payment', 'notifications']);
 
@@ -266,7 +278,7 @@ export default function App() {
     }
 
     // Rule 2: Accessing admin-talent-requests without admin token → go to admin login
-    if (!hasAdminToken && page === 'admin-talent-requests') {
+    if (!hasAdminToken && (page === 'admin-talent-requests' || page === 'admin-talent-request-detail')) {
       setPage('admin-login');
       return;
     }
@@ -279,51 +291,6 @@ export default function App() {
 
     // Rule 4: All other pages are public (no restrictions)
   }, [page]);
-
-  // Render a small admin banner into document body when admin is signed in
-  useEffect(() => {
-    const id = 'dechub-admin-banner';
-    let container = document.getElementById(id);
-    if (isAdmin && !container) {
-      container = document.createElement('div');
-      container.id = id;
-      container.style.position = 'fixed';
-      container.style.top = '8px';
-      container.style.right = '8px';
-      container.style.zIndex = '9999';
-      container.style.background = '#111827';
-      container.style.color = '#fff';
-      container.style.padding = '8px 12px';
-      container.style.borderRadius = '8px';
-      container.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
-      container.style.fontFamily = 'Inter, system-ui, sans-serif';
-      container.innerHTML = `<span style="margin-right:12px;font-weight:600;">Admin mode</span><button id="dechub-admin-logout" style="background:#fff;color:#111827;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;">Logout</button>`;
-      document.body.appendChild(container);
-      const btn = document.getElementById('dechub-admin-logout');
-      if (btn) {
-        btn.addEventListener('click', () => {
-          // dispatch a custom event that App listens to
-          window.dispatchEvent(new CustomEvent('dechub:admin-logout'));
-        });
-      }
-    }
-
-    if (!isAdmin && container) {
-      container.remove();
-    }
-
-    return () => {
-      const el = document.getElementById(id);
-      if (el) el.remove();
-    };
-  }, [isAdmin]);
-
-  // Listen for banner logout events
-  useEffect(() => {
-    const onLogout = () => handleAdminLogout();
-    window.addEventListener('dechub:admin-logout', onLogout as EventListener);
-    return () => window.removeEventListener('dechub:admin-logout', onLogout as EventListener);
-  }, []);
 
   useEffect(() => {
     const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -395,6 +362,9 @@ export default function App() {
       case 'admin-talent-requests':
         targetPath = '/admin/talent-requests';
         break;
+      case 'admin-talent-request-detail':
+        targetPath = `/admin/talent-requests/${encodeURIComponent(selectedAdminRequestId)}`;
+        break;
       case 'marketplace-consultation':
         targetPath = `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}/consultation`;
         break;
@@ -424,7 +394,7 @@ export default function App() {
     if (currentPath !== targetPath) {
       window.history.pushState({}, '', targetPath);
     }
-  }, [authMode, marketplaceQuery, page, selectedMarketplaceProfileId]);
+  }, [authMode, marketplaceQuery, page, selectedAdminRequestId, selectedMarketplaceProfileId]);
 
   const handleAuthSuccess = (result: { signupStep?: number }) => {
     console.log('[handleAuthSuccess] Called with:', result);
@@ -436,7 +406,7 @@ export default function App() {
     const destination = getCompanyDestination();
     console.log('[handleAuthSuccess] Destination from sessionStorage:', destination);
     
-    setCompanyOnboardingFromMarketplace(destination === 'marketplace');
+    setCompanyOnboardingFromMarketplace(destination === 'marketplace' || destination === 'marketplace-profile');
 
     const signupStep = typeof result.signupStep === 'number' ? result.signupStep : 1;
     console.log('[handleAuthSuccess] Signup step:', signupStep);
@@ -444,6 +414,12 @@ export default function App() {
     if (destination === 'marketplace') {
       console.log('[handleAuthSuccess] Marketplace origin login; redirecting to marketplace immediately');
       setPage('marketplace');
+      return;
+    }
+
+    if (destination === 'marketplace-profile') {
+      console.log('[handleAuthSuccess] Marketplace profile origin login; redirecting to profile immediately');
+      setPage('marketplace-profile');
       return;
     }
 
@@ -468,13 +444,11 @@ export default function App() {
   };
 
   const handleAdminAuthSuccess = () => {
-    setIsAdmin(true);
     setPage('admin-talent-requests');
   };
 
   const handleAdminLogout = () => {
     adminTokenStore.clear();
-    setIsAdmin(false);
     setPage('landing');
   };
 
@@ -689,7 +663,24 @@ export default function App() {
   }
 
   if (page === 'admin-talent-requests') {
-    return <TalentRequestsPage onLogout={handleAdminLogout} />;
+    return (
+      <TalentRequestsPage
+        onLogout={handleAdminLogout}
+        onOpenRequest={(requestId) => {
+          setSelectedAdminRequestId(requestId);
+          setPage('admin-talent-request-detail');
+        }}
+      />
+    );
+  }
+
+  if (page === 'admin-talent-request-detail') {
+    return (
+      <TalentRequestDetailPage
+        requestId={selectedAdminRequestId}
+        onBack={() => setPage('admin-talent-requests')}
+      />
+    );
   }
 
   if (page === 'marketplace-consultation') {
@@ -756,11 +747,11 @@ export default function App() {
         onNotifications={() => setPage('notifications')}
         onLogin={() => {
           if (tokenStore.getAccess()) {
-            setCompanyDestination('marketplace');
-            setPage('marketplace');
+            setCompanyDestination('marketplace-profile');
+            setPage('marketplace-profile');
             return;
           }
-          setCompanyDestination('marketplace');
+          setCompanyDestination('marketplace-profile');
           setPage('company-dashboard-auth');
         }}
       />

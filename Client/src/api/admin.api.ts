@@ -5,6 +5,7 @@ export interface TalentRequestItem {
   workerId: string;
   workerName: string;
   workerRole: string;
+  workerProfileUrl?: string;
   companyName: string;
   contactFirstName: string;
   contactLastName: string;
