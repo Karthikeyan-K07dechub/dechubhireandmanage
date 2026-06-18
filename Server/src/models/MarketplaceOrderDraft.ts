@@ -16,11 +16,8 @@ export interface IMarketplaceOrderDraft extends Document {
     features: string[];
   };
   clientDetails: {
-    firstName: string;
-    lastName: string;
-    countryCode: string;
-    phoneNumber: string;
-    workEmail: string;
+    companyName: string;
+    companyWebsite: string;
     projectType: string;
     budget: string;
     projectDescription: string;
@@ -49,7 +46,7 @@ const marketplaceOrderDraftSchema = new Schema<IMarketplaceOrderDraft>(
 );
 
 marketplaceOrderDraftSchema.index({ workerId: 1, createdAt: -1 });
-marketplaceOrderDraftSchema.index({ 'clientDetails.workEmail': 1, createdAt: -1 });
+marketplaceOrderDraftSchema.index({ 'clientDetails.companyName': 1, createdAt: -1 });
 
 export const MarketplaceOrderDraft = mongoose.model<IMarketplaceOrderDraft>(
   'MarketplaceOrderDraft',

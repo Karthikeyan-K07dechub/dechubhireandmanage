@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getTalentRequest, markAsRead, updateTalentRequestStatus, unreadCount, type TalentRequestItem } from '../../api/admin.api';
+import { getTalentRequest, markAsRead, updateTalentRequestStatus, type TalentRequestItem } from '../../api/admin.api';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import './admin-talent-request-detail.css';
 
@@ -20,7 +20,6 @@ export default function TalentRequestDetailPage({
   onBack,
 }: TalentRequestDetailPageProps) {
   const [request, setRequest] = useState<TalentRequestItem | null>(null);
-  const [badge, setBadge] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showFullPortfolio, setShowFullPortfolio] = useState(false);
 
@@ -32,14 +31,12 @@ export default function TalentRequestDetailPage({
         setLoading(true);
         const detail = await getTalentRequest(requestId);
         await markAsRead(requestId);
-        const unread = await unreadCount();
 
         if (!active) {
           return;
         }
 
         setRequest({ ...detail, unread: false });
-        setBadge(unread.unread || 0);
         setShowFullPortfolio(false);
       } catch (err) {
         if (active) {
@@ -323,6 +320,10 @@ export default function TalentRequestDetailPage({
                   <div>
                     <span>Business</span>
                     <strong>{request.companyName}</strong>
+                  </div>
+                  <div>
+                    <span>Website</span>
+                    <strong>{request.companyWebsite || 'Not provided'}</strong>
                   </div>
                   <div>
                     <span>Contact person</span>

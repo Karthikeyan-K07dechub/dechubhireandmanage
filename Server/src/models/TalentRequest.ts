@@ -9,6 +9,7 @@ export interface ITalentRequest extends Document {
   workerRole: string;
   workerProfileUrl?: string;
   companyName: string;
+  companyWebsite: string;
   contactFirstName: string;
   contactLastName: string;
   phoneNumber: string;
@@ -30,6 +31,7 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     workerProfileUrl: { type: String, default: '' },
 
     companyName: { type: String, required: true, trim: true },
+    companyWebsite: { type: String, default: '', trim: true },
     contactFirstName: { type: String, required: true, trim: true },
     contactLastName: { type: String, required: true, trim: true },
     phoneNumber: { type: String, required: true, trim: true },

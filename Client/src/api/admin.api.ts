@@ -32,6 +32,7 @@ export interface TalentRequestItem {
     }>;
   } | null;
   companyName: string;
+  companyWebsite?: string;
   contactFirstName: string;
   contactLastName: string;
   phoneNumber: string;

@@ -248,11 +248,8 @@ const marketplaceOrderDraftSchema = z.object({
     features: z.array(z.string().trim().min(1).max(100)).min(1).max(20),
   }),
   clientDetails: z.object({
-    firstName: z.string().trim().min(1).max(80),
-    lastName: z.string().trim().min(1).max(80),
-    countryCode: z.string().trim().min(2).max(12),
-    phoneNumber: z.string().trim().min(6).max(20),
-    workEmail: z.string().trim().email(),
+    companyName: z.string().trim().min(1).max(120),
+    companyWebsite: z.string().trim().url().max(300),
     projectType: z.string().trim().min(1).max(100),
     budget: z.string().trim().min(1).max(100),
     projectDescription: z.string().trim().min(150).max(3000),
@@ -451,6 +448,10 @@ export async function getMarketplaceTalentProfile(req: Request, res: Response, n
 export async function createMarketplaceOrderDraft(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = marketplaceOrderDraftSchema.parse(req.body);
+    if (!req.user) {
+      throw Errors.Unauthorized();
+    }
+
     const worker = await Worker.findOne({
       _id: req.params.id,
       workerType: 'contractor',
@@ -476,15 +477,13 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
     // Create a TalentRequest record for admin notification
     let createdTalentRequestId: string | null = null;
     try {
-      let companyName = data.clientDetails.workEmail || 'Guest Company';
-      if (req.user) {
-        try {
-          const { company } = await getCompanyForUser(req.user!.sub);
-          companyName = company.companyName ?? companyName;
-        } catch {
-          // ignore
-        }
-      }
+      const { account, company } = await getCompanyForUser(req.user.sub);
+      const contactFirstName = account.firstName?.trim() || 'Company';
+      const contactLastName = account.lastName?.trim() || 'Admin';
+      const contactEmail = account.email?.trim().toLowerCase() || company.billingEmail?.trim().toLowerCase() || '';
+      const contactPhone = account.phone?.trim() || '';
+      const companyName = data.clientDetails.companyName.trim() || company.companyName?.trim() || 'Company';
+      const companyWebsite = data.clientDetails.companyWebsite.trim() || company.companyWebsite?.trim() || '';
 
       const tr = await TalentRequest.create({
         workerId: worker._id,
@@ -493,10 +492,11 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
         workerProfileUrl: `/marketplace/${worker._id}`,
 
         companyName,
-        contactFirstName: data.clientDetails.firstName,
-        contactLastName: data.clientDetails.lastName,
-        phoneNumber: `${data.clientDetails.countryCode} ${data.clientDetails.phoneNumber}`,
-        email: data.clientDetails.workEmail,
+        companyWebsite,
+        contactFirstName,
+        contactLastName,
+        phoneNumber: contactPhone,
+        email: contactEmail,
 
         projectType: data.clientDetails.projectType,
         budget: data.clientDetails.budget,

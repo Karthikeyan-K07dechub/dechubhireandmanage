@@ -104,20 +104,12 @@ export default function MarketplacePaymentPage({
               <h2 className="text-[20px] font-semibold text-[#111827]">Project brief</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
-                  <div className="text-[13px] font-semibold text-[#7c8796]">Client</div>
-                  <div className="mt-1 text-[16px] text-[#243447]">
-                    {orderDraft.clientDetails.firstName} {orderDraft.clientDetails.lastName}
-                  </div>
+                  <div className="text-[13px] font-semibold text-[#7c8796]">Company name</div>
+                  <div className="mt-1 text-[16px] text-[#243447]">{orderDraft.clientDetails.companyName}</div>
                 </div>
                 <div>
-                  <div className="text-[13px] font-semibold text-[#7c8796]">Work email</div>
-                  <div className="mt-1 text-[16px] text-[#243447]">{orderDraft.clientDetails.workEmail}</div>
-                </div>
-                <div>
-                  <div className="text-[13px] font-semibold text-[#7c8796]">Phone</div>
-                  <div className="mt-1 text-[16px] text-[#243447]">
-                    {orderDraft.clientDetails.countryCode} {orderDraft.clientDetails.phoneNumber}
-                  </div>
+                  <div className="text-[13px] font-semibold text-[#7c8796]">Company website</div>
+                  <div className="mt-1 text-[16px] text-[#243447]">{orderDraft.clientDetails.companyWebsite}</div>
                 </div>
                 <div>
                   <div className="text-[13px] font-semibold text-[#7c8796]">Project type</div>

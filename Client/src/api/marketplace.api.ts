@@ -64,11 +64,8 @@ export interface MarketplaceTalentProfileDetail extends MarketplaceTalentProfile
 }
 
 export interface MarketplaceOrderDraftClientDetails {
-  firstName: string;
-  lastName: string;
-  countryCode: string;
-  phoneNumber: string;
-  workEmail: string;
+  companyName: string;
+  companyWebsite: string;
   projectType: string;
   budget: string;
   projectDescription: string;

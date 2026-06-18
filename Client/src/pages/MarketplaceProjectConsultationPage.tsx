@@ -1,8 +1,9 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useForm, type FieldError, type UseFormRegisterReturn } from 'react-hook-form';
 import './marketplace-project-consultation.css';
 import { createMarketplaceOrderDraft, type MarketplaceCheckoutSelection } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
+import { getMyCompany } from '../api/company.api';
 import UserMenu from '../components/common/UserMenu';
 import SuccessModal from '../components/common/SuccessModal';
 
@@ -17,26 +18,14 @@ interface MarketplaceProjectConsultationPageProps {
 }
 
 interface ConsultationFormValues {
-  firstName: string;
-  lastName: string;
-  countryCode: string;
-  phoneNumber: string;
-  workEmail: string;
+  companyName: string;
+  companyWebsite: string;
   projectType: string;
   budget: string;
   projectDescription: string;
 }
 
 const MIN_PROJECT_DESCRIPTION = 150;
-
-const COUNTRY_CODE_OPTIONS = [
-  { label: 'India (+91)', value: '+91' },
-  { label: 'United States (+1)', value: '+1' },
-  { label: 'United Kingdom (+44)', value: '+44' },
-  { label: 'United Arab Emirates (+971)', value: '+971' },
-  { label: 'Singapore (+65)', value: '+65' },
-  { label: 'Australia (+61)', value: '+61' },
-];
 
 const PROJECT_TYPE_OPTIONS = [
   'Web Development',
@@ -128,22 +117,56 @@ export default function MarketplaceProjectConsultationPage({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const {
     register,
+    reset,
     handleSubmit,
     watch,
     formState: { errors, isValid, isSubmitting },
   } = useForm<ConsultationFormValues>({
     mode: 'onChange',
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      countryCode: '+91',
-      phoneNumber: '',
-      workEmail: '',
+      companyName: '',
+      companyWebsite: '',
       projectType: '',
       budget: '',
       projectDescription: '',
     },
   });
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void getMyCompany()
+      .then((data) => {
+        if (cancelled) {
+          return;
+        }
+
+        const company = (data?.company ?? {}) as Record<string, unknown>;
+        const companyName = typeof company.companyName === 'string' ? company.companyName.trim() : '';
+        const companyWebsite = typeof company.companyWebsite === 'string' ? company.companyWebsite.trim() : '';
+
+        if (!companyName && !companyWebsite) {
+          return;
+        }
+
+        reset((currentValues) => ({
+          ...currentValues,
+          companyName: currentValues.companyName || companyName,
+          companyWebsite: currentValues.companyWebsite || companyWebsite,
+        }));
+      })
+      .catch(() => {
+        // Keep the consultation form usable even if company profile prefill fails.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, reset]);
 
   const description = watch('projectDescription') ?? '';
   const charactersLeft = Math.max(0, MIN_PROJECT_DESCRIPTION - description.trim().length);
@@ -154,6 +177,10 @@ export default function MarketplaceProjectConsultationPage({
 
   const onSubmit = handleSubmit(async (values) => {
     if (!selection) return;
+    if (!isAuthenticated) {
+      setSubmitError('Please log in with your company account before booking a consultation.');
+      return;
+    }
 
     setSubmitError('');
 
@@ -161,11 +188,8 @@ export default function MarketplaceProjectConsultationPage({
       await createMarketplaceOrderDraft(selection.workerId, {
         packageSnapshot: selection.package,
         clientDetails: {
-          firstName: values.firstName.trim(),
-          lastName: values.lastName.trim(),
-          countryCode: values.countryCode,
-          phoneNumber: values.phoneNumber.trim(),
-          workEmail: values.workEmail.trim(),
+          companyName: values.companyName.trim(),
+          companyWebsite: values.companyWebsite.trim(),
           projectType: values.projectType,
           budget: values.budget,
           projectDescription: values.projectDescription.trim(),
@@ -232,67 +256,27 @@ export default function MarketplaceProjectConsultationPage({
           <form onSubmit={onSubmit} className="mpc-form" noValidate>
             <div className="mpc-grid">
               <TextField
-                label="First name *"
-                placeholder="First name"
-                registration={register('firstName', {
-                  required: 'First name is required.',
+                label="Company name *"
+                placeholder="Acme Corporation"
+                registration={register('companyName', {
+                  required: 'Company name is required.',
                   minLength: { value: 2, message: 'Enter at least 2 characters.' },
                 })}
-                error={errors.firstName}
+                error={errors.companyName}
               />
 
               <TextField
-                label="Last name *"
-                placeholder="Last name"
-                registration={register('lastName', {
-                  required: 'Last name is required.',
-                  minLength: { value: 2, message: 'Enter at least 2 characters.' },
-                })}
-                error={errors.lastName}
-              />
-
-              <div className="mpc-phone-row">
-                <SelectField
-                  label="Phone number"
-                  registration={register('countryCode', {
-                    required: 'Country code is required.',
-                  })}
-                  error={errors.countryCode}
-                >
-                  {COUNTRY_CODE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </SelectField>
-
-                <TextField
-                  label="Phone number"
-                  placeholder="Phone number"
-                  registration={register('phoneNumber', {
-                    required: 'Phone number is required.',
-                    pattern: {
-                      value: /^[0-9\s\-()]{6,20}$/,
-                      message: 'Enter a valid phone number.',
-                    },
-                  })}
-                  error={errors.phoneNumber}
-                  hideLabel
-                />
-              </div>
-
-              <TextField
-                label="Work email *"
-                placeholder="Work email"
-                type="email"
-                registration={register('workEmail', {
-                  required: 'Work email is required.',
+                label="Company website URL *"
+                placeholder="https://acme.com"
+                type="url"
+                registration={register('companyWebsite', {
+                  required: 'Company website URL is required.',
                   pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: 'Enter a valid work email.',
+                    value: /^https?:\/\/[^\s/$.?#].[^\s]*$/i,
+                    message: 'Enter a valid website URL starting with http:// or https://',
                   },
                 })}
-                error={errors.workEmail}
+                error={errors.companyWebsite}
               />
 
               <SelectField
@@ -361,6 +345,12 @@ export default function MarketplaceProjectConsultationPage({
             <p className="mpc-footnote">
               By submitting this form you agree to Dechub&apos;s Terms of Service and acknowledge that you&apos;ve read our Privacy Policy.
             </p>
+            <p className="mpc-footnote">
+              Company name and website are saved only with this consultation request. Your signed-in company profile remains the permanent source of truth.
+            </p>
+            <p className="mpc-footnote">
+              Your contact name, phone number, and email will be pulled from your signed-in company account.
+            </p>
           </form>
         </section>
       </main>
@@ -378,4 +368,3 @@ export default function MarketplaceProjectConsultationPage({
     </div>
   );
 }
-

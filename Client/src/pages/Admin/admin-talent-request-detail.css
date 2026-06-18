@@ -475,13 +475,16 @@
 }
 
 .atd-body-copy {
-  margin-top: 20px;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .atd-body-label {
   margin-top: 20px;
   color: var(--atd-text-soft);
   font-size: 12px;
+  line-height: 1.35;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
