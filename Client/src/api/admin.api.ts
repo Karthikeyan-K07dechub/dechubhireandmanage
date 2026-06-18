@@ -6,6 +6,31 @@ export interface TalentRequestItem {
   workerName: string;
   workerRole: string;
   workerProfileUrl?: string;
+  talentProfile?: {
+    location: string;
+    availabilityLabel: string;
+    profilePhotoUrl: string;
+    phone: string;
+    email: string;
+    responseTimeHours: number | null;
+    skills: string[];
+    languages: string[];
+    profileOverview: string;
+    servicePackages: Array<{
+      name: string;
+      price: number;
+      description: string;
+      deliveryDays: number | null;
+      revisions: number | null;
+      features: string[];
+    }>;
+    portfolioProjects: Array<{
+      title: string;
+      description: string;
+      imageUrl: string;
+      tags: string[];
+    }>;
+  } | null;
   companyName: string;
   contactFirstName: string;
   contactLastName: string;

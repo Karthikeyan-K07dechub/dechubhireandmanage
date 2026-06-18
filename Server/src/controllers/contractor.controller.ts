@@ -284,6 +284,7 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
       firstName:     worker.firstName,
       lastName:      worker.lastName,
       email:         worker.email,
+      phone:         worker.phone ?? '',
       roleTitle:     worker.roleTitle,
       companyName:   company?.companyName ?? 'Your Company',
       country:       worker.country,
@@ -310,6 +311,7 @@ const selfSignupSchema = z.object({
   firstName: z.string().trim().min(1).max(50),
   lastName: z.string().trim().min(1).max(50),
   email: z.string().trim().email(),
+  phone: z.string().trim().regex(/^[+\d][\d\s()-]{6,19}$/, 'Enter a valid contact number'),
   password: z.string().min(8),
 });
 
@@ -348,8 +350,9 @@ export async function setPassword(req: Request, res: Response, next: NextFunctio
 
 export async function selfSignup(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { firstName, lastName, email, password } = selfSignupSchema.parse(req.body);
+    const { firstName, lastName, email, phone, password } = selfSignupSchema.parse(req.body);
     const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPhone = phone.trim();
 
     const [existingUser, existingWorker, company] = await Promise.all([
       CompanyAuth.findOne({ email: normalizedEmail }),
@@ -378,7 +381,7 @@ export async function selfSignup(req: Request, res: Response, next: NextFunction
       firstName,
       lastName,
       email: normalizedEmail,
-      phone: null,
+      phone: normalizedPhone,
       country: 'Unknown',
       track: 'track_2_us',
       workerType: 'contractor',
@@ -737,6 +740,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       firstName: worker.firstName,
       lastName: worker.lastName,
       email: worker.email,
+      phone: worker.phone ?? '',
       roleTitle: worker.roleTitle,
       companyName: company?.companyName ?? 'Your Company',
       status: worker.status,
@@ -891,6 +895,7 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
       firstName:     worker.firstName,
       lastName:      worker.lastName,
       email:         worker.email,
+      phone:         worker.phone ?? '',
       roleTitle:     worker.roleTitle,
       companyName:   company?.companyName ?? 'Your Company',
       status:        worker.status,

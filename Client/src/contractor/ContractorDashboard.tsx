@@ -124,6 +124,7 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
     firstName: profile.firstName ?? '',
     lastName: profile.lastName ?? '',
     email: profile.email ?? '',
+    phone: profile.phone ?? '',
     roleTitle: profile.roleTitle ?? '',
     companyName: profile.companyName ?? '',
     status: profile.status ?? '',
@@ -1046,6 +1047,7 @@ function ProfilePage({
               <div className="cd-profile-info-list">
                 <DetailRow label="Full name" value={fullName} />
                 <DetailRow label="Email" value={profile.email?.trim() || 'Not added yet'} />
+                <DetailRow label="Contact number" value={profile.phone?.trim() || 'Not added yet'} />
                 <DetailRow label="Professional domain" value={domainValue} />
                 <DetailRow label="Location" value={locationValue} />
               </div>

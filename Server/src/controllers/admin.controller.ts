@@ -3,7 +3,80 @@ import { z } from 'zod';
 import { env } from '../config/env';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { TalentRequest } from '../models/TalentRequest';
+import { Worker } from '../models/Worker';
 import { ok, Errors, AppError } from '../utils/response';
+
+const ADMIN_AVAILABILITY_LABELS: Record<string, string> = {
+  available_now: 'Available now',
+  this_week: 'Available this week',
+  two_weeks: '2 weeks notice',
+  next_month: 'Available next month',
+  not_available: 'Not available',
+};
+
+function normalizeStringList(value: unknown, limit = 10): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function normalizePortfolioProjects(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      const project = entry as Record<string, unknown>;
+      const title = typeof project.title === 'string' ? project.title.trim() : '';
+      const description = typeof project.description === 'string' ? project.description.trim() : '';
+      const imageUrl = typeof project.imageUrl === 'string' ? project.imageUrl.trim() : '';
+      const tags = normalizeStringList(project.tags, 8);
+
+      if (!title || !description) {
+        return null;
+      }
+
+      return { title, description, imageUrl, tags };
+    })
+    .filter(Boolean);
+}
+
+function normalizeServicePackages(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      const item = entry as Record<string, unknown>;
+      const name = typeof item.name === 'string' ? item.name.trim() : '';
+      const price = typeof item.price === 'number' ? item.price : Number(item.price ?? 0);
+      const description = typeof item.description === 'string' ? item.description.trim() : '';
+      const deliveryDays = typeof item.deliveryDays === 'number' ? item.deliveryDays : Number(item.deliveryDays ?? 0);
+      const revisions = typeof item.revisions === 'number' ? item.revisions : Number(item.revisions ?? 0);
+      const features = normalizeStringList(item.features, 12);
+
+      if (!name || !Number.isFinite(price) || price <= 0) {
+        return null;
+      }
+
+      return {
+        name,
+        price,
+        description,
+        deliveryDays: Number.isFinite(deliveryDays) && deliveryDays > 0 ? deliveryDays : null,
+        revisions: Number.isFinite(revisions) && revisions >= 0 ? revisions : null,
+        features,
+      };
+    })
+    .filter(Boolean);
+}
 
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -106,7 +179,39 @@ export async function getTalentRequest(req: Request, res: Response, next: NextFu
       item.unread = false;
       await item.save();
     }
-    ok(res, item);
+
+    const worker = await Worker.findById(item.workerId).lean();
+    const city = worker?.contractorProfile?.city?.trim()
+      || worker?.contractorProfile?.address?.city?.trim()
+      || '';
+    const country = worker?.contractorProfile?.address?.country?.trim()
+      || worker?.country?.trim()
+      || '';
+    const availability = worker?.contractorProfile?.marketplaceAvailability ?? 'available_now';
+    const overview = worker?.contractorProfile?.profileOverview?.trim()
+      || worker?.contractorProfile?.marketplaceBio?.trim()
+      || worker?.scopeOfWork?.trim()
+      || '';
+
+    ok(res, {
+      ...item.toObject(),
+      talentProfile: worker ? {
+        location: city ? `${city}${country ? `, ${country}` : ''}` : (country || 'Remote'),
+        availabilityLabel: ADMIN_AVAILABILITY_LABELS[availability] || 'Not provided',
+        profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
+        phone: worker.phone ?? '',
+        email: worker.email ?? '',
+        responseTimeHours:
+          typeof worker.contractorProfile?.responseTimeHours === 'number' && worker.contractorProfile.responseTimeHours > 0
+            ? worker.contractorProfile.responseTimeHours
+            : null,
+        skills: normalizeStringList(worker.contractorProfile?.skills, 12),
+        languages: normalizeStringList(worker.contractorProfile?.languages, 8),
+        profileOverview: overview,
+        portfolioProjects: normalizePortfolioProjects(worker.contractorProfile?.portfolioProjects),
+        servicePackages: normalizeServicePackages(worker.contractorProfile?.servicePackages),
+      } : null,
+    });
   } catch (err) { next(err); }
 }
 

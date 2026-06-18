@@ -1,4 +1,5 @@
 export interface ContractorOnboardingData {
+  phone: string;
   password: string;
   confirmPassword: string;
   dateOfBirth: string;
@@ -25,6 +26,7 @@ export interface ContractorOnboardingData {
 }
 
 export const INITIAL_ONBOARDING: ContractorOnboardingData = {
+  phone: '',
   password: '',
   confirmPassword: '',
   dateOfBirth: '',
@@ -143,6 +145,7 @@ export interface ContractorProfile {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   roleTitle: string;
   companyName: string;
   status: string;

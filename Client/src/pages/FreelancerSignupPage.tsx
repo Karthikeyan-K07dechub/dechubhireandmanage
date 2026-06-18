@@ -12,6 +12,7 @@ interface FreelancerProfile {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   dateOfBirth: string;
   nationality: string;
   addressLine1: string;
@@ -54,6 +55,16 @@ const STEPS = [
   { label: 'Payment details', desc: 'Add payout method' },
 ] as const;
 
+const PHONE_CODES = [
+  { value: '+1', label: 'US +1' },
+  { value: '+44', label: 'UK +44' },
+  { value: '+91', label: 'IN +91' },
+  { value: '+49', label: 'DE +49' },
+  { value: '+33', label: 'FR +33' },
+  { value: '+61', label: 'AU +61' },
+  { value: '+65', label: 'SG +65' },
+] as const;
+
 export default function FreelancerSignupPage({
   onBack,
   onComplete,
@@ -65,6 +76,8 @@ export default function FreelancerSignupPage({
     firstName: '',
     lastName: '',
     email: '',
+    phoneCode: '+1',
+    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -107,6 +120,11 @@ export default function FreelancerSignupPage({
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email)) {
       nextErrors.email = 'Enter a valid email address';
     }
+    if (!account.phone.trim()) {
+      nextErrors.phone = 'Contact number is required';
+    } else if (!/^\d[\d\s()-]{5,18}$/.test(account.phone.trim())) {
+      nextErrors.phone = 'Enter a valid contact number';
+    }
     if (!account.password.trim()) {
       nextErrors.password = 'Password is required';
     } else if (account.password.length < 8) {
@@ -126,6 +144,7 @@ export default function FreelancerSignupPage({
       firstName: account.firstName.trim(),
       lastName: account.lastName.trim(),
       email: account.email.trim().toLowerCase(),
+      phone: `${account.phoneCode} ${account.phone.trim()}`,
       dateOfBirth: form.dateOfBirth,
       nationality: form.nationality.trim(),
       addressLine1: form.addressLine1.trim(),
@@ -163,6 +182,7 @@ export default function FreelancerSignupPage({
         firstName: account.firstName.trim(),
         lastName: account.lastName.trim(),
         email: account.email.trim().toLowerCase(),
+        phone: `${account.phoneCode} ${account.phone.trim()}`,
         password: account.password,
       });
       setStep(1);
@@ -265,6 +285,31 @@ export default function FreelancerSignupPage({
                   placeholder="you@example.com"
                 />
                 {errors.email && <p className="cp-field-error">{errors.email}</p>}
+              </div>
+
+              <div className="cp-field">
+                <label className="cp-label">Contact number <span className="cp-req">*</span></label>
+                <div className="fsp-phone-row">
+                  <select
+                    className="cp-input fsp-phone-code"
+                    value={account.phoneCode}
+                    onChange={(e) => updateAccountField('phoneCode', e.target.value)}
+                    aria-label="Country code"
+                  >
+                    {PHONE_CODES.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    className={`cp-input ${errors.phone ? 'error' : ''}`}
+                    value={account.phone}
+                    onChange={(e) => updateAccountField('phone', e.target.value)}
+                    placeholder="555 123 4567"
+                    autoComplete="tel"
+                  />
+                </div>
+                {errors.phone && <p className="cp-field-error">{errors.phone}</p>}
               </div>
 
               <div className="cp-field">

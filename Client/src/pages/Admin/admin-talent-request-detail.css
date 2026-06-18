@@ -66,17 +66,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .atd-back {
-  height: 52px;
-  border-radius: 18px;
+  height: 38px;
+  border-radius: 14px;
   border: 1px solid var(--atd-border);
   background: rgba(255, 255, 255, 0.06);
   color: var(--atd-text);
-  padding: 0 20px;
+  padding: 0 14px;
+  font-size: 0.84rem;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
@@ -101,14 +102,24 @@
 .atd-header-meta {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
   flex: 1;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .atd-header-card {
-  min-height: 92px;
-  padding: 16px 18px;
-  border-radius: 20px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.09);
 }
@@ -119,7 +130,8 @@
 .atd-select-label {
   display: block;
   color: var(--atd-text-soft);
-  font-size: 12px;
+  font-size: 10px;
+  line-height: 1.35;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -127,8 +139,8 @@
 .atd-header-card strong {
   display: block;
   margin-top: 6px;
-  font-size: 19px;
-  line-height: 1.35;
+  font-size: 14px;
+  line-height: 1.2;
   letter-spacing: -0.03em;
   word-break: break-word;
 }
@@ -137,9 +149,10 @@
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  padding: 8px 12px;
+  padding: 5px 9px;
   border-radius: 999px;
   border: 1px solid transparent;
+  font-size: 0.9rem;
   letter-spacing: -0.04em;
 }
 
@@ -168,18 +181,18 @@
 }
 
 .atd-header-card-select {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
 }
 
 .atd-header-card select {
-  height: 46px;
-  margin-top: 10px;
-  border-radius: 14px;
+  height: 32px;
+  margin-top: 8px;
+  padding: 0 10px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background-color: rgba(255, 255, 255, 0.06);
   color: #ffffff;
+  font-size: 0.84rem;
 }
 
 .atd-header-card select option {
@@ -251,9 +264,7 @@
 }
 
 .atd-grid-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
-  gap: 20px;
+  display: block;
 }
 
 .atd-column {
@@ -268,7 +279,7 @@
 }
 
 .atd-card h2 {
-  margin-bottom: 18px;
+  margin-bottom: 30px;
   font-size: 22px;
   letter-spacing: -0.04em;
 }
@@ -295,8 +306,184 @@
   text-decoration: none;
 }
 
+.atd-profile-top {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+}
+
+.atd-talent-head {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.atd-talent-photo {
+  width: 112px;
+  height: 112px;
+  border-radius: 20%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
+}
+
+.atd-talent-photo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--atd-text);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.atd-info-grid-profile {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+}
+
+.atd-info-grid-profile strong {
+  font-size: 16px;
+}
+
+.atd-talent-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.atd-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.atd-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(115, 245, 209, 0.18);
+  background: rgba(115, 245, 209, 0.08);
+  color: var(--atd-text);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.atd-portfolio-section {
+  margin-top: 28px;
+}
+
+.atd-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.atd-section-head h3,
+.atd-portfolio-copy h4 {
+  margin: 0;
+}
+
+.atd-inline-button {
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(115, 245, 209, 0.18);
+  background: rgba(115, 245, 209, 0.08);
+  color: var(--atd-accent);
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.atd-portfolio-list {
+  display: grid;
+  gap: 16px;
+}
+
+.atd-package-list {
+  display: grid;
+  gap: 14px;
+}
+
+.atd-package-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.atd-package-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.atd-package-head h4 {
+  margin: 0;
+}
+
+.atd-package-head strong {
+  font-size: 1rem;
+  color: var(--atd-accent);
+}
+
+.atd-package-card p {
+  margin: 10px 0 0;
+  color: var(--atd-text-soft);
+  line-height: 1.65;
+}
+
+.atd-package-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--atd-text-soft);
+  font-size: 0.94rem;
+}
+
+.atd-portfolio-card {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.atd-portfolio-image {
+  width: 100%;
+  height: 132px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.atd-portfolio-copy p {
+  margin: 8px 0 0;
+  color: var(--atd-text-soft);
+  line-height: 1.65;
+}
+
 .atd-body-copy {
   margin-top: 20px;
+}
+
+.atd-body-label {
+  margin-top: 20px;
+  color: var(--atd-text-soft);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .atd-card select {
@@ -357,6 +544,25 @@
   }
 
   .atd-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .atd-profile-top,
+  .atd-talent-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .atd-talent-head {
+    justify-content: center;
+    margin-bottom: 6px;
+  }
+
+  .atd-section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .atd-portfolio-card {
     grid-template-columns: 1fr;
   }
 }

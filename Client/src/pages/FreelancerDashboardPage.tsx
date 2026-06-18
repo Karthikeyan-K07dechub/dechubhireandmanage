@@ -5,6 +5,7 @@ interface FreelancerDashboardPageProps {
     firstName: string;
     lastName: string;
     email: string;
+    phone: string;
     nationality: string;
     city: string;
     country: string;
@@ -72,6 +73,8 @@ export default function FreelancerDashboardPage({
               {profile.firstName} {profile.lastName}
               <br />
               {profile.email}
+              <br />
+              {profile.phone}
               <br />
               {profile.nationality}
             </p>

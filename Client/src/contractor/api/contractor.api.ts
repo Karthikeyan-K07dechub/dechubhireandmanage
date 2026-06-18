@@ -254,6 +254,7 @@ export async function selfSignupContractor(data: {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   password: string;
 }): Promise<{ accessToken: string; refreshToken: string; firstName: string; lastName: string; email: string }> {
   try {
