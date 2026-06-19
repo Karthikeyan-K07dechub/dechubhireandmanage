@@ -318,7 +318,7 @@ export default function TalentRequestDetailPage({
                 <h2>Company contact</h2>
                 <div className="atd-info-grid">
                   <div>
-                    <span>Business</span>
+                    <span>Company Name</span>
                     <strong>{request.companyName}</strong>
                   </div>
                   <div>
