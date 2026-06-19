@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getTalentRequest, markAsRead, updateTalentRequestStatus, type TalentRequestItem } from '../../api/admin.api';
+import { getMarketplaceTalent, type MarketplaceTalentProfile } from '../../api/marketplace.api';
 import { resolveImageUrl } from '../../utils/imageUrl';
 import './admin-talent-request-detail.css';
 
@@ -9,10 +10,11 @@ interface TalentRequestDetailPageProps {
 }
 
 const statusTone: Record<string, string> = {
-  new: 'new',
-  contacted: 'contacted',
-  in_discussion: 'discussion',
-  closed: 'closed',
+  pending_review: 'new',
+  approved: 'contacted',
+  alternative_suggested: 'discussion',
+  rejected: 'closed',
+  hired: 'contacted',
 };
 
 export default function TalentRequestDetailPage({
@@ -22,6 +24,10 @@ export default function TalentRequestDetailPage({
   const [request, setRequest] = useState<TalentRequestItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFullPortfolio, setShowFullPortfolio] = useState(false);
+  const [availableProfiles, setAvailableProfiles] = useState<MarketplaceTalentProfile[]>([]);
+  const [suggestedWorkerId, setSuggestedWorkerId] = useState('');
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [savingAction, setSavingAction] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -37,6 +43,8 @@ export default function TalentRequestDetailPage({
         }
 
         setRequest({ ...detail, unread: false });
+        setSuggestedWorkerId(detail.suggestedWorkerId ?? '');
+        setReviewNotes(detail.reviewNotes ?? '');
         setShowFullPortfolio(false);
       } catch (err) {
         if (active) {
@@ -56,13 +64,30 @@ export default function TalentRequestDetailPage({
     };
   }, [requestId]);
 
+  useEffect(() => {
+    getMarketplaceTalent()
+      .then((items) => setAvailableProfiles(items))
+      .catch(() => setAvailableProfiles([]));
+  }, []);
+
   const handleStatusChange = async (status: string) => {
     if (!request) {
       return;
     }
 
-    await updateTalentRequestStatus(request._id, status);
-    setRequest({ ...request, status });
+    setSavingAction(status);
+    try {
+      const updated = await updateTalentRequestStatus(request._id, {
+        status,
+        suggestedWorkerId: status === 'alternative_suggested' ? suggestedWorkerId : undefined,
+        reviewNotes,
+      });
+      setRequest(updated);
+      setSuggestedWorkerId(updated.suggestedWorkerId ?? '');
+      setReviewNotes(updated.reviewNotes ?? '');
+    } finally {
+      setSavingAction('');
+    }
   };
 
   const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'Unknown');
@@ -79,6 +104,7 @@ export default function TalentRequestDetailPage({
   const portfolioProjects = request?.talentProfile?.portfolioProjects ?? [];
   const servicePackages = request?.talentProfile?.servicePackages ?? [];
   const visiblePortfolioProjects = showFullPortfolio ? portfolioProjects : portfolioProjects.slice(0, 2);
+  const suggestionCandidates = availableProfiles.filter((profile) => profile.workerId !== request?.workerId);
 
   return (
     <div className="atd-root">
@@ -104,18 +130,43 @@ export default function TalentRequestDetailPage({
               <span>Request status</span>
               <strong className={`atd-header-status ${currentTone}`}>{formatStatus(request.status)}</strong>
             </div>
-            <div className="atd-header-card atd-header-card-select">
-              <label className="atd-select-label" htmlFor="atd-status">Update status</label>
-              <select
-                id="atd-status"
-                value={request.status}
-                onChange={(event) => handleStatusChange(event.target.value)}
-              >
-                <option value="new">New</option>
-                <option value="contacted">Contacted</option>
-                <option value="in_discussion">In Discussion</option>
-                <option value="closed">Closed</option>
-              </select>
+            <div className="atd-header-card atd-header-card-select" style={{ minWidth: 320 }}>
+              <label className="atd-select-label" htmlFor="atd-review-notes">Admin decision</label>
+              <textarea
+                id="atd-review-notes"
+                value={reviewNotes}
+                onChange={(event) => setReviewNotes(event.target.value)}
+                placeholder="Optional note for the company"
+                style={{ minHeight: 88, borderRadius: 16, border: '1px solid rgba(148, 163, 184, 0.35)', background: 'rgba(15, 23, 42, 0.22)', color: '#fff', padding: 12, resize: 'vertical' }}
+              />
+              <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+                <button type="button" className="atd-inline-button" onClick={() => void handleStatusChange('approved')} disabled={savingAction === 'approved'}>
+                  {savingAction === 'approved' ? 'Saving...' : 'Approve talent'}
+                </button>
+                <select
+                  value={suggestedWorkerId}
+                  onChange={(event) => setSuggestedWorkerId(event.target.value)}
+                  style={{ borderRadius: 14, border: '1px solid rgba(148, 163, 184, 0.35)', background: 'rgba(15, 23, 42, 0.22)', color: '#fff', padding: 12 }}
+                >
+                  <option value="">Select alternative profile</option>
+                  {suggestionCandidates.map((profile) => (
+                    <option key={profile.workerId} value={profile.workerId}>
+                      {profile.name} - {profile.role}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="atd-inline-button"
+                  onClick={() => void handleStatusChange('alternative_suggested')}
+                  disabled={!suggestedWorkerId || savingAction === 'alternative_suggested'}
+                >
+                  {savingAction === 'alternative_suggested' ? 'Saving...' : 'Suggest alternative'}
+                </button>
+                <button type="button" className="atd-inline-button" onClick={() => void handleStatusChange('rejected')} disabled={savingAction === 'rejected'}>
+                  {savingAction === 'rejected' ? 'Saving...' : 'Reject request'}
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
@@ -339,6 +390,30 @@ export default function TalentRequestDetailPage({
                   </div>
                 </div>
               </article>
+
+              {request.suggestedTalentProfile ? (
+                <article className="atd-card">
+                  <h2>Suggested profile</h2>
+                  <div className="atd-info-grid">
+                    <div>
+                      <span>Name</span>
+                      <strong>{request.suggestedTalentProfile.workerName}</strong>
+                    </div>
+                    <div>
+                      <span>Role</span>
+                      <strong>{request.suggestedTalentProfile.workerRole}</strong>
+                    </div>
+                    <div>
+                      <span>Location</span>
+                      <strong>{request.suggestedTalentProfile.location}</strong>
+                    </div>
+                    <div>
+                      <span>Availability</span>
+                      <strong>{request.suggestedTalentProfile.availabilityLabel}</strong>
+                    </div>
+                  </div>
+                </article>
+              ) : null}
             </div>
           </section>
         </main>

@@ -138,7 +138,8 @@ export default function Dashboard({
   userRole    = 'Company Admin',
   initialPage = 'home',
 }: DashboardProps) {
-  const [page,           setPage]           = useState<DashboardPage>(initialPage);
+  const initialHireRequestId = new URLSearchParams(window.location.search).get('hireRequest')?.trim() ?? '';
+  const [page,           setPage]           = useState<DashboardPage>(initialHireRequestId ? 'workers' : initialPage);
   const [notifCount,     setNotifCount]     = useState(3);
   const [searchQuery,    setSearchQuery]    = useState('');
 
@@ -272,7 +273,7 @@ export default function Dashboard({
         {/* Page content */}
         <main>
           {page === 'home'      && <DashboardHome onNavigate={(p: string) => setPage(p as DashboardPage)} />}
-          {page === 'workers'   && <WorkersPage />}
+          {page === 'workers'   && <WorkersPage initialHireRequestId={initialHireRequestId} />}
           {page === 'contracts' && <ContractsPage />}
           {page === 'invoices'  && <InvoicesPage />}
           {page === 'documents' && <DocumentsPage />}

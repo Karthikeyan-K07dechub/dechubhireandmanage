@@ -8,6 +8,7 @@ import TalentMarketplacePage from './pages/TalentMarketplacePage';
 import MarketplaceTalentProfilePage from './pages/MarketplaceTalentProfilePage';
 import MarketplaceProjectConsultationPage from './pages/MarketplaceProjectConsultationPage';
 import MarketplacePaymentPage from './pages/MarketplacePaymentPage';
+import MarketplaceTalentRequestsPage from './pages/MarketplaceTalentRequestsPage';
 import NotificationPage from './pages/NotificationPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
 import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
@@ -36,6 +37,7 @@ type AppPage =
   | 'freelancer-dashboard'
   | 'marketplace'
   | 'marketplace-profile'
+  | 'marketplace-requests'
   | 'marketplace-consultation'
   | 'marketplace-payment'
   | 'admin-login'
@@ -70,6 +72,11 @@ function writeSessionJson<T>(key: string, value: T | null): void {
 
 function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+
+  if (normalizedPath === '/marketplace/requests') {
+    return { page: 'marketplace-requests', mode: 'login' };
+  }
+
   const marketplaceMatch = normalizedPath.match(/^\/marketplace\/([^/]+)(?:\/(consultation|payment))?$/);
 
   if (marketplaceMatch) {
@@ -269,7 +276,7 @@ export default function App() {
     // Define page access rules by role
     const adminPages = new Set(['admin-login', 'admin-talent-requests', 'admin-talent-request-detail']);
     // Pages that require an ACTIVE company login session (NOT the login page itself)
-    const companyOnlyPages = new Set(['company-onboarding', 'marketplace-consultation', 'marketplace-payment', 'notifications']);
+    const companyOnlyPages = new Set(['company-onboarding', 'marketplace-requests', 'marketplace-consultation', 'marketplace-payment', 'notifications']);
 
     // Rule 1: If admin is logged in, restrict to admin pages only
     if (hasAdminToken && !adminPages.has(page)) {
@@ -352,6 +359,9 @@ export default function App() {
         break;
       case 'marketplace':
         targetPath = `/marketplace${marketplaceQuery ? `?q=${encodeURIComponent(marketplaceQuery)}` : ''}`;
+        break;
+      case 'marketplace-requests':
+        targetPath = '/marketplace/requests';
         break;
       case 'notifications':
         targetPath = '/notifications';
@@ -733,6 +743,21 @@ export default function App() {
     return <NotificationPage onBack={() => setPage('marketplace')} />;
   }
 
+  if (page === 'marketplace-requests') {
+    return (
+      <MarketplaceTalentRequestsPage
+        userName={userName}
+        onBack={() => setPage('marketplace')}
+        onLogout={handleLogout}
+        onNotifications={() => setPage('notifications')}
+        onOpenProfile={(workerId) => {
+          setSelectedMarketplaceProfileId(workerId);
+          setPage('marketplace-profile');
+        }}
+      />
+    );
+  }
+
   return (
     page === 'marketplace-profile' ? (
       <MarketplaceTalentProfilePage
@@ -740,6 +765,7 @@ export default function App() {
         isAuthenticated={Boolean(tokenStore.getAccess())}
         userName={userName}
         onContinueToConsultation={handleMarketplaceCheckoutSelection}
+        onOpenTalentRequests={() => setPage('marketplace-requests')}
         onBack={() => {
           setPage('marketplace');
         }}
@@ -760,6 +786,7 @@ export default function App() {
         initialQuery={marketplaceQuery}
         isAuthenticated={Boolean(tokenStore.getAccess())}
         userName={userName}
+        onOpenTalentRequests={() => setPage('marketplace-requests')}
         onLogout={handleLogout}
         onNotifications={() => setPage('notifications')}
         onLogin={() => {

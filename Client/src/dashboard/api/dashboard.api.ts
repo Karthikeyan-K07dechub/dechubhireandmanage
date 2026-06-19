@@ -56,9 +56,10 @@ export interface InviteWorkerPayload {
   endDate?:         string;
   noticePeriodDays: number;
   scopeOfWork:      string;
+  talentRequestId?: string;
 }
 
-export async function inviteWorker(data: AddWorkerFormData): Promise<Worker> {
+export async function inviteWorker(data: AddWorkerFormData, talentRequestId?: string): Promise<Worker> {
   try {
     const payload: InviteWorkerPayload = {
       workerType:       data.workerType,
@@ -77,6 +78,7 @@ export async function inviteWorker(data: AddWorkerFormData): Promise<Worker> {
       endDate:          data.endDate || undefined,
       noticePeriodDays: Number(data.noticePeriodDays),
       scopeOfWork:      data.scopeOfWork,
+      talentRequestId,
     };
     const res = await api.post<ApiResponse<Worker>>('/workers', payload);
     return unwrapApiData(res.data);

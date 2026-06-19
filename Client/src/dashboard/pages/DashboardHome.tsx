@@ -2,21 +2,17 @@ import { useEffect, useState } from 'react';
 import type { Worker, Invoice, DashboardStats } from '../types/dashboard.type';
 import { getDashboardStats, getWorkers, getInvoices, approveInvoice } from '../api/dashboard.api';
 
-// ─── Status badge helpers ─────────────────────────────────────────────────────
-
 function workerBadge(status: Worker['status']) {
   const map: Record<Worker['status'], [string, string]> = {
-    active:     ['db-badge db-badge-active',     'Active'],
-    invited:    ['db-badge db-badge-invited',    'Invited'],
-    kyc_pending:['db-badge db-badge-kyc',        'KYC Pending'],
-    inactive:   ['db-badge db-badge-terminated', 'Inactive'],
+    active: ['db-badge db-badge-active', 'Active'],
+    invited: ['db-badge db-badge-invited', 'Invited'],
+    kyc_pending: ['db-badge db-badge-kyc', 'KYC Pending'],
+    inactive: ['db-badge db-badge-terminated', 'Inactive'],
     terminated: ['db-badge db-badge-terminated', 'Terminated'],
   };
   const [cls, label] = map[status] ?? ['db-badge db-badge-draft', status];
   return <span className={cls}>{label}</span>;
 }
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -46,16 +42,14 @@ function StatCard({
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
 interface Props {
   onNavigate: (page: string) => void;
 }
 
 export default function DashboardHome({ onNavigate }: Props) {
-  const [stats,   setStats]   = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [invoices,setInvoices]= useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
@@ -74,14 +68,16 @@ export default function DashboardHome({ onNavigate }: Props) {
         setWorkers(w.slice(0, 5));
         setInvoices(inv.filter((invoice: Invoice) => invoice.status === 'submitted').slice(0, 3));
       } catch {
-        // Silently fail — show empty state
+        // Silently fail and show empty state.
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    load();
-    return () => { cancelled = true; };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleApproveInvoice = async (id: string) => {
@@ -89,11 +85,12 @@ export default function DashboardHome({ onNavigate }: Props) {
     try {
       const updated = await approveInvoice(id);
       setInvoices((prev) =>
-        prev.map((inv) => (inv._id === id ? updated : inv))
+        prev
+          .map((inv) => (inv._id === id ? updated : inv))
           .filter((inv) => inv.status === 'submitted'),
       );
     } catch {
-      // Show error toast in real app
+      // Leave the current list visible if approval fails.
     } finally {
       setApprovingId(null);
     }
@@ -103,91 +100,75 @@ export default function DashboardHome({ onNavigate }: Props) {
     return (
       <div className="db-page">
         <div className="db-loading">
-          <div className="db-spinner" /> Loading dashboard…
+          <div className="db-spinner" /> Loading dashboard...
         </div>
       </div>
     );
   }
 
-  // Determine pending actions
-  const pendingKyc    = workers.filter((w) => w.kycStatus === 'pending').length;
+  const pendingKyc = workers.filter((w) => w.kycStatus === 'pending').length;
   const pendingInvite = workers.filter((w) => w.status === 'invited').length;
 
   return (
     <div className="db-page">
-      {/* ── Page header ─────────────────────────────────────────────────── */}
       <div className="db-page-header">
         <div>
           <div className="db-page-title">Dashboard</div>
           <div className="db-page-sub">
-            Welcome back. Here's what's happening with your team.
+            Welcome back. Here&apos;s what&apos;s happening with your team.
           </div>
-        </div>
-        <div className="db-page-actions">
-          <button className="db-btn-primary" onClick={() => onNavigate('workers')}>
-            + Add Worker
-          </button>
         </div>
       </div>
 
-      {/* ── Stats ────────────────────────────────────────────────────────── */}
       <div className="db-stats-row">
         <StatCard
-          icon="👥"
+          icon="Team"
           label="Active Workers"
           value={stats?.activeWorkers ?? 0}
           delta={`${pendingInvite} invite${pendingInvite !== 1 ? 's' : ''} pending`}
           deltaType="neutral"
         />
         <StatCard
-          icon="🧾"
+          icon="Bills"
           label="Pending Invoices"
           value={stats?.pendingInvoices ?? 0}
           delta={stats?.pendingInvoices ? 'Need your approval' : 'All clear'}
           deltaType={stats?.pendingInvoices ? 'negative' : 'neutral'}
         />
         <StatCard
-          icon="📅"
+          icon="Pay"
           label="Next Payroll"
           value={stats?.nextPayrollDate
             ? new Date(stats.nextPayrollDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : '—'}
+            : '-'}
           delta="Auto-processed via Wise"
           deltaType="neutral"
         />
         <StatCard
-          icon="💰"
+          icon="Cost"
           label="Monthly Cost"
-          value={stats
-            ? `${stats.currency} ${stats.monthlyTotalCost.toLocaleString()}`
-            : '—'}
+          value={stats ? `${stats.currency} ${stats.monthlyTotalCost.toLocaleString()}` : '-'}
           delta="All active workers"
           deltaType="neutral"
         />
       </div>
 
-      {/* ── Two-column grid ──────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
-
-        {/* ── Recent workers ─────────────────────────────────────────────── */}
         <div className="db-card">
           <div className="db-card-header">
             <span className="db-card-title">Recent Workers</span>
             <button className="db-card-link" onClick={() => onNavigate('workers')}>
-              View all →
+              {'View all ->'}
             </button>
           </div>
 
           {workers.length === 0 ? (
             <div className="db-empty">
-              <div className="db-empty-icon">👥</div>
+              <div className="db-empty-icon">Team</div>
               <div className="db-empty-title">No workers yet</div>
               <div className="db-empty-sub">
-                Add your first worker to get started
+                Approved marketplace hires will appear here once you complete the hiring flow.
               </div>
-              <button className="db-btn-primary" onClick={() => onNavigate('workers')}>
-                + Add Worker
-              </button>
             </div>
           ) : (
             <div className="db-table-wrap">
@@ -208,11 +189,15 @@ export default function DashboardHome({ onNavigate }: Props) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div
                             style={{
-                              width: 32, height: 32,
+                              width: 32,
+                              height: 32,
                               borderRadius: '50%',
                               background: 'linear-gradient(135deg, #0a1628, #2563eb)',
-                              display: 'grid', placeItems: 'center',
-                              color: '#fff', fontSize: 12, fontWeight: 700,
+                              display: 'grid',
+                              placeItems: 'center',
+                              color: '#fff',
+                              fontSize: 12,
+                              fontWeight: 700,
                               flexShrink: 0,
                             }}
                           >
@@ -226,15 +211,13 @@ export default function DashboardHome({ onNavigate }: Props) {
                       </td>
                       <td>
                         <span className={w.track === 'track_2_us' ? 'db-track db-track-2' : 'db-track db-track-1'}>
-                          {w.track === 'track_2_us' ? '🇺🇸 US' : '🇮🇳 India'}
+                          {w.track === 'track_2_us' ? 'US' : 'India'}
                         </span>
                       </td>
                       <td>{w.roleTitle}</td>
                       <td>{workerBadge(w.status)}</td>
                       <td style={{ color: '#94a3b8', fontSize: 12 }}>
-                        {w.lastPaymentAt
-                          ? new Date(w.lastPaymentAt).toLocaleDateString()
-                          : '—'}
+                        {w.lastPaymentAt ? new Date(w.lastPaymentAt).toLocaleDateString() : '-'}
                       </td>
                     </tr>
                   ))}
@@ -244,25 +227,23 @@ export default function DashboardHome({ onNavigate }: Props) {
           )}
         </div>
 
-        {/* ── Right column ─────────────────────────────────────────────────── */}
         <div>
-          {/* Pending invoices */}
           <div className="db-card" style={{ marginBottom: 16 }}>
             <div className="db-card-header">
               <span className="db-card-title">Invoices to Approve</span>
               <button className="db-card-link" onClick={() => onNavigate('invoices')}>
-                View all →
+                {'View all ->'}
               </button>
             </div>
             {invoices.length === 0 ? (
               <div style={{ padding: '20px 24px', fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
-                ✅ No pending invoices
+                No pending invoices
               </div>
             ) : (
               <div className="db-action-list">
                 {invoices.map((inv) => (
                   <div key={inv._id} className="db-action-item">
-                    <div className="db-action-icon" style={{ background: '#eff6ff' }}>🧾</div>
+                    <div className="db-action-icon" style={{ background: '#eff6ff' }}>Bills</div>
                     <div className="db-action-text">
                       <div className="db-action-title">{inv.workerName}</div>
                       <div className="db-action-sub">
@@ -274,7 +255,7 @@ export default function DashboardHome({ onNavigate }: Props) {
                       onClick={() => handleApproveInvoice(inv._id)}
                       disabled={approvingId === inv._id}
                     >
-                      {approvingId === inv._id ? '…' : 'Approve'}
+                      {approvingId === inv._id ? '...' : 'Approve'}
                     </button>
                   </div>
                 ))}
@@ -282,17 +263,16 @@ export default function DashboardHome({ onNavigate }: Props) {
             )}
           </div>
 
-          {/* Quick actions */}
           <div className="db-card">
             <div className="db-card-header">
               <span className="db-card-title">Quick Actions</span>
             </div>
             <div className="db-action-list">
               {[
-                { icon: '👤', bg: '#f0f9ff', label: 'Add new worker',        sub: 'Invite & onboard',        action: () => onNavigate('workers') },
-                { icon: '📄', bg: '#fdf4ff', label: 'View contracts',        sub: 'All contract statuses',   action: () => onNavigate('contracts') },
-                { icon: '🧾', bg: '#fff7ed', label: 'Manage invoices',       sub: 'Approve pending payments', action: () => onNavigate('invoices') },
-                { icon: '📁', bg: '#f0fdf4', label: 'Download documents',    sub: 'Contracts, payslips',     action: () => onNavigate('documents') },
+                { icon: 'Requests', bg: '#f0f9ff', label: 'Open talent requests', sub: 'Track approvals and next steps', action: () => { window.location.href = '/marketplace/requests'; } },
+                { icon: 'Docs', bg: '#fdf4ff', label: 'View contracts', sub: 'All contract statuses', action: () => onNavigate('contracts') },
+                { icon: 'Bills', bg: '#fff7ed', label: 'Manage invoices', sub: 'Approve pending payments', action: () => onNavigate('invoices') },
+                { icon: 'Files', bg: '#f0fdf4', label: 'Download documents', sub: 'Contracts, payslips', action: () => onNavigate('documents') },
               ].map(({ icon, bg, label, sub, action }) => (
                 <button
                   key={label}
@@ -305,7 +285,7 @@ export default function DashboardHome({ onNavigate }: Props) {
                     <div className="db-action-title">{label}</div>
                     <div className="db-action-sub">{sub}</div>
                   </div>
-                  <span style={{ color: '#cbd5e1', fontSize: 16 }}>›</span>
+                  <span style={{ color: '#cbd5e1', fontSize: 16 }}>{'>'}</span>
                 </button>
               ))}
             </div>
@@ -313,7 +293,6 @@ export default function DashboardHome({ onNavigate }: Props) {
         </div>
       </div>
 
-      {/* ── Pending actions banner ─────────────────────────────────────────── */}
       {(pendingKyc > 0 || stats?.contractsExpiring) && (
         <div
           style={{
@@ -327,7 +306,7 @@ export default function DashboardHome({ onNavigate }: Props) {
             gap: 12,
           }}
         >
-          <span style={{ fontSize: 20 }}>⚠️</span>
+          <span style={{ fontSize: 20 }}>!</span>
           <div>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: '#92400e' }}>
               Action required

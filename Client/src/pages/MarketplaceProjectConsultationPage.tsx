@@ -334,7 +334,7 @@ export default function MarketplaceProjectConsultationPage({
             </div>
 
             {submitError ? <div className="mpc-message mpc-message-error">{submitError}</div> : null}
-            {isSubmitted ? <div className="mpc-message mpc-message-success">Project draft created successfully. Redirecting you to payment...</div> : null}
+            {isSubmitted ? <div className="mpc-message mpc-message-success">Talent request submitted successfully. Redirecting you to your request tracker...</div> : null}
 
             <div className="mpc-submit-row">
               <button type="submit" disabled={!isValid || isSubmitting || isSubmitted} className="mpc-submit">
@@ -360,8 +360,7 @@ export default function MarketplaceProjectConsultationPage({
           message={`Thank you for choosing this talent. Our team has received your request and will connect with you shortly to discuss your requirements and help you find the perfect match.`}
           onClose={() => {
             setShowSuccessModal(false);
-            // Redirect to marketplace preserving existing flow
-            window.location.replace('/marketplace');
+            window.location.replace('/marketplace/requests');
           }}
         />
       ) : null}

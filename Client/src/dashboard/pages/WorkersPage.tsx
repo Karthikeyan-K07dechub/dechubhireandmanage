@@ -1,104 +1,76 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import type { Worker, WorkerStatus, Track } from '../types/dashboard.type';
+import type { Worker, WorkerStatus, Track, AddWorkerFormData } from '../types/dashboard.type';
 import { getWorkers, terminateWorker } from '../api/dashboard.api';
 import AddWorkerModal from '../components/AddWorkerModel';
-
-// ─── Badge helpers ────────────────────────────────────────────────────────────
+import { getTalentRequestHirePrefill } from '../../api/talentRequests.api';
 
 const STATUS_CONFIG: Record<WorkerStatus, { cls: string; label: string }> = {
-  active:     { cls: 'db-badge db-badge-active',     label: 'Active'       },
-  invited:    { cls: 'db-badge db-badge-invited',    label: 'Invited'      },
-  kyc_pending:{ cls: 'db-badge db-badge-kyc',        label: 'KYC Pending'  },
-  inactive:   { cls: 'db-badge db-badge-terminated', label: 'Inactive'     },
-  terminated: { cls: 'db-badge db-badge-terminated', label: 'Terminated'   },
+  active: { cls: 'db-badge db-badge-active', label: 'Active' },
+  invited: { cls: 'db-badge db-badge-invited', label: 'Invited' },
+  kyc_pending: { cls: 'db-badge db-badge-kyc', label: 'KYC Pending' },
+  inactive: { cls: 'db-badge db-badge-terminated', label: 'Inactive' },
+  terminated: { cls: 'db-badge db-badge-terminated', label: 'Terminated' },
 };
 
 const KYC_CONFIG: Record<'pending' | 'approved' | 'rejected', { cls: string; label: string }> = {
-  pending:  { cls: 'db-badge db-badge-pending',  label: 'Pending'  },
+  pending: { cls: 'db-badge db-badge-pending', label: 'Pending' },
   approved: { cls: 'db-badge db-badge-approved', label: 'Verified' },
   rejected: { cls: 'db-badge db-badge-disputed', label: 'Rejected' },
 };
 
 function WorkerAvatar({ w }: { w: Worker }) {
   return (
-    <div style={{
-      width: 34, height: 34,
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #0a1628, #2563eb)',
-      display: 'grid', placeItems: 'center',
-      color: '#fff', fontSize: 12, fontWeight: 700,
-      flexShrink: 0,
-    }}>
+    <div
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #0a1628, #2563eb)',
+        display: 'grid',
+        placeItems: 'center',
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}
+    >
       {w.firstName[0]}{w.lastName[0]}
     </div>
   );
 }
 
-// ─── Row action menu ──────────────────────────────────────────────────────────
-
-function RowMenu({ worker, onTerminate }: {
-  worker: Worker;
-  onTerminate: (id: string) => void;
-}) {
+function RowMenu({ worker, onTerminate }: { worker: Worker; onTerminate: (id: string) => void }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div style={{ position: 'relative' }}>
       <button
         className="db-btn-secondary db-btn-sm"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen((value) => !value)}
         style={{ padding: '0 10px', fontSize: 16 }}
         aria-label="Actions"
       >
-        ⋯
+        ...
       </button>
 
-      {open && (
+      {open ? (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute',
-            right: 0, top: '100%',
-            marginTop: 4,
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 10,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-            width: 180,
-            zIndex: 100,
-            overflow: 'hidden',
-          }}>
-            {[
-              { icon: '👁️', label: 'View profile',    action: () => setOpen(false) },
-              { icon: '📄', label: 'View contract',   action: () => setOpen(false) },
-              { icon: '🧾', label: 'View invoices',   action: () => setOpen(false) },
-              { icon: '📧', label: 'Resend invite',   action: () => setOpen(false), disabled: worker.status !== 'invited' },
-            ].map(({ icon, label, action, disabled }) => (
-              <button
-                key={label}
-                onClick={() => { if (!disabled) { action(); } }}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  background: 'none',
-                  border: 'none',
-                  cursor: disabled ? 'not-allowed' : 'pointer',
-                  fontSize: 13,
-                  color: disabled ? '#cbd5e1' : '#374151',
-                  textAlign: 'left',
-                  fontFamily: 'inherit',
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={(e) => { if (!disabled) (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
-              >
-                <span>{icon}</span> {label}
-              </button>
-            ))}
-            <div style={{ height: 1, background: '#f1f4f9' }} />
+          <div
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: '100%',
+              marginTop: 4,
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: 10,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              width: 180,
+              zIndex: 100,
+              overflow: 'hidden',
+            }}
+          >
             <button
               onClick={() => { onTerminate(worker._id); setOpen(false); }}
               style={{
@@ -115,27 +87,29 @@ function RowMenu({ worker, onTerminate }: {
                 textAlign: 'left',
                 fontFamily: 'inherit',
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#fef2f2'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
             >
-              <span>🚫</span> Terminate
+              Terminate
             </button>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+interface WorkersPageProps {
+  initialHireRequestId?: string;
+}
 
-export default function WorkersPage() {
-  const [workers,      setWorkers]      = useState<Worker[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [showModal,    setShowModal]    = useState(false);
-  const [searchQuery,  setSearchQuery]  = useState('');
+export default function WorkersPage({ initialHireRequestId = '' }: WorkersPageProps) {
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [modalSeed, setModalSeed] = useState<AddWorkerFormData | undefined>(undefined);
+  const [modalRequestId, setModalRequestId] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<WorkerStatus | ''>('');
-  const [filterTrack,  setFilterTrack]  = useState<Track | ''>('');
+  const [filterTrack, setFilterTrack] = useState<Track | ''>('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -143,20 +117,45 @@ export default function WorkersPage() {
       const data = await getWorkers();
       setWorkers(data);
     } catch {
-      // Show empty state
+      // Keep page usable if worker fetch fails.
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!initialHireRequestId) return;
+
+    let active = true;
+
+    void getTalentRequestHirePrefill(initialHireRequestId)
+      .then((result) => {
+        if (!active) return;
+        setModalSeed(result.initialData);
+        setModalRequestId(result.talentRequestId);
+        setShowModal(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setModalSeed(undefined);
+        setModalRequestId(undefined);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [initialHireRequestId]);
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return workers.filter((w) => {
       if (q && !`${w.firstName} ${w.lastName} ${w.email} ${w.roleTitle}`.toLowerCase().includes(q)) return false;
       if (filterStatus && w.status !== filterStatus) return false;
-      if (filterTrack  && w.track  !== filterTrack)  return false;
+      if (filterTrack && w.track !== filterTrack) return false;
       return true;
     });
   }, [workers, searchQuery, filterStatus, filterTrack]);
@@ -165,51 +164,48 @@ export default function WorkersPage() {
     if (!window.confirm('Terminate this worker? This cannot be undone.')) return;
     try {
       await terminateWorker(id);
-      setWorkers((prev) =>
-        prev.map((w) => w._id === id ? { ...w, status: 'terminated' as const } : w),
-      );
+      setWorkers((prev) => prev.map((w) => (w._id === id ? { ...w, status: 'terminated' as const } : w)));
     } catch {
-      // Handle error
+      // Keep current row state if termination fails.
     }
   }, []);
 
   const handleWorkerAdded = useCallback((worker: unknown) => {
     setWorkers((prev) => [worker as Worker, ...prev]);
     setShowModal(false);
+    setModalSeed(undefined);
+    setModalRequestId(undefined);
+    if (window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
-  // Stats summary
-  const active    = workers.filter((w) => w.status === 'active').length;
-  const invited   = workers.filter((w) => w.status === 'invited').length;
-  const kycPending= workers.filter((w) => w.kycStatus === 'pending' && w.status !== 'terminated').length;
+  const activeWorkers = workers.filter((w) => w.status === 'active').length;
+  const invitedWorkers = workers.filter((w) => w.status === 'invited').length;
+  const pendingKyc = workers.filter((w) => w.kycStatus === 'pending' && w.status !== 'terminated').length;
 
   return (
     <>
       <div className="db-page">
-        {/* Header */}
         <div className="db-page-header">
           <div>
             <div className="db-page-title">Workers</div>
             <div className="db-page-sub">
-              {workers.length} total · {active} active · {invited} invited
-              {kycPending > 0 && ` · ${kycPending} KYC pending`}
+              {workers.length} total · {activeWorkers} active · {invitedWorkers} invited
+              {pendingKyc > 0 && ` · ${pendingKyc} KYC pending`}
             </div>
           </div>
           <div className="db-page-actions">
-            <button className="db-btn-secondary">↓ Export CSV</button>
-            <button className="db-btn-primary" onClick={() => setShowModal(true)}>
-              + Add Worker
-            </button>
+            <button className="db-btn-secondary">Export CSV</button>
           </div>
         </div>
 
-        {/* Summary pills */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
           {[
-            { label: 'All',        value: workers.length, filter: '',           color: '#0a1628' },
-            { label: 'Active',     value: active,         filter: 'active',     color: '#16a34a' },
-            { label: 'Invited',    value: invited,        filter: 'invited',    color: '#ca8a04' },
-            { label: 'KYC Pending',value: kycPending,     filter: 'kyc_pending',color: '#ea580c' },
+            { label: 'All', value: workers.length, filter: '', color: '#0a1628' },
+            { label: 'Active', value: activeWorkers, filter: 'active', color: '#16a34a' },
+            { label: 'Invited', value: invitedWorkers, filter: 'invited', color: '#ca8a04' },
+            { label: 'KYC Pending', value: pendingKyc, filter: 'kyc_pending', color: '#ea580c' },
           ].map(({ label, value, filter, color }) => (
             <button
               key={label}
@@ -227,7 +223,6 @@ export default function WorkersPage() {
                 fontWeight: 600,
                 cursor: 'pointer',
                 fontFamily: 'inherit',
-                transition: 'all 0.15s',
               }}
             >
               {label}
@@ -247,28 +242,26 @@ export default function WorkersPage() {
           ))}
         </div>
 
-        {/* Table card */}
         <div className="db-card">
-          {/* Filters */}
           <div className="db-filters">
             <div className="db-filter-search">
-              <span style={{ color: '#94a3b8' }}>🔍</span>
+              <span style={{ color: '#94a3b8' }}>Search</span>
               <input
                 type="text"
-                placeholder="Search by name, email, or role…"
+                placeholder="Search by name, email, or role..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(event) => setSearchQuery(event.target.value)}
               />
             </div>
 
             <select
               className="db-filter-select"
               value={filterTrack}
-              onChange={(e) => setFilterTrack(e.target.value as Track | '')}
+              onChange={(event) => setFilterTrack(event.target.value as Track | '')}
             >
               <option value="">All tracks</option>
-              <option value="track_2_us">🇺🇸 Track 2 — US</option>
-              <option value="track_1_india">🇮🇳 Track 1 — India</option>
+              <option value="track_2_us">Track 2 - US</option>
+              <option value="track_1_india">Track 1 - India</option>
             </select>
 
             <div className="db-filter-count">
@@ -276,27 +269,21 @@ export default function WorkersPage() {
             </div>
           </div>
 
-          {/* Table */}
           {loading ? (
             <div className="db-loading">
-              <div className="db-spinner" /> Loading workers…
+              <div className="db-spinner" /> Loading workers...
             </div>
           ) : filtered.length === 0 ? (
             <div className="db-empty">
-              <div className="db-empty-icon">{workers.length === 0 ? '👥' : '🔍'}</div>
+              <div className="db-empty-icon">{workers.length === 0 ? 'Team' : 'Search'}</div>
               <div className="db-empty-title">
                 {workers.length === 0 ? 'No workers yet' : 'No workers match your search'}
               </div>
               <div className="db-empty-sub">
                 {workers.length === 0
-                  ? 'Add your first worker to start hiring and paying global talent'
-                  : 'Try a different search term or clear your filters'}
+                  ? 'Approved marketplace hires will appear here after you proceed from Talent Requests.'
+                  : 'Try a different search term or clear your filters.'}
               </div>
-              {workers.length === 0 && (
-                <button className="db-btn-primary" onClick={() => setShowModal(true)}>
-                  + Add First Worker
-                </button>
-              )}
             </div>
           ) : (
             <div className="db-table-wrap">
@@ -318,7 +305,6 @@ export default function WorkersPage() {
                 <tbody>
                   {filtered.map((w) => (
                     <tr key={w._id}>
-                      {/* Worker */}
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <WorkerAvatar w={w} />
@@ -328,59 +314,37 @@ export default function WorkersPage() {
                           </div>
                         </div>
                       </td>
-
-                      {/* Track */}
                       <td>
                         <span className={w.track === 'track_2_us' ? 'db-track db-track-2' : 'db-track db-track-1'}>
-                          {w.track === 'track_2_us' ? '🇺🇸 US' : '🇮🇳 India'}
+                          {w.track === 'track_2_us' ? 'US' : 'India'}
                         </span>
                       </td>
-
-                      {/* Role */}
                       <td>
                         <div style={{ fontWeight: 500, color: '#334155' }}>{w.roleTitle}</div>
-                        {w.department && <div className="db-table-sub">{w.department}</div>}
+                        {w.department ? <div className="db-table-sub">{w.department}</div> : null}
                       </td>
-
-                      {/* Status */}
                       <td>
                         <span className={STATUS_CONFIG[w.status]?.cls ?? 'db-badge db-badge-draft'}>
                           {STATUS_CONFIG[w.status]?.label ?? w.status}
                         </span>
                       </td>
-
-                      {/* KYC */}
                       <td>
                         <span className={KYC_CONFIG[w.kycStatus]?.cls ?? 'db-badge db-badge-pending'}>
                           {KYC_CONFIG[w.kycStatus]?.label ?? w.kycStatus}
                         </span>
                       </td>
-
-                      {/* Services count */}
                       <td style={{ color: '#64748b', fontSize: 12.5 }}>
                         {w.selectedServices.length} service{w.selectedServices.length !== 1 ? 's' : ''}
                       </td>
-
-                      {/* Pay rate */}
                       <td style={{ fontWeight: 500, color: '#0f172a', fontSize: 13 }}>
-                        {w.payRate
-                          ? `${w.payCurrency} ${w.payRate.toLocaleString()}/mo`
-                          : '—'}
+                        {w.payRate ? `${w.payCurrency} ${w.payRate.toLocaleString()}/mo` : '-'}
                       </td>
-
-                      {/* Last payment */}
                       <td style={{ color: '#94a3b8', fontSize: 12 }}>
-                        {w.lastPaymentAt
-                          ? new Date(w.lastPaymentAt).toLocaleDateString()
-                          : '—'}
+                        {w.lastPaymentAt ? new Date(w.lastPaymentAt).toLocaleDateString() : '-'}
                       </td>
-
-                      {/* Added */}
                       <td style={{ color: '#94a3b8', fontSize: 12, whiteSpace: 'nowrap' }}>
                         {new Date(w.createdAt).toLocaleDateString()}
                       </td>
-
-                      {/* Actions */}
                       <td>
                         <RowMenu worker={w} onTerminate={handleTerminate} />
                       </td>
@@ -393,13 +357,21 @@ export default function WorkersPage() {
         </div>
       </div>
 
-      {/* Add Worker Modal */}
-      {showModal && (
+      {showModal ? (
         <AddWorkerModal
-          onClose={() => setShowModal(false)}
+          onClose={() => {
+            setShowModal(false);
+            setModalSeed(undefined);
+            setModalRequestId(undefined);
+            if (window.location.search) {
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          }}
           onSuccess={handleWorkerAdded}
+          initialData={modalSeed}
+          talentRequestId={modalRequestId}
         />
-      )}
+      ) : null}
     </>
   );
 }

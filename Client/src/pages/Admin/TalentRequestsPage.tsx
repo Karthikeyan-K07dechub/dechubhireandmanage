@@ -12,10 +12,11 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   const [badge, setBadge] = useState(0);
 
   const statusTone: Record<string, string> = {
-    new: 'new',
-    contacted: 'contacted',
-    in_discussion: 'discussion',
-    closed: 'closed',
+    pending_review: 'new',
+    approved: 'contacted',
+    alternative_suggested: 'discussion',
+    rejected: 'closed',
+    hired: 'contacted',
   };
 
   async function load() {
@@ -35,9 +36,9 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
 
   const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'Unknown');
   const formatStatus = (value?: string) => (value ? value.replace(/_/g, ' ') : 'unknown');
-  const newCount = items.filter((item) => item.status === 'new').length;
-  const contactedCount = items.filter((item) => item.status === 'contacted').length;
-  const closedCount = items.filter((item) => item.status === 'closed').length;
+  const pendingCount = items.filter((item) => item.status === 'pending_review').length;
+  const approvedCount = items.filter((item) => item.status === 'approved').length;
+  const hiredCount = items.filter((item) => item.status === 'hired').length;
 
   return (
     <div className="atr-root">
@@ -73,19 +74,19 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
           <small>Last 50 submissions</small>
         </article>
         <article className="atr-stat-card">
-          <span>New</span>
-          <strong>{newCount}</strong>
-          <small>Needs first response</small>
+          <span>Pending Review</span>
+          <strong>{pendingCount}</strong>
+          <small>Needs admin decision</small>
         </article>
         <article className="atr-stat-card">
-          <span>Contacted</span>
-          <strong>{contactedCount}</strong>
-          <small>Active conversations</small>
+          <span>Approved</span>
+          <strong>{approvedCount}</strong>
+          <small>Ready for company action</small>
         </article>
         <article className="atr-stat-card">
-          <span>Closed</span>
-          <strong>{closedCount}</strong>
-          <small>Completed pipeline</small>
+          <span>Hired</span>
+          <strong>{hiredCount}</strong>
+          <small>Moved into dashboard</small>
         </article>
       </section>
 
@@ -94,7 +95,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
           <div className="atr-panel-header">
             <div>
               <h2>Request stream</h2>
-              <p>Prioritize unread inquiries and keep status updates visible for the team.</p>
+              <p>Review availability, suggest alternatives, and unlock hiring only after approval.</p>
             </div>
           </div>
 

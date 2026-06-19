@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { env } from '../config/env';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
-import { TalentRequest } from '../models/TalentRequest';
+import { TalentRequest, type ITalentRequest, type TalentRequestStatus } from '../models/TalentRequest';
 import { Worker } from '../models/Worker';
 import { ok, Errors, AppError } from '../utils/response';
 
@@ -76,6 +76,64 @@ function normalizeServicePackages(value: unknown) {
       };
     })
     .filter(Boolean);
+}
+
+function formatTalentProfile(worker: any) {
+  if (!worker) {
+    return null;
+  }
+
+  const city = worker?.contractorProfile?.city?.trim()
+    || worker?.contractorProfile?.address?.city?.trim()
+    || '';
+  const country = worker?.contractorProfile?.address?.country?.trim()
+    || worker?.country?.trim()
+    || '';
+  const availability = worker?.contractorProfile?.marketplaceAvailability ?? 'available_now';
+  const overview = worker?.contractorProfile?.profileOverview?.trim()
+    || worker?.contractorProfile?.marketplaceBio?.trim()
+    || worker?.scopeOfWork?.trim()
+    || '';
+
+  return {
+    workerId: worker._id?.toString?.() ?? '',
+    location: city ? `${city}${country ? `, ${country}` : ''}` : (country || 'Remote'),
+    availabilityLabel: ADMIN_AVAILABILITY_LABELS[availability] || 'Not provided',
+    profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
+    phone: worker.phone ?? '',
+    email: worker.email ?? '',
+    responseTimeHours:
+      typeof worker.contractorProfile?.responseTimeHours === 'number' && worker.contractorProfile.responseTimeHours > 0
+        ? worker.contractorProfile.responseTimeHours
+        : null,
+    skills: normalizeStringList(worker.contractorProfile?.skills, 12),
+    languages: normalizeStringList(worker.contractorProfile?.languages, 8),
+    profileOverview: overview,
+    portfolioProjects: normalizePortfolioProjects(worker.contractorProfile?.portfolioProjects),
+    servicePackages: normalizeServicePackages(worker.contractorProfile?.servicePackages),
+  };
+}
+
+async function serializeTalentRequest(item: ITalentRequest) {
+  const [worker, suggestedWorker] = await Promise.all([
+    Worker.findById(item.workerId).lean(),
+    item.suggestedWorkerId ? Worker.findById(item.suggestedWorkerId).lean() : Promise.resolve(null),
+  ]);
+
+  return {
+    ...item.toObject(),
+    talentProfile: formatTalentProfile(worker),
+    suggestedTalentProfile: suggestedWorker
+      ? {
+          workerId: suggestedWorker._id.toString(),
+          workerName: `${suggestedWorker.firstName} ${suggestedWorker.lastName}`.trim(),
+          workerRole: suggestedWorker.contractorProfile?.marketplaceTitle?.trim() || suggestedWorker.roleTitle || 'Freelancer',
+          profilePhotoUrl: suggestedWorker.contractorProfile?.profilePhotoUrl ?? '',
+          location: formatTalentProfile(suggestedWorker)?.location ?? 'Remote',
+          availabilityLabel: formatTalentProfile(suggestedWorker)?.availabilityLabel ?? 'Not provided',
+        }
+      : null,
+  };
 }
 
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -180,54 +238,53 @@ export async function getTalentRequest(req: Request, res: Response, next: NextFu
       await item.save();
     }
 
-    const worker = await Worker.findById(item.workerId).lean();
-    const city = worker?.contractorProfile?.city?.trim()
-      || worker?.contractorProfile?.address?.city?.trim()
-      || '';
-    const country = worker?.contractorProfile?.address?.country?.trim()
-      || worker?.country?.trim()
-      || '';
-    const availability = worker?.contractorProfile?.marketplaceAvailability ?? 'available_now';
-    const overview = worker?.contractorProfile?.profileOverview?.trim()
-      || worker?.contractorProfile?.marketplaceBio?.trim()
-      || worker?.scopeOfWork?.trim()
-      || '';
-
-    ok(res, {
-      ...item.toObject(),
-      talentProfile: worker ? {
-        location: city ? `${city}${country ? `, ${country}` : ''}` : (country || 'Remote'),
-        availabilityLabel: ADMIN_AVAILABILITY_LABELS[availability] || 'Not provided',
-        profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
-        phone: worker.phone ?? '',
-        email: worker.email ?? '',
-        responseTimeHours:
-          typeof worker.contractorProfile?.responseTimeHours === 'number' && worker.contractorProfile.responseTimeHours > 0
-            ? worker.contractorProfile.responseTimeHours
-            : null,
-        skills: normalizeStringList(worker.contractorProfile?.skills, 12),
-        languages: normalizeStringList(worker.contractorProfile?.languages, 8),
-        profileOverview: overview,
-        portfolioProjects: normalizePortfolioProjects(worker.contractorProfile?.portfolioProjects),
-        servicePackages: normalizeServicePackages(worker.contractorProfile?.servicePackages),
-      } : null,
-    });
+    ok(res, await serializeTalentRequest(item));
   } catch (err) { next(err); }
 }
 
 export async function updateTalentRequestStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params.id;
-    const { status } = req.body as { status?: string };
+    const { status, suggestedWorkerId, reviewNotes } = req.body as {
+      status?: TalentRequestStatus;
+      suggestedWorkerId?: string;
+      reviewNotes?: string;
+    };
     if (!status) throw new AppError('Status is required', 400, 'INVALID_REQUEST');
-    const allowed = ['new', 'contacted', 'in_discussion', 'closed'];
+    const allowed: TalentRequestStatus[] = ['pending_review', 'approved', 'alternative_suggested', 'rejected', 'hired'];
     if (!allowed.includes(status)) throw new AppError(`Invalid status: ${status}. Allowed values are: ${allowed.join(', ')}`, 400, 'INVALID_REQUEST');
 
     const item = await TalentRequest.findById(id);
     if (!item) throw Errors.NotFound('Talent request');
-    item.status = status as any;
+    item.status = status;
+    item.reviewNotes = typeof reviewNotes === 'string' ? reviewNotes.trim() : item.reviewNotes;
+    item.reviewedAt = new Date();
+
+    if (status === 'approved') {
+      item.approvedAt = new Date();
+      item.suggestedWorkerId = null;
+    }
+
+    if (status === 'alternative_suggested') {
+      if (!suggestedWorkerId) {
+        throw new AppError('Suggested worker is required', 400, 'INVALID_REQUEST');
+      }
+
+      const suggestedWorker = await Worker.findById(suggestedWorkerId);
+      if (!suggestedWorker) {
+        throw Errors.NotFound('Suggested worker');
+      }
+
+      item.suggestedWorkerId = suggestedWorker._id;
+      item.approvedAt = null;
+    }
+
+    if (status === 'rejected') {
+      item.approvedAt = null;
+    }
+
     await item.save();
-    ok(res, item);
+    ok(res, await serializeTalentRequest(item));
   } catch (err) { next(err); }
 }
 

@@ -16,6 +16,7 @@ interface MarketplaceTalentProfilePageProps {
   isAuthenticated: boolean;
   userName: string;
   onContinueToConsultation: (selection: MarketplaceCheckoutSelection) => void;
+  onOpenTalentRequests: () => void;
   onBack: () => void;
   onLogout: () => void;
   onNotifications: () => void;
@@ -80,6 +81,7 @@ export default function MarketplaceTalentProfilePage({
   isAuthenticated,
   userName,
   onContinueToConsultation,
+  onOpenTalentRequests,
   onBack,
   onLogout,
   onNotifications,
@@ -142,6 +144,24 @@ export default function MarketplaceTalentProfilePage({
     <div className="mpp-root">
       <header className="mpp-topbar">
         <button className="mpp-back" onClick={onBack}>← Back to marketplace</button>
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={onOpenTalentRequests}
+            style={{
+              border: '1px solid rgba(148, 163, 184, 0.35)',
+              background: '#fff',
+              borderRadius: 999,
+              padding: '10px 16px',
+              fontSize: 14,
+              fontWeight: 700,
+              color: '#0f172a',
+              cursor: 'pointer',
+            }}
+          >
+            Talent Requests
+          </button>
+        ) : null}
         <div className="mpp-user">
           {isAuthenticated ? (
             <UserMenu userName={userName} onLogout={onLogout} onNotifications={onNotifications} />

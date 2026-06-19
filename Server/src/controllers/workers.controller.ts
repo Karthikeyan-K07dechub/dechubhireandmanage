@@ -236,6 +236,7 @@ const inviteSchema = z.object({
   endDate:          z.string().optional(),
   noticePeriodDays: z.number().int().min(0).default(30),
   scopeOfWork:      z.string().min(1),
+  talentRequestId:  z.string().trim().optional(),
 });
 
 const marketplaceOrderDraftSchema = z.object({
@@ -462,9 +463,11 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
       throw Errors.NotFound('Marketplace profile');
     }
 
+    const { account, company } = await getCompanyForUser(req.user.sub);
+
     const draft = await MarketplaceOrderDraft.create({
       workerId: worker._id,
-      companyId: null,
+      companyId: company._id,
       orderNumber: createMarketplaceOrderNumber(),
       workerName: `${worker.firstName} ${worker.lastName}`.trim(),
       workerRole: worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer',
@@ -477,7 +480,6 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
     // Create a TalentRequest record for admin notification
     let createdTalentRequestId: string | null = null;
     try {
-      const { account, company } = await getCompanyForUser(req.user.sub);
       const contactFirstName = account.firstName?.trim() || 'Company';
       const contactLastName = account.lastName?.trim() || 'Admin';
       const contactEmail = account.email?.trim().toLowerCase() || company.billingEmail?.trim().toLowerCase() || '';
@@ -486,6 +488,7 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
       const companyWebsite = data.clientDetails.companyWebsite.trim() || company.companyWebsite?.trim() || '';
 
       const tr = await TalentRequest.create({
+        companyId: company._id,
         workerId: worker._id,
         workerName: draft.workerName,
         workerRole: draft.workerRole,
@@ -533,6 +536,17 @@ export async function inviteWorker(req: Request, res: Response, next: NextFuncti
     const data = inviteSchema.parse(req.body);
     const { company } = await getCompanyForUser(req.user!.sub);
     const normalizedEmail = data.email.trim().toLowerCase();
+    let linkedTalentRequest = null;
+
+    if (data.talentRequestId) {
+      linkedTalentRequest = await TalentRequest.findOne({ _id: data.talentRequestId, companyId: company._id });
+      if (!linkedTalentRequest) {
+        throw Errors.NotFound('Talent request');
+      }
+      if (linkedTalentRequest.status !== 'approved') {
+        throw new AppError('Only approved talent requests can be hired', 400, 'REQUEST_NOT_APPROVED');
+      }
+    }
 
     const existingCompanyAccount = await CompanyAuth.findOne({ email: normalizedEmail });
     if (existingCompanyAccount) {
@@ -565,6 +579,12 @@ export async function inviteWorker(req: Request, res: Response, next: NextFuncti
         logger.info(`Worker invite refreshed: ${existing.email} by company ${company._id}`);
       } else {
         logger.info(`Worker already exists: ${existing.email} status=${existing.status}`);
+      }
+
+      if (linkedTalentRequest) {
+        linkedTalentRequest.status = 'hired';
+        linkedTalentRequest.hiredAt = new Date();
+        await linkedTalentRequest.save();
       }
 
       ok(res, existing);
@@ -607,6 +627,12 @@ export async function inviteWorker(req: Request, res: Response, next: NextFuncti
       worker.roleTitle,
       inviteToken,
     );
+
+    if (linkedTalentRequest) {
+      linkedTalentRequest.status = 'hired';
+      linkedTalentRequest.hiredAt = new Date();
+      await linkedTalentRequest.save();
+    }
 
     logger.info(`Worker invited: ${worker.email} by company ${company._id}`);
     created(res, worker);

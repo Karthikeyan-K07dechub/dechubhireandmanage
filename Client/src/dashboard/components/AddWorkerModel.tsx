@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { AddWorkerFormData, DechubService, ServiceConfig } from '../types/dashboard.type';
 import { INITIAL_ADD_WORKER, DECHUB_SERVICES } from '../types/dashboard.type';
 import { inviteWorker } from '../api/dashboard.api';
@@ -33,9 +33,10 @@ function StepBar({ current }: { current: number }) {
 
 // ─── Step 1: Worker type ──────────────────────────────────────────────────────
 
-function Step1Type({ data, onChange }: {
+function Step1Type({ data, onChange, locked }: {
   data: AddWorkerFormData;
   onChange: (k: keyof AddWorkerFormData, v: string) => void;
+  locked?: boolean;
 }) {
   return (
     <div>
@@ -52,6 +53,7 @@ function Step1Type({ data, onChange }: {
           <button
             type="button"
             className={`db-type-card ${data.workerType === 'contractor' ? 'selected' : ''}`}
+            disabled={locked}
             onClick={() => onChange('workerType', 'contractor')}
           >
             {data.workerType === 'contractor' && (
@@ -67,6 +69,7 @@ function Step1Type({ data, onChange }: {
           <button
             type="button"
             className={`db-type-card ${data.workerType === 'full_time_employee' ? 'selected' : ''}`}
+            disabled={locked}
             onClick={() => onChange('workerType', 'full_time_employee')}
           >
             {data.workerType === 'full_time_employee' && (
@@ -90,6 +93,7 @@ function Step1Type({ data, onChange }: {
           <button
             type="button"
             className={`db-type-card ${data.track === 'track_2_us' ? 'selected' : ''}`}
+            disabled={locked}
             onClick={() => onChange('track', 'track_2_us')}
           >
             {data.track === 'track_2_us' && (
@@ -105,6 +109,7 @@ function Step1Type({ data, onChange }: {
           <button
             type="button"
             className={`db-type-card ${data.track === 'track_1_india' ? 'selected' : ''}`}
+            disabled={locked}
             onClick={() => onChange('track', 'track_1_india')}
           >
             {data.track === 'track_1_india' && (
@@ -130,10 +135,11 @@ const COUNTRIES = [
   'France', 'India', 'Singapore', 'Netherlands', 'UAE', 'Sweden', 'Brazil',
 ];
 
-function Step2Details({ data, onChange, errors }: {
+function Step2Details({ data, onChange, errors, locked }: {
   data: AddWorkerFormData;
   onChange: (k: keyof AddWorkerFormData, v: string) => void;
   errors: Record<string, string>;
+  locked?: boolean;
 }) {
   return (
     <div>
@@ -149,6 +155,7 @@ function Step2Details({ data, onChange, errors }: {
             className={`db-input ${errors.firstName ? 'error' : ''}`}
             placeholder="John"
             value={data.firstName}
+            disabled={locked}
             onChange={(e) => onChange('firstName', e.target.value)}
           />
           {errors.firstName && <p className="db-field-error">{errors.firstName}</p>}
@@ -159,6 +166,7 @@ function Step2Details({ data, onChange, errors }: {
             className={`db-input ${errors.lastName ? 'error' : ''}`}
             placeholder="Smith"
             value={data.lastName}
+            disabled={locked}
             onChange={(e) => onChange('lastName', e.target.value)}
           />
           {errors.lastName && <p className="db-field-error">{errors.lastName}</p>}
@@ -172,6 +180,7 @@ function Step2Details({ data, onChange, errors }: {
           className={`db-input ${errors.email ? 'error' : ''}`}
           placeholder="john@example.com"
           value={data.email}
+          disabled={locked}
           onChange={(e) => onChange('email', e.target.value)}
         />
         {errors.email && <p className="db-field-error">{errors.email}</p>}
@@ -187,6 +196,7 @@ function Step2Details({ data, onChange, errors }: {
             className={`db-input ${errors.roleTitle ? 'error' : ''}`}
             placeholder="Senior React Developer"
             value={data.roleTitle}
+            disabled={locked}
             onChange={(e) => onChange('roleTitle', e.target.value)}
           />
           {errors.roleTitle && <p className="db-field-error">{errors.roleTitle}</p>}
@@ -207,6 +217,7 @@ function Step2Details({ data, onChange, errors }: {
         <select
           className={`db-select ${errors.country ? 'error' : ''}`}
           value={data.country}
+          disabled={locked}
           onChange={(e) => onChange('country', e.target.value)}
         >
           <option value="">Select country…</option>
@@ -560,14 +571,29 @@ function validateStep(step: number, data: AddWorkerFormData): Record<string, str
 interface AddWorkerModalProps {
   onClose:   () => void;
   onSuccess: (worker: unknown) => void;
+  initialData?: AddWorkerFormData;
+  talentRequestId?: string;
 }
 
-export default function AddWorkerModal({ onClose, onSuccess }: AddWorkerModalProps) {
+export default function AddWorkerModal({
+  onClose,
+  onSuccess,
+  initialData,
+  talentRequestId,
+}: AddWorkerModalProps) {
   const [step,     setStep]     = useState(0);
-  const [data,     setData]     = useState<AddWorkerFormData>(INITIAL_ADD_WORKER);
+  const [data,     setData]     = useState<AddWorkerFormData>(initialData ?? INITIAL_ADD_WORKER);
   const [errors,   setErrors]   = useState<Record<string, string>>({});
   const [loading,  setLoading]  = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const hasLockedTalent = Boolean(talentRequestId);
+
+  useEffect(() => {
+    setData(initialData ?? INITIAL_ADD_WORKER);
+    setStep(0);
+    setErrors({});
+    setApiError(null);
+  }, [initialData, talentRequestId]);
 
   const handleChange = useCallback(<K extends keyof AddWorkerFormData>(
     key: K,
@@ -609,7 +635,7 @@ export default function AddWorkerModal({ onClose, onSuccess }: AddWorkerModalPro
     setLoading(true);
     setApiError(null);
     try {
-      const worker = await inviteWorker(data);
+      const worker = await inviteWorker(data, talentRequestId);
       onSuccess(worker);
     } catch (err: unknown) {
       const e = err as { message?: string };
@@ -643,10 +669,10 @@ export default function AddWorkerModal({ onClose, onSuccess }: AddWorkerModalPro
         {/* Body */}
         <div className="db-modal-body">
           {step === 0 && (
-            <Step1Type data={data} onChange={handleStringChange} />
+            <Step1Type data={data} onChange={handleStringChange} locked={hasLockedTalent} />
           )}
           {step === 1 && (
-            <Step2Details data={data} onChange={handleStringChange} errors={errors} />
+            <Step2Details data={data} onChange={handleStringChange} errors={errors} locked={hasLockedTalent} />
           )}
           {step === 2 && (
             <Step3Services data={data} onToggle={toggleService} />

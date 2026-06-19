@@ -10,6 +10,7 @@ interface TalentMarketplacePageProps {
   isAuthenticated: boolean;
   userName: string;
   onOpenProfile: (workerId: string) => void;
+  onOpenTalentRequests: () => void;
   onLogout: () => void;
   onNotifications: () => void;
   onLogin: () => void;
@@ -75,6 +76,7 @@ export default function TalentMarketplacePage({
   isAuthenticated,
   userName,
   onOpenProfile,
+  onOpenTalentRequests,
   onLogout,
   onNotifications,
   onLogin,
@@ -132,6 +134,25 @@ export default function TalentMarketplacePage({
             <div className="tmp-brand-sub">Talent marketplace</div>
           </div>
         </div>
+
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={onOpenTalentRequests}
+            style={{
+              border: '1px solid #dbe4f0',
+              background: '#fff',
+              borderRadius: 999,
+              padding: '10px 16px',
+              fontSize: 14,
+              fontWeight: 700,
+              color: '#0f172a',
+              cursor: 'pointer',
+            }}
+          >
+            Talent Requests
+          </button>
+        ) : null}
 
         <div className="tmp-user">
           {isAuthenticated ? (

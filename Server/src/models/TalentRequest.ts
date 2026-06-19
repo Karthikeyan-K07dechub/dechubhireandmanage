@@ -1,10 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type TalentRequestStatus = 'new' | 'contacted' | 'in_discussion' | 'closed';
+export type TalentRequestStatus =
+  | 'pending_review'
+  | 'approved'
+  | 'alternative_suggested'
+  | 'rejected'
+  | 'hired';
 
 export interface ITalentRequest extends Document {
   _id: mongoose.Types.ObjectId;
+  companyId: mongoose.Types.ObjectId;
   workerId: mongoose.Types.ObjectId;
+  originalWorkerId: mongoose.Types.ObjectId | null;
+  suggestedWorkerId: mongoose.Types.ObjectId | null;
   workerName: string;
   workerRole: string;
   workerProfileUrl?: string;
@@ -18,6 +26,10 @@ export interface ITalentRequest extends Document {
   budget: string;
   projectDescription: string;
   status: TalentRequestStatus;
+  reviewNotes: string;
+  approvedAt: Date | null;
+  reviewedAt: Date | null;
+  hiredAt: Date | null;
   unread: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -25,7 +37,10 @@ export interface ITalentRequest extends Document {
 
 const talentRequestSchema = new Schema<ITalentRequest>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true, index: true },
+    originalWorkerId: { type: Schema.Types.ObjectId, ref: 'Worker', default: null },
+    suggestedWorkerId: { type: Schema.Types.ObjectId, ref: 'Worker', default: null },
     workerName: { type: String, required: true, trim: true },
     workerRole: { type: String, required: true, trim: true },
     workerProfileUrl: { type: String, default: '' },
@@ -41,7 +56,15 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     budget: { type: String, required: true, trim: true },
     projectDescription: { type: String, required: true, trim: true },
 
-    status: { type: String, enum: ['new', 'contacted', 'in_discussion', 'closed'], default: 'new' },
+    status: {
+      type: String,
+      enum: ['pending_review', 'approved', 'alternative_suggested', 'rejected', 'hired'],
+      default: 'pending_review',
+    },
+    reviewNotes: { type: String, default: '', trim: true },
+    approvedAt: { type: Date, default: null },
+    reviewedAt: { type: Date, default: null },
+    hiredAt: { type: Date, default: null },
     unread: { type: Boolean, default: true },
   },
   { timestamps: true },
@@ -49,5 +72,6 @@ const talentRequestSchema = new Schema<ITalentRequest>(
 
 talentRequestSchema.index({ companyName: 1, createdAt: -1 });
 talentRequestSchema.index({ unread: 1, createdAt: -1 });
+talentRequestSchema.index({ companyId: 1, createdAt: -1 });
 
 export const TalentRequest = mongoose.model<ITalentRequest>('TalentRequest', talentRequestSchema);

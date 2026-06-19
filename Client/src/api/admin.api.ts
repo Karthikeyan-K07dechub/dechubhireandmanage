@@ -2,7 +2,10 @@ import { api, ApiResponse, normalizeError, unwrapApiData } from './client';
 
 export interface TalentRequestItem {
   _id: string;
+  companyId: string;
   workerId: string;
+  originalWorkerId?: string | null;
+  suggestedWorkerId?: string | null;
   workerName: string;
   workerRole: string;
   workerProfileUrl?: string;
@@ -31,6 +34,14 @@ export interface TalentRequestItem {
       tags: string[];
     }>;
   } | null;
+  suggestedTalentProfile?: {
+    workerId: string;
+    workerName: string;
+    workerRole: string;
+    profilePhotoUrl: string;
+    location: string;
+    availabilityLabel: string;
+  } | null;
   companyName: string;
   companyWebsite?: string;
   contactFirstName: string;
@@ -41,6 +52,10 @@ export interface TalentRequestItem {
   budget: string;
   projectDescription: string;
   status: string;
+  reviewNotes?: string;
+  approvedAt?: string | null;
+  reviewedAt?: string | null;
+  hiredAt?: string | null;
   unread: boolean;
   createdAt: string;
 }
@@ -68,9 +83,12 @@ export async function unreadCount() {
   } catch (err) { throw normalizeError(err); }
 }
 
-export async function updateTalentRequestStatus(id: string, status: string) {
+export async function updateTalentRequestStatus(
+  id: string,
+  payload: { status: string; suggestedWorkerId?: string; reviewNotes?: string },
+) {
   try {
-    const res = await api.patch<ApiResponse<any>>(`/admin/talent-requests/${id}/status`, { status });
+    const res = await api.patch<ApiResponse<any>>(`/admin/talent-requests/${id}/status`, payload);
     return unwrapApiData(res.data);
   } catch (err) { throw normalizeError(err); }
 }

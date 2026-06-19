@@ -9,6 +9,12 @@ import {
   savePreferences,
   getMyCompany,
 } from '../controllers/company.controller';
+import {
+  listCompanyTalentRequests,
+  getCompanyTalentRequest,
+  acceptSuggestedTalent,
+  getTalentRequestHirePrefill,
+} from '../controllers/companyTalentRequests.controller';
 import { requireAuth } from '../middleware/auth.middleware';
 import { kybUpload } from '../middleware/upload.middleware';
 
@@ -25,5 +31,9 @@ router.get  ('/kyb/status',     getKybStatus);
 router.post ('/billing/setup-intent', createSetupIntent);
 router.post ('/billing',        saveBilling);            // Step 5
 router.post ('/preferences',    savePreferences);        // Step 6
+router.get  ('/talent-requests', listCompanyTalentRequests);
+router.get  ('/talent-requests/:id', getCompanyTalentRequest);
+router.post ('/talent-requests/:id/accept-suggestion', acceptSuggestedTalent);
+router.get  ('/talent-requests/:id/hire-prefill', getTalentRequestHirePrefill);
 
 export default router;
