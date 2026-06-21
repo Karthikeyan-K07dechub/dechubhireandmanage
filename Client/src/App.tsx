@@ -23,6 +23,7 @@ import { getMyCompany } from './api/company.api';
 import { contractorTokenStore } from './contractor/api/contractor.api';
 import type { Step } from './types/signup';
 import type { MarketplaceCheckoutSelection, MarketplaceOrderDraft } from './api/marketplace.api';
+import { claimShortlistedTalentRequest } from './api/talentRequests.api';
 
 type AppPage =
   | 'landing'
@@ -51,6 +52,13 @@ type CompanyDestination = 'marketplace' | 'dashboard' | 'marketplace-profile';
 const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
 const MARKETPLACE_CHECKOUT_SELECTION_KEY = 'dechub_marketplace_checkout_selection';
 const MARKETPLACE_ORDER_DRAFT_KEY = 'dechub_marketplace_order_draft';
+const PENDING_SHORTLIST_CLAIM_KEY = 'dechub_pending_shortlist_claim';
+
+interface PendingShortlistClaim {
+  requestId: string;
+  workerId: string;
+  token: string;
+}
 
 function readSessionJson<T>(key: string): T | null {
   try {
@@ -175,6 +183,22 @@ function getAdminRequestIdFromUrl(): string {
   return match ? decodeURIComponent(match[1]).trim() : '';
 }
 
+function getPendingShortlistClaimFromUrl(): PendingShortlistClaim | null {
+  const requestId = new URLSearchParams(window.location.search).get('requestId')?.trim() ?? '';
+  const token = new URLSearchParams(window.location.search).get('token')?.trim() ?? '';
+  const workerId = getMarketplaceProfileIdFromUrl();
+
+  if (!requestId || !token || !workerId) {
+    return null;
+  }
+
+  return { requestId, token, workerId };
+}
+
+function getActiveShortlistClaimContext(): PendingShortlistClaim | null {
+  return getPendingShortlistClaimFromUrl() ?? readSessionJson<PendingShortlistClaim>(PENDING_SHORTLIST_CLAIM_KEY);
+}
+
 function getUserNameFromToken(): string {
   const accessToken = tokenStore.getAccess();
   if (!accessToken) return 'Company User';
@@ -247,6 +271,9 @@ export default function App() {
   const [marketplaceOrderDraft, setMarketplaceOrderDraft] = useState<MarketplaceOrderDraft | null>(
     () => readSessionJson<MarketplaceOrderDraft>(MARKETPLACE_ORDER_DRAFT_KEY),
   );
+  const [pendingShortlistClaimFromUrl, setPendingShortlistClaimFromUrl] = useState<PendingShortlistClaim | null>(
+    () => getActiveShortlistClaimContext(),
+  );
 
   useEffect(() => {
     const handlePopState = () => {
@@ -256,6 +283,7 @@ export default function App() {
       setMarketplaceQuery(getMarketplaceQueryFromUrl());
       setSelectedMarketplaceProfileId(getMarketplaceProfileIdFromUrl());
       setSelectedAdminRequestId(getAdminRequestIdFromUrl());
+      setPendingShortlistClaimFromUrl(getActiveShortlistClaimContext());
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -335,6 +363,25 @@ export default function App() {
     setPage('marketplace');
   }, []);
 
+  const completePendingShortlistClaim = async (): Promise<boolean> => {
+    const pending = readSessionJson<PendingShortlistClaim>(PENDING_SHORTLIST_CLAIM_KEY);
+    if (!pending || !tokenStore.getAccess()) {
+      return false;
+    }
+
+    try {
+      const result = await claimShortlistedTalentRequest(pending.requestId, {
+        token: pending.token,
+        workerId: pending.workerId,
+      });
+      writeSessionJson(PENDING_SHORTLIST_CLAIM_KEY, null);
+      window.location.replace(`/dashboard?hireRequest=${encodeURIComponent(result._id)}`);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     let targetPath = authMode === 'signup' ? '/company/signup' : '/company/login';
 
@@ -406,7 +453,7 @@ export default function App() {
     }
   }, [authMode, marketplaceQuery, page, selectedAdminRequestId, selectedMarketplaceProfileId]);
 
-  const handleAuthSuccess = (result: { signupStep?: number }) => {
+  const handleAuthSuccess = async (result: { signupStep?: number }) => {
     console.log('[handleAuthSuccess] Called with:', result);
     console.log('[handleAuthSuccess] Company token stored:', !!tokenStore.getAccess());
     
@@ -448,6 +495,15 @@ export default function App() {
       return;
     }
 
+    if (readSessionJson<PendingShortlistClaim>(PENDING_SHORTLIST_CLAIM_KEY)) {
+      const claimed = await completePendingShortlistClaim();
+      if (claimed) {
+        return;
+      }
+      setPage('marketplace-profile');
+      return;
+    }
+
     // User has completed onboarding or is not coming from marketplace
     console.log('[handleAuthSuccess] Defaulting to dashboard');
     window.location.replace('/dashboard');
@@ -469,9 +525,18 @@ export default function App() {
     setPage('landing');
   };
 
-  const handleCompanyOnboardingComplete = () => {
+  const handleCompanyOnboardingComplete = async () => {
     const destination = getCompanyDestination();
     console.log('[handleCompanyOnboardingComplete] companyOnboardingFromMarketplace:', companyOnboardingFromMarketplace, 'destination:', destination);
+
+    if (readSessionJson<PendingShortlistClaim>(PENDING_SHORTLIST_CLAIM_KEY)) {
+      const claimed = await completePendingShortlistClaim();
+      if (claimed) {
+        return;
+      }
+      setPage('marketplace-profile');
+      return;
+    }
 
     if (companyOnboardingFromMarketplace || destination === 'marketplace') {
       console.log('[handleCompanyOnboardingComplete] Redirecting to marketplace via SPA');
@@ -490,6 +555,33 @@ export default function App() {
     writeSessionJson(MARKETPLACE_CHECKOUT_SELECTION_KEY, selection);
     writeSessionJson(MARKETPLACE_ORDER_DRAFT_KEY, null);
     setPage('marketplace-consultation');
+  };
+
+  const handleShortlistProfileContinue = async (claim: PendingShortlistClaim) => {
+    writeSessionJson(PENDING_SHORTLIST_CLAIM_KEY, claim);
+
+    if (!tokenStore.getAccess()) {
+      setCompanyDestination('dashboard');
+      setPage('company-dashboard-auth');
+      return;
+    }
+
+    const signupStep = (await getSignupStepFromServer()) ?? getSignupStepFromToken();
+    if (signupStep !== null && signupStep < 7) {
+      const nextStep = getNextCompanyStep(signupStep);
+      if (nextStep !== null) {
+        setCompanyDestination('dashboard');
+        setCompanyOnboardingFromMarketplace(false);
+        setCompanyOnboardingStep(nextStep);
+        setPage('company-onboarding');
+        return;
+      }
+    }
+
+    const claimed = await completePendingShortlistClaim();
+    if (!claimed) {
+      setPage('marketplace-profile');
+    }
   };
 
   if (page === 'landing') {
@@ -513,7 +605,6 @@ export default function App() {
           setSelectedMarketplaceProfileId('');
           setPage('marketplace');
         }}
-        onDemo={() => window.open('mailto:demo@dechub.in')}
       />
     );
   }
@@ -765,6 +856,8 @@ export default function App() {
         isAuthenticated={Boolean(tokenStore.getAccess())}
         userName={userName}
         onContinueToConsultation={handleMarketplaceCheckoutSelection}
+        shortlistClaimContext={pendingShortlistClaimFromUrl}
+        onContinueFromShortlist={handleShortlistProfileContinue}
         onOpenTalentRequests={() => setPage('marketplace-requests')}
         onBack={() => {
           setPage('marketplace');

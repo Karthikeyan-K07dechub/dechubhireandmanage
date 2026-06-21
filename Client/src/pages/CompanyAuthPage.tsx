@@ -26,6 +26,22 @@ function LogoMark() {
   );
 }
 
+const FREE_EMAIL_DOMAINS = new Set([
+  'gmail.com',
+  'yahoo.com',
+  'hotmail.com',
+  'outlook.com',
+  'icloud.com',
+  'protonmail.com',
+  'aol.com',
+  'live.com',
+]);
+
+function isWorkEmail(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase();
+  return Boolean(domain && !FREE_EMAIL_DOMAINS.has(domain));
+}
+
 export default function CompanyAuthPage({
   mode,
   onModeChange,
@@ -74,10 +90,14 @@ export default function CompanyAuthPage({
 
     if (mode === 'signup' && !form.firstName.trim()) {
       nextErrors.firstName = 'First name is required';
+    } else if (mode === 'signup' && form.firstName.trim().length < 2) {
+      nextErrors.firstName = 'First name must be at least 2 characters';
     }
 
     if (mode === 'signup' && !form.lastName.trim()) {
       nextErrors.lastName = 'Last name is required';
+    } else if (mode === 'signup' && form.lastName.trim().length < 2) {
+      nextErrors.lastName = 'Last name must be at least 2 characters';
     }
 
     if (mode === 'signup' && !form.phone.trim()) {
@@ -93,6 +113,8 @@ export default function CompanyAuthPage({
       nextErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       nextErrors.email = 'Enter a valid email address';
+    } else if (mode === 'signup' && !isWorkEmail(form.email.trim())) {
+      nextErrors.email = 'Use your company email address';
     }
 
     if (!form.password.trim()) {
@@ -146,9 +168,17 @@ export default function CompanyAuthPage({
     } catch (err) {
       const apiError = err as ApiError;
       if (apiError.fields) {
-        setFieldErrors(apiError.fields);
+        const normalizedFields = { ...apiError.fields };
+        if (normalizedFields.workEmail && !normalizedFields.email) {
+          normalizedFields.email = normalizedFields.workEmail;
+        }
+        setFieldErrors(normalizedFields);
       }
-      setError(apiError.message ?? 'Something went wrong. Please try again.');
+      setError(
+        apiError.fields
+          ? 'Please correct the highlighted fields.'
+          : (apiError.message ?? 'Something went wrong. Please try again.'),
+      );
     } finally {
       setLoading(false);
     }

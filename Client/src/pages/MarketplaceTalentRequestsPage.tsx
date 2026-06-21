@@ -17,6 +17,7 @@ interface MarketplaceTalentRequestsPageProps {
 
 const STATUS_LABELS: Record<string, string> = {
   pending_review: 'Pending review',
+  shortlisted_sent: 'Shortlist sent',
   approved: 'Approved',
   alternative_suggested: 'Alternative suggested',
   rejected: 'Rejected',
@@ -120,13 +121,15 @@ export default function MarketplaceTalentRequestsPage({
                   </div>
 
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => onOpenProfile(item.workerId)}
-                      style={secondaryButtonStyle}
-                    >
-                      View current profile
-                    </button>
+                    {item.workerId ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenProfile(item.workerId!)}
+                        style={secondaryButtonStyle}
+                      >
+                        View current profile
+                      </button>
+                    ) : null}
                     {item.status === 'approved' ? (
                       <button
                         type="button"
@@ -164,6 +167,7 @@ export default function MarketplaceTalentRequestsPage({
                     <div style={{ color: '#475569', lineHeight: 1.7 }}>
                       {item.reviewNotes?.trim()
                         || (item.status === 'pending_review' ? 'Your request is with the Dechub admin team for review.' : '')
+                        || (item.status === 'shortlisted_sent' ? 'Dechub has emailed shortlisted candidate profiles for this request. Continue from one of those profile links to move into hiring.' : '')
                         || (item.status === 'approved' ? 'This talent has been approved. You can continue to the dashboard hire flow.' : '')
                         || (item.status === 'rejected' ? 'This request was not approved. Please submit a new request if you want to explore a different fit.' : '')
                         || (item.status === 'hired' ? 'This talent has already been moved into your dashboard.' : '')
@@ -248,6 +252,7 @@ const sectionLabelStyle: CSSProperties = {
 function statusPillStyle(status: string): CSSProperties {
   const palette: Record<string, { background: string; color: string }> = {
     pending_review: { background: '#eff6ff', color: '#1d4ed8' },
+    shortlisted_sent: { background: '#faf5ff', color: '#7c3aed' },
     approved: { background: '#ecfdf5', color: '#047857' },
     alternative_suggested: { background: '#faf5ff', color: '#7c3aed' },
     rejected: { background: '#fef2f2', color: '#b91c1c' },

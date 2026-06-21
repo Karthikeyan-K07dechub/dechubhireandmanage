@@ -16,6 +16,12 @@ interface MarketplaceTalentProfilePageProps {
   isAuthenticated: boolean;
   userName: string;
   onContinueToConsultation: (selection: MarketplaceCheckoutSelection) => void;
+  shortlistClaimContext?: {
+    requestId: string;
+    token: string;
+    workerId: string;
+  } | null;
+  onContinueFromShortlist?: (claim: { requestId: string; token: string; workerId: string }) => void | Promise<void>;
   onOpenTalentRequests: () => void;
   onBack: () => void;
   onLogout: () => void;
@@ -81,6 +87,8 @@ export default function MarketplaceTalentProfilePage({
   isAuthenticated,
   userName,
   onContinueToConsultation,
+  shortlistClaimContext,
+  onContinueFromShortlist,
   onOpenTalentRequests,
   onBack,
   onLogout,
@@ -330,11 +338,21 @@ export default function MarketplaceTalentProfilePage({
                         <button
                           type="button"
                           className="mpp-primary-action"
-                          onClick={() => {
+                          onClick={async () => {
+                            if (
+                              shortlistClaimContext
+                              && shortlistClaimContext.workerId === workerId
+                              && onContinueFromShortlist
+                            ) {
+                              await onContinueFromShortlist(shortlistClaimContext);
+                              return;
+                            }
+
                             if (!isAuthenticated) {
                               onLogin();
                               return;
                             }
+
                             const selection = buildCheckoutSelection(profile.servicePackages[selectedPackageIndex]);
                             if (selection) onContinueToConsultation(selection);
                           }}

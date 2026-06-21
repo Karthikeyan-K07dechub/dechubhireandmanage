@@ -13,6 +13,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
 
   const statusTone: Record<string, string> = {
     pending_review: 'new',
+    shortlisted_sent: 'discussion',
     approved: 'contacted',
     alternative_suggested: 'discussion',
     rejected: 'closed',

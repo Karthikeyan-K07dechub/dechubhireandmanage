@@ -3,6 +3,7 @@ import landingTemplate from '../landing/landing-template.html?raw';
 import heroBackground from '../landing/assets/back_img.png';
 import heroLaptop from '../landing/assets/laptop.png';
 import modernExperienceImage from '../modern-experience-generated.png';
+import LandingTalentRequestModal from '../components/common/LandingTalentRequestModal';
 import '../landing/landing-globals.css';
 import '../landing/landing-styleguide.css';
 import '../landing/landing-design.css';
@@ -13,7 +14,6 @@ interface LandingPageProps {
   onGetStarted: () => void;
   onMarketplace: () => void;
   onMarketplaceSearch: (query: string) => void;
-  onDemo?: () => void;
 }
 
 const SECTION_SELECTORS: Record<string, string> = {
@@ -125,6 +125,7 @@ function buildLandingMarkup(): string {
 
 export default function LandingPage(props: LandingPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showTalentRequestModal, setShowTalentRequestModal] = useState(false);
   const markup = useMemo(() => buildLandingMarkup(), []);
   const parser = useMemo(() => new DOMParser(), []);
   const submitMarketplaceSearch = useCallback(() => {
@@ -169,8 +170,7 @@ export default function LandingPage(props: LandingPageProps) {
 
       if (classList.contains('button-2')) {
         return {
-          onClick: () =>
-            (props.onDemo ?? (() => window.open('mailto:demo@dechub.in', '_blank', 'noopener,noreferrer')))(),
+          onClick: () => setShowTalentRequestModal(true),
         };
       }
 
@@ -321,7 +321,15 @@ export default function LandingPage(props: LandingPageProps) {
       .filter((child) => child !== null);
   }, [markup, parser, props, searchQuery, submitMarketplaceSearch]);
 
-  return <div className="landing-template-root"><Fragment>{contentWithSearch}</Fragment></div>;
+  return (
+    <>
+      <div className="landing-template-root"><Fragment>{contentWithSearch}</Fragment></div>
+      <LandingTalentRequestModal
+        isOpen={showTalentRequestModal}
+        onClose={() => setShowTalentRequestModal(false)}
+      />
+    </>
+  );
 }
 
 function classListContains(element: Element, className: string): boolean {

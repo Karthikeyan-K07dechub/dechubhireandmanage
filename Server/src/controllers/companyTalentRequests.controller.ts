@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { TalentRequest } from '../models/TalentRequest';
 import { Worker } from '../models/Worker';
 import { CompanyAuth } from '../models/CompanyAuth';
@@ -50,15 +51,21 @@ function buildProfileSummary(worker: any) {
 async function serializeRequest(item: any) {
   const source = typeof item?.toObject === 'function' ? item.toObject() : item;
 
-  const [worker, suggestedWorker] = await Promise.all([
-    Worker.findById(source.workerId).lean(),
+  const [worker, suggestedWorker, shortlistedWorkers] = await Promise.all([
+    source.workerId ? Worker.findById(source.workerId).lean() : Promise.resolve(null),
     source.suggestedWorkerId ? Worker.findById(source.suggestedWorkerId).lean() : Promise.resolve(null),
+    Array.isArray(source.shortlistedWorkerIds) && source.shortlistedWorkerIds.length
+      ? Worker.find({ _id: { $in: source.shortlistedWorkerIds } }).lean()
+      : Promise.resolve([]),
   ]);
 
   return {
     ...source,
     talentProfile: buildProfileSummary(worker),
     suggestedTalentProfile: buildProfileSummary(suggestedWorker),
+    shortlistedTalentProfiles: Array.isArray(shortlistedWorkers)
+      ? shortlistedWorkers.map((shortlistedWorker) => buildProfileSummary(shortlistedWorker)).filter(Boolean)
+      : [],
   };
 }
 
@@ -121,8 +128,14 @@ export async function getTalentRequestHirePrefill(req: Request, res: Response, n
     const { company } = await getCompanyForUser(req.user!.sub);
     const item = await TalentRequest.findOne({ _id: req.params.id, companyId: company._id });
     if (!item) throw Errors.NotFound('Talent request');
-    if (item.status !== 'approved') {
+    if (!['approved', 'candidate_selected', 'hire_started'].includes(item.status)) {
       throw new AppError('This request is not approved for hiring yet', 400, 'REQUEST_NOT_APPROVED');
+    }
+
+    if (item.status !== 'hire_started') {
+      item.status = 'hire_started';
+      item.reviewedAt = new Date();
+      await item.save();
     }
 
     const worker = await Worker.findById(item.workerId).lean();
@@ -160,6 +173,60 @@ export async function getTalentRequestHirePrefill(req: Request, res: Response, n
         scopeOfWork: item.projectDescription || '',
       },
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function claimShortlistedTalentRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { company, account } = await getCompanyForUser(req.user!.sub);
+    const { token, workerId } = req.body as { token?: string; workerId?: string };
+
+    if (!token?.trim() || !workerId?.trim()) {
+      throw new AppError('Token and worker selection are required.', 400, 'INVALID_REQUEST');
+    }
+
+    const item = await TalentRequest.findById(req.params.id);
+    if (!item) throw Errors.NotFound('Talent request');
+
+    if (item.status !== 'shortlisted_sent') {
+      throw new AppError('This talent request is not waiting for shortlisted profile selection.', 400, 'INVALID_REQUEST');
+    }
+
+    if (!item.shortlistTokenHash || !item.shortlistTokenExpiresAt || item.shortlistTokenExpiresAt.getTime() < Date.now()) {
+      throw new AppError('This shortlist link has expired. Please ask Dechub to send a fresh shortlist email.', 401, 'INVALID_TOKEN');
+    }
+
+    const providedHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    if (providedHash !== item.shortlistTokenHash) {
+      throw new AppError('This shortlist link is invalid. Please use the latest email from Dechub.', 401, 'INVALID_TOKEN');
+    }
+
+    if (item.email.trim().toLowerCase() !== account.email.trim().toLowerCase()) {
+      throw new AppError('Please log in with the same company email that received the shortlist.', 403, 'EMAIL_MISMATCH');
+    }
+
+    const shortlistedIds = (item.shortlistedWorkerIds ?? []).map((entry) => entry.toString());
+    if (!shortlistedIds.includes(workerId.trim())) {
+      throw new AppError('This candidate was not part of the shortlisted profiles for this request.', 400, 'INVALID_REQUEST');
+    }
+
+    const worker = await Worker.findById(workerId.trim());
+    if (!worker) throw Errors.NotFound('Talent profile');
+
+    item.companyId = company._id;
+    item.workerId = worker._id;
+    item.workerName = `${worker.firstName} ${worker.lastName}`.trim();
+    item.workerRole = worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer';
+    item.workerProfileUrl = `/marketplace/${worker._id}`;
+    item.status = 'candidate_selected';
+    item.reviewedAt = new Date();
+    item.shortlistTokenHash = null;
+    item.shortlistTokenExpiresAt = null;
+    await item.save();
+
+    ok(res, await serializeRequest(item));
   } catch (err) {
     next(err);
   }

@@ -13,9 +13,20 @@ export interface CompanyTalentProfileSummary {
   track: string;
 }
 
+export interface PublicTalentRequestPayload {
+  companyName: string;
+  companyWebsite: string;
+  projectType: string;
+  budget: string;
+  projectDescription: string;
+  contactName?: string;
+  contactEmail?: string;
+  phoneNumber?: string;
+}
+
 export interface CompanyTalentRequestItem {
   _id: string;
-  workerId: string;
+  workerId: string | null;
   originalWorkerId?: string | null;
   suggestedWorkerId?: string | null;
   workerName: string;
@@ -26,7 +37,7 @@ export interface CompanyTalentRequestItem {
   projectType: string;
   budget: string;
   projectDescription: string;
-  status: 'pending_review' | 'approved' | 'alternative_suggested' | 'rejected' | 'hired';
+  status: 'pending_review' | 'shortlisted_sent' | 'approved' | 'alternative_suggested' | 'rejected' | 'hired';
   reviewNotes?: string;
   approvedAt?: string | null;
   reviewedAt?: string | null;
@@ -34,11 +45,28 @@ export interface CompanyTalentRequestItem {
   createdAt: string;
   talentProfile: CompanyTalentProfileSummary | null;
   suggestedTalentProfile: CompanyTalentProfileSummary | null;
+  shortlistedTalentProfiles?: CompanyTalentProfileSummary[];
 }
 
 export async function listCompanyTalentRequests(): Promise<CompanyTalentRequestItem[]> {
   try {
     const res = await api.get<ApiResponse<CompanyTalentRequestItem[]>>('/company/talent-requests');
+    return unwrapApiData(res.data);
+  } catch (err) {
+    throw normalizeError(err);
+  }
+}
+
+export async function createPublicTalentRequest(payload: PublicTalentRequestPayload): Promise<{
+  id: string;
+  status: string;
+  createdAt: string;
+}> {
+  try {
+    const res = await api.post<ApiResponse<{ id: string; status: string; createdAt: string }>>(
+      '/workers/marketplace/talent-requests',
+      payload,
+    );
     return unwrapApiData(res.data);
   } catch (err) {
     throw normalizeError(err);
@@ -71,6 +99,18 @@ export async function getTalentRequestHirePrefill(id: string): Promise<{
     const res = await api.get<ApiResponse<{ talentRequestId: string; initialData: AddWorkerFormData }>>(
       `/company/talent-requests/${id}/hire-prefill`,
     );
+    return unwrapApiData(res.data);
+  } catch (err) {
+    throw normalizeError(err);
+  }
+}
+
+export async function claimShortlistedTalentRequest(
+  id: string,
+  payload: { token: string; workerId: string },
+): Promise<CompanyTalentRequestItem> {
+  try {
+    const res = await api.post<ApiResponse<CompanyTalentRequestItem>>(`/company/talent-requests/${id}/claim-shortlist`, payload);
     return unwrapApiData(res.data);
   } catch (err) {
     throw normalizeError(err);

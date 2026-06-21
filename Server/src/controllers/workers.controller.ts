@@ -257,6 +257,17 @@ const marketplaceOrderDraftSchema = z.object({
   }),
 });
 
+const marketplaceTalentRequestSchema = z.object({
+  companyName: z.string().trim().min(1).max(120),
+  companyWebsite: z.string().trim().url().max(300),
+  projectType: z.string().trim().min(1).max(100),
+  budget: z.string().trim().min(1).max(100),
+  projectDescription: z.string().trim().min(150).max(3000),
+  contactName: z.string().trim().min(2).max(120).optional(),
+  contactEmail: z.string().trim().email().max(200).optional(),
+  phoneNumber: z.string().trim().max(40).optional(),
+});
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function getCompanyForUser(userId: string) {
@@ -531,6 +542,61 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
   }
 }
 
+export async function createMarketplaceTalentRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = marketplaceTalentRequestSchema.parse(req.body);
+
+    let companyId = null;
+    let contactFirstName = '';
+    let contactLastName = '';
+    let contactEmail = data.contactEmail?.trim().toLowerCase() ?? '';
+    let contactPhone = data.phoneNumber?.trim() ?? '';
+
+    if (req.user) {
+      const { account, company } = await getCompanyForUser(req.user.sub);
+      companyId = company._id;
+      contactFirstName = account.firstName?.trim() || 'Company';
+      contactLastName = account.lastName?.trim() || 'Admin';
+      contactEmail = account.email?.trim().toLowerCase() || contactEmail;
+      contactPhone = account.phone?.trim() || contactPhone;
+    } else {
+      const normalizedName = data.contactName?.trim() ?? '';
+      const nameParts = normalizedName.split(/\s+/).filter(Boolean);
+      contactFirstName = nameParts[0] ?? 'Company';
+      contactLastName = nameParts.slice(1).join(' ') || 'Contact';
+
+      if (!contactEmail) {
+        throw new AppError('Contact email is required to receive matched candidate profiles.', 400, 'INVALID_REQUEST');
+      }
+    }
+
+    const request = await TalentRequest.create({
+      companyId,
+      workerId: null,
+      workerName: 'Open talent request',
+      workerRole: 'Best-fit marketplace candidate to be suggested',
+      workerProfileUrl: '',
+      companyName: data.companyName.trim(),
+      companyWebsite: data.companyWebsite.trim(),
+      contactFirstName,
+      contactLastName,
+      phoneNumber: contactPhone,
+      email: contactEmail,
+      projectType: data.projectType.trim(),
+      budget: data.budget.trim(),
+      projectDescription: data.projectDescription.trim(),
+    });
+
+    created(res, {
+      id: request._id,
+      status: request.status,
+      createdAt: request.createdAt,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function inviteWorker(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = inviteSchema.parse(req.body);
@@ -543,7 +609,7 @@ export async function inviteWorker(req: Request, res: Response, next: NextFuncti
       if (!linkedTalentRequest) {
         throw Errors.NotFound('Talent request');
       }
-      if (linkedTalentRequest.status !== 'approved') {
+      if (!['approved', 'candidate_selected', 'hire_started'].includes(linkedTalentRequest.status)) {
         throw new AppError('Only approved talent requests can be hired', 400, 'REQUEST_NOT_APPROVED');
       }
     }

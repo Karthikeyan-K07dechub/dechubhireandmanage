@@ -403,6 +403,65 @@
   cursor: pointer;
 }
 
+.atd-action-error {
+  margin-top: 10px;
+  color: #ffb2b2;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.atd-shortlist-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(180px, 0.6fr));
+  gap: 12px;
+  margin-bottom: 18px;
+  align-items: stretch;
+}
+
+.atd-shortlist-control {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.2);
+  color: #fff;
+  padding: 0 14px;
+  font: inherit;
+}
+
+.atd-shortlist-control:focus {
+  outline: none;
+  border-color: rgba(115, 245, 209, 0.42);
+  box-shadow: 0 0 0 3px rgba(115, 245, 209, 0.1);
+}
+
+.atd-shortlist-control option {
+  color: #0f172a;
+}
+
+.atd-shortlist-results {
+  position: relative;
+  display: grid;
+  gap: 14px;
+}
+
+.atd-shortlist-loading {
+  position: absolute;
+  top: -6px;
+  right: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(115, 245, 209, 0.2);
+  color: var(--atd-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .atd-portfolio-list {
   display: grid;
   gap: 16px;
@@ -563,6 +622,10 @@
   .atd-section-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .atd-shortlist-filters {
+    grid-template-columns: 1fr;
   }
 
   .atd-portfolio-card {
