@@ -18,10 +18,13 @@ interface MarketplaceTalentRequestsPageProps {
 const STATUS_LABELS: Record<string, string> = {
   pending_review: 'Pending review',
   shortlisted_sent: 'Shortlist sent',
+  candidate_selected: 'Candidate selected',
+  hire_started: 'Hire started',
   approved: 'Approved',
   alternative_suggested: 'Alternative suggested',
   rejected: 'Rejected',
-  hired: 'Hired',
+  hired: 'Worker invited',
+  talent_hired: 'Talent hired',
 };
 
 export default function MarketplaceTalentRequestsPage({
@@ -87,7 +90,7 @@ export default function MarketplaceTalentRequestsPage({
             </div>
             <h1 style={{ margin: 0, fontSize: 40, lineHeight: 1.1, color: '#0f172a' }}>Talent Requests</h1>
             <p style={{ margin: '12px 0 0', maxWidth: 760, color: '#475569', fontSize: 16, lineHeight: 1.7 }}>
-              Track every request you have submitted, review admin decisions, and move approved talent into hiring.
+              Track every request you have submitted, review admin decisions, and move shortlisted talent into hiring.
             </p>
           </div>
           <div style={{ minWidth: 180, padding: '20px 22px', borderRadius: 20, background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 20px 45px rgba(15, 23, 42, 0.06)' }}>
@@ -130,13 +133,13 @@ export default function MarketplaceTalentRequestsPage({
                         View current profile
                       </button>
                     ) : null}
-                    {item.status === 'approved' ? (
+                    {['approved', 'candidate_selected', 'hire_started'].includes(item.status) ? (
                       <button
                         type="button"
                         onClick={() => { window.location.href = `/dashboard?hireRequest=${encodeURIComponent(item._id)}`; }}
                         style={primaryButtonStyle}
                       >
-                        Proceed to hire
+                        {item.status === 'hire_started' ? 'Continue hiring' : 'Proceed to hire'}
                       </button>
                     ) : null}
                     {item.status === 'alternative_suggested' && item.suggestedTalentProfile ? (
@@ -168,9 +171,12 @@ export default function MarketplaceTalentRequestsPage({
                       {item.reviewNotes?.trim()
                         || (item.status === 'pending_review' ? 'Your request is with the Dechub admin team for review.' : '')
                         || (item.status === 'shortlisted_sent' ? 'Dechub has emailed shortlisted candidate profiles for this request. Continue from one of those profile links to move into hiring.' : '')
+                        || (item.status === 'candidate_selected' ? 'You selected a shortlisted candidate. Continue to the dashboard to finish the hiring setup.' : '')
+                        || (item.status === 'hire_started' ? 'Your hiring setup is already in progress in the dashboard. Continue there to finish onboarding this candidate.' : '')
                         || (item.status === 'approved' ? 'This talent has been approved. You can continue to the dashboard hire flow.' : '')
                         || (item.status === 'rejected' ? 'This request was not approved. Please submit a new request if you want to explore a different fit.' : '')
-                        || (item.status === 'hired' ? 'This talent has already been moved into your dashboard.' : '')
+                        || (item.status === 'hired' ? 'The worker invite and agreement flow have been sent. Waiting for final signatures to complete the hire.' : '')
+                        || (item.status === 'talent_hired' ? 'The agreement is fully signed and this candidate is now hired.' : '')
                         || 'An alternative profile was suggested for review.'}
                     </div>
                   </div>
@@ -253,10 +259,13 @@ function statusPillStyle(status: string): CSSProperties {
   const palette: Record<string, { background: string; color: string }> = {
     pending_review: { background: '#eff6ff', color: '#1d4ed8' },
     shortlisted_sent: { background: '#faf5ff', color: '#7c3aed' },
+    candidate_selected: { background: '#ecfeff', color: '#0f766e' },
+    hire_started: { background: '#ecfccb', color: '#3f6212' },
     approved: { background: '#ecfdf5', color: '#047857' },
     alternative_suggested: { background: '#faf5ff', color: '#7c3aed' },
     rejected: { background: '#fef2f2', color: '#b91c1c' },
     hired: { background: '#f5f3ff', color: '#5b21b6' },
+    talent_hired: { background: '#dcfce7', color: '#166534' },
   };
 
   const tone = palette[status] ?? palette.pending_review;

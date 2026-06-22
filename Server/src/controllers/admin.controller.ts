@@ -213,6 +213,26 @@ async function serializeTalentRequest(item: ITalentRequest) {
       ? Worker.find({ _id: { $in: item.shortlistedWorkerIds } }).lean()
       : Promise.resolve([]),
   ]);
+  const shortlistHistory = await Promise.all(
+    (item.shortlistHistory ?? []).map(async (entry) => {
+      const workersForEntry = entry.workerIds?.length
+        ? await Worker.find({ _id: { $in: entry.workerIds } }).lean()
+        : [];
+
+      return {
+        sentAt: entry.sentAt,
+        note: entry.note ?? '',
+        profiles: workersForEntry.map((shortlistedWorker) => ({
+          workerId: shortlistedWorker._id.toString(),
+          workerName: `${shortlistedWorker.firstName} ${shortlistedWorker.lastName}`.trim(),
+          workerRole: shortlistedWorker.contractorProfile?.marketplaceTitle?.trim() || shortlistedWorker.roleTitle || 'Freelancer',
+          profilePhotoUrl: shortlistedWorker.contractorProfile?.profilePhotoUrl ?? '',
+          location: formatTalentProfile(shortlistedWorker)?.location ?? 'Remote',
+          availabilityLabel: formatTalentProfile(shortlistedWorker)?.availabilityLabel ?? 'Not provided',
+        })),
+      };
+    }),
+  );
 
   return {
     ...item.toObject(),
@@ -237,6 +257,7 @@ async function serializeTalentRequest(item: ITalentRequest) {
           availabilityLabel: formatTalentProfile(shortlistedWorker)?.availabilityLabel ?? 'Not provided',
         }))
       : [],
+    shortlistHistory,
   };
 }
 
@@ -509,7 +530,7 @@ export async function updateTalentRequestStatus(req: Request, res: Response, nex
       reviewNotes?: string;
     };
     if (!status) throw new AppError('Status is required', 400, 'INVALID_REQUEST');
-    const allowed: TalentRequestStatus[] = ['pending_review', 'shortlisted_sent', 'candidate_selected', 'hire_started', 'approved', 'alternative_suggested', 'rejected', 'hired'];
+    const allowed: TalentRequestStatus[] = ['pending_review', 'shortlisted_sent', 'candidate_selected', 'hire_started', 'approved', 'alternative_suggested', 'rejected', 'hired', 'talent_hired'];
     if (!allowed.includes(status)) throw new AppError(`Invalid status: ${status}. Allowed values are: ${allowed.join(', ')}`, 400, 'INVALID_REQUEST');
 
     const item = await TalentRequest.findById(id);
@@ -589,6 +610,28 @@ export async function sendTalentRequestShortlist(req: Request, res: Response, ne
       throw new AppError('One or more shortlisted candidates could not be found.', 400, 'INVALID_REQUEST');
     }
 
+    const existingShortlistWorkerIds = (item.shortlistedWorkerIds ?? []).map((value) => value.toString());
+    const existingShortlistSentAt = item.shortlistSentAt;
+    const existingHistory = item.shortlistHistory ?? [];
+    const hasExistingShortlist = existingShortlistWorkerIds.length > 0 && Boolean(existingShortlistSentAt);
+    const historyAlreadyTracksCurrentShortlist = existingHistory.some((entry) => {
+      const entryWorkerIds = (entry.workerIds ?? []).map((value) => value.toString());
+      return (
+        Boolean(existingShortlistSentAt)
+        && new Date(entry.sentAt).getTime() === new Date(existingShortlistSentAt as Date).getTime()
+        && entryWorkerIds.length === existingShortlistWorkerIds.length
+        && entryWorkerIds.every((workerId, index) => workerId === existingShortlistWorkerIds[index])
+      );
+    });
+
+    if (hasExistingShortlist && !historyAlreadyTracksCurrentShortlist) {
+      existingHistory.push({
+        sentAt: existingShortlistSentAt as Date,
+        note: item.reviewNotes ?? '',
+        workerIds: item.shortlistedWorkerIds ?? [],
+      });
+    }
+
     const { token, tokenHash, expiresAt } = createShortlistToken();
 
     item.shortlistedWorkerIds = workers.map((worker) => worker._id);
@@ -599,6 +642,14 @@ export async function sendTalentRequestShortlist(req: Request, res: Response, ne
     item.status = 'shortlisted_sent';
     item.reviewedAt = new Date();
     item.approvedAt = null;
+    item.shortlistHistory = [
+      ...existingHistory,
+      {
+        sentAt: item.shortlistSentAt,
+        note: item.reviewNotes,
+        workerIds: workers.map((worker) => worker._id),
+      },
+    ];
     await item.save();
 
     await sendShortlistedProfilesEmail(

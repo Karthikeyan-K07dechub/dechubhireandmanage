@@ -2,7 +2,7 @@ import { api, ApiResponse, normalizeError, unwrapApiData } from './client';
 
 export interface TalentRequestItem {
   _id: string;
-  companyId: string;
+  companyId: string | null;
   workerId: string | null;
   originalWorkerId?: string | null;
   suggestedWorkerId?: string | null;
@@ -50,6 +50,18 @@ export interface TalentRequestItem {
     location: string;
     availabilityLabel: string;
   }>;
+  shortlistHistory?: Array<{
+    sentAt: string;
+    note: string;
+    profiles: Array<{
+      workerId: string;
+      workerName: string;
+      workerRole: string;
+      profilePhotoUrl: string;
+      location: string;
+      availabilityLabel: string;
+    }>;
+  }>;
   companyName: string;
   companyWebsite?: string;
   contactFirstName: string;
@@ -61,9 +73,11 @@ export interface TalentRequestItem {
   projectDescription: string;
   status: string;
   reviewNotes?: string;
+  shortlistSentAt?: string | null;
   approvedAt?: string | null;
   reviewedAt?: string | null;
   hiredAt?: string | null;
+  talentHiredAt?: string | null;
   unread: boolean;
   createdAt: string;
 }

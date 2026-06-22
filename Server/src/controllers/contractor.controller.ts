@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { Worker } from '../models/Worker';
 import { Contract } from '../models/Contract';
+import { TalentRequest } from '../models/TalentRequest';
 import { Invoice } from '../models/Invoice';
 import { Company } from '../models/Company';
 import { CompanyAuth } from '../models/CompanyAuth';
@@ -21,6 +22,22 @@ async function getWorkerFromReq(req: Request) {
   const worker = await Worker.findById(workerId);
   if (!worker) throw Errors.NotFound('Worker');
   return worker;
+}
+
+async function markTalentRequestAsTalentHired(contract: { companyId: unknown; workerId: unknown }) {
+  const talentRequest = await TalentRequest.findOne({
+    companyId: contract.companyId,
+    workerId: contract.workerId,
+    status: { $in: ['hired', 'talent_hired'] },
+  }).sort({ updatedAt: -1, createdAt: -1 });
+
+  if (!talentRequest || talentRequest.status === 'talent_hired') {
+    return;
+  }
+
+  talentRequest.status = 'talent_hired';
+  talentRequest.talentHiredAt = new Date();
+  await talentRequest.save();
 }
 
 const MARKETPLACE_AVAILABILITY_LABELS = {
@@ -819,6 +836,9 @@ export async function signMyContract(req: Request, res: Response, next: NextFunc
     if (!contract) throw new AppError('Contract not found for this contractor', 404, 'CONTRACT_NOT_FOUND');
 
     const updatedContract = await locallySignContract(contract);
+    if (updatedContract.status === 'active') {
+      await markTalentRequestAsTalentHired(updatedContract);
+    }
 
     if (worker.status !== 'active' || worker.kycStatus !== 'approved') {
       worker.status = 'active';
@@ -864,6 +884,7 @@ export async function docusignWebhook(req: Request, res: Response, next: NextFun
 
         // Activate worker
         await Worker.findByIdAndUpdate(contract.workerId, { status: 'active' });
+        await markTalentRequestAsTalentHired(contract);
         logger.info(`Company signed — contract ACTIVE: ${contract._id}`);
       }
     }
@@ -875,6 +896,7 @@ export async function docusignWebhook(req: Request, res: Response, next: NextFun
       contract.status        = 'active';
       await contract.save();
       await Worker.findByIdAndUpdate(contract.workerId, { status: 'active' });
+      await markTalentRequestAsTalentHired(contract);
       logger.info(`Envelope fully completed: ${contract._id}`);
     }
 

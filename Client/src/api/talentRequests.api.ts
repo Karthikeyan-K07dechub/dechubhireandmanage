@@ -37,15 +37,30 @@ export interface CompanyTalentRequestItem {
   projectType: string;
   budget: string;
   projectDescription: string;
-  status: 'pending_review' | 'shortlisted_sent' | 'approved' | 'alternative_suggested' | 'rejected' | 'hired';
+  status:
+    | 'pending_review'
+    | 'shortlisted_sent'
+    | 'candidate_selected'
+    | 'hire_started'
+    | 'approved'
+    | 'alternative_suggested'
+    | 'rejected'
+    | 'hired'
+    | 'talent_hired';
   reviewNotes?: string;
   approvedAt?: string | null;
   reviewedAt?: string | null;
   hiredAt?: string | null;
+  talentHiredAt?: string | null;
   createdAt: string;
   talentProfile: CompanyTalentProfileSummary | null;
   suggestedTalentProfile: CompanyTalentProfileSummary | null;
   shortlistedTalentProfiles?: CompanyTalentProfileSummary[];
+  shortlistHistory?: Array<{
+    sentAt: string;
+    note: string;
+    profiles: CompanyTalentProfileSummary[];
+  }>;
 }
 
 export async function listCompanyTalentRequests(): Promise<CompanyTalentRequestItem[]> {

@@ -58,6 +58,19 @@ async function serializeRequest(item: any) {
       ? Worker.find({ _id: { $in: source.shortlistedWorkerIds } }).lean()
       : Promise.resolve([]),
   ]);
+  const shortlistHistory = await Promise.all(
+    (source.shortlistHistory ?? []).map(async (entry: any) => {
+      const workersForEntry = entry.workerIds?.length
+        ? await Worker.find({ _id: { $in: entry.workerIds } }).lean()
+        : [];
+
+      return {
+        sentAt: entry.sentAt,
+        note: entry.note ?? '',
+        profiles: workersForEntry.map((shortlistedWorker) => buildProfileSummary(shortlistedWorker)).filter(Boolean),
+      };
+    }),
+  );
 
   return {
     ...source,
@@ -66,6 +79,7 @@ async function serializeRequest(item: any) {
     shortlistedTalentProfiles: Array.isArray(shortlistedWorkers)
       ? shortlistedWorkers.map((shortlistedWorker) => buildProfileSummary(shortlistedWorker)).filter(Boolean)
       : [],
+    shortlistHistory,
   };
 }
 
@@ -134,7 +148,6 @@ export async function getTalentRequestHirePrefill(req: Request, res: Response, n
 
     if (item.status !== 'hire_started') {
       item.status = 'hire_started';
-      item.reviewedAt = new Date();
       await item.save();
     }
 
@@ -221,7 +234,7 @@ export async function claimShortlistedTalentRequest(req: Request, res: Response,
     item.workerRole = worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer';
     item.workerProfileUrl = `/marketplace/${worker._id}`;
     item.status = 'candidate_selected';
-    item.reviewedAt = new Date();
+    item.approvedAt = new Date();
     item.shortlistTokenHash = null;
     item.shortlistTokenExpiresAt = null;
     await item.save();

@@ -8,7 +8,14 @@ export type TalentRequestStatus =
   | 'approved'
   | 'alternative_suggested'
   | 'rejected'
-  | 'hired';
+  | 'hired'
+  | 'talent_hired';
+
+export interface ITalentRequestShortlistHistoryEntry {
+  sentAt: Date;
+  note: string;
+  workerIds: mongoose.Types.ObjectId[];
+}
 
 export interface ITalentRequest extends Document {
   _id: mongoose.Types.ObjectId;
@@ -31,16 +38,27 @@ export interface ITalentRequest extends Document {
   status: TalentRequestStatus;
   reviewNotes: string;
   shortlistedWorkerIds: mongoose.Types.ObjectId[];
+  shortlistHistory: ITalentRequestShortlistHistoryEntry[];
   shortlistTokenHash: string | null;
   shortlistTokenExpiresAt: Date | null;
   shortlistSentAt: Date | null;
   approvedAt: Date | null;
   reviewedAt: Date | null;
   hiredAt: Date | null;
+  talentHiredAt: Date | null;
   unread: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const talentRequestShortlistHistorySchema = new Schema<ITalentRequestShortlistHistoryEntry>(
+  {
+    sentAt: { type: Date, required: true },
+    note: { type: String, default: '', trim: true },
+    workerIds: [{ type: Schema.Types.ObjectId, ref: 'Worker' }],
+  },
+  { _id: false },
+);
 
 const talentRequestSchema = new Schema<ITalentRequest>(
   {
@@ -65,17 +83,19 @@ const talentRequestSchema = new Schema<ITalentRequest>(
 
     status: {
       type: String,
-      enum: ['pending_review', 'shortlisted_sent', 'candidate_selected', 'hire_started', 'approved', 'alternative_suggested', 'rejected', 'hired'],
+      enum: ['pending_review', 'shortlisted_sent', 'candidate_selected', 'hire_started', 'approved', 'alternative_suggested', 'rejected', 'hired', 'talent_hired'],
       default: 'pending_review',
     },
     reviewNotes: { type: String, default: '', trim: true },
     shortlistedWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'Worker' }],
+    shortlistHistory: { type: [talentRequestShortlistHistorySchema], default: [] },
     shortlistTokenHash: { type: String, default: null },
     shortlistTokenExpiresAt: { type: Date, default: null },
     shortlistSentAt: { type: Date, default: null },
     approvedAt: { type: Date, default: null },
     reviewedAt: { type: Date, default: null },
     hiredAt: { type: Date, default: null },
+    talentHiredAt: { type: Date, default: null },
     unread: { type: Boolean, default: true },
   },
   { timestamps: true },

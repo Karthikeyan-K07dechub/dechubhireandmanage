@@ -14,10 +14,13 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   const statusTone: Record<string, string> = {
     pending_review: 'new',
     shortlisted_sent: 'discussion',
+    candidate_selected: 'contacted',
+    hire_started: 'contacted',
     approved: 'contacted',
     alternative_suggested: 'discussion',
     rejected: 'closed',
     hired: 'contacted',
+    talent_hired: 'contacted',
   };
 
   async function load() {
@@ -38,8 +41,8 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'Unknown');
   const formatStatus = (value?: string) => (value ? value.replace(/_/g, ' ') : 'unknown');
   const pendingCount = items.filter((item) => item.status === 'pending_review').length;
-  const approvedCount = items.filter((item) => item.status === 'approved').length;
-  const hiredCount = items.filter((item) => item.status === 'hired').length;
+  const approvedCount = items.filter((item) => ['approved', 'candidate_selected', 'hire_started'].includes(item.status)).length;
+  const hiredCount = items.filter((item) => ['hired', 'talent_hired'].includes(item.status)).length;
 
   return (
     <div className="atr-root">
