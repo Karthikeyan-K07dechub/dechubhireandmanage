@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { Worker } from '../models/Worker';
 import { Contract } from '../models/Contract';
+import { ContractorNotification } from '../models/ContractorNotification';
 import { TalentRequest } from '../models/TalentRequest';
 import { Invoice } from '../models/Invoice';
 import { Company } from '../models/Company';
@@ -22,6 +23,62 @@ async function getWorkerFromReq(req: Request) {
   const worker = await Worker.findById(workerId);
   if (!worker) throw Errors.NotFound('Worker');
   return worker;
+}
+
+function hasCompletedPersonalDetails(worker: InstanceType<typeof Worker>): boolean {
+  const profile = worker.contractorProfile;
+  const address = profile?.address;
+
+  return Boolean(
+    profile?.dateOfBirth
+    && profile?.nationality?.trim()
+    && address?.line1?.trim()
+    && address?.city?.trim()
+    && address?.postalCode?.trim()
+    && address?.country?.trim()
+    && profile?.taxId?.trim(),
+  );
+}
+
+function hasCompletedKyc(worker: InstanceType<typeof Worker>): boolean {
+  return Boolean(worker.kycData?.idFrontPath && worker.kycStatus === 'approved');
+}
+
+function hasCompletedPaymentDetails(worker: InstanceType<typeof Worker>): boolean {
+  const details = worker.paymentDetails;
+  if (!details?.paymentMethod) {
+    return false;
+  }
+
+  if (details.paymentMethod === 'wise') {
+    return Boolean(details.wiseEmail?.trim());
+  }
+
+  if (details.paymentMethod === 'paypal') {
+    return Boolean(details.paypalEmail?.trim());
+  }
+
+  return Boolean(details.bankName?.trim() && details.accountNumber?.trim());
+}
+
+function getInviteOnboardingStep(worker: InstanceType<typeof Worker>): number {
+  if (!worker.passwordHash) {
+    return 0;
+  }
+
+  if (!hasCompletedPersonalDetails(worker)) {
+    return 1;
+  }
+
+  if (!hasCompletedKyc(worker)) {
+    return 2;
+  }
+
+  if (!hasCompletedPaymentDetails(worker)) {
+    return 3;
+  }
+
+  return 4;
 }
 
 async function markTalentRequestAsTalentHired(contract: { companyId: unknown; workerId: unknown }) {
@@ -285,7 +342,7 @@ async function ensureTalentNetworkCompany() {
 export async function verifyToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { token } = req.params;
-    const worker = await Worker.findOne({ inviteToken: token, status: 'invited' });
+    const worker = await Worker.findOne({ inviteToken: token, status: 'invited' }).select('+passwordHash +refreshTokenHash');
     if (!worker) throw new AppError('Invalid or expired invite token', 400, 'INVALID_TOKEN');
 
     // Check expiry — tokens valid 7 days
@@ -295,6 +352,23 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
     }
 
     const company = await Company.findById(worker.companyId).lean();
+    const onboardingStep = getInviteOnboardingStep(worker);
+    let accessToken: string | null = null;
+    let refreshToken: string | null = null;
+
+    if (worker.passwordHash) {
+      accessToken = signAccessToken({
+        sub: worker._id.toString(),
+        email: worker.email,
+        role: 'contractor',
+        companyId: worker.companyId.toString(),
+      });
+      refreshToken = signRefreshToken({ sub: worker._id.toString() });
+
+      worker.refreshTokenHash = await hashToken(refreshToken);
+      worker.lastLoginAt = new Date();
+      await worker.save();
+    }
 
     ok(res, {
       workerId:      worker._id,
@@ -312,7 +386,10 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
       payFrequency:  worker.payFrequency,
       startDate:     worker.startDate,
       scopeOfWork:   worker.scopeOfWork,
-      onboardingStep:0,
+      onboardingStep,
+      accessToken,
+      refreshToken,
+      isExistingContractor: onboardingStep > 0,
     });
   } catch (err) { next(err); }
 }
@@ -836,18 +913,47 @@ export async function signMyContract(req: Request, res: Response, next: NextFunc
     if (!contract) throw new AppError('Contract not found for this contractor', 404, 'CONTRACT_NOT_FOUND');
 
     const updatedContract = await locallySignContract(contract);
+    worker.kycStatus = 'approved';
+    worker.status = updatedContract.status === 'active' ? 'active' : 'inactive';
+    worker.inviteToken = null;
+    await worker.save();
+
+    if (updatedContract.status === 'worker_signed') {
+      await ContractorNotification.create({
+        workerId: worker._id,
+        type: 'contract_pending',
+        title: 'Contract signed',
+        message: `You signed your contract with ${updatedContract.companyName}. It is now waiting for the company countersignature.`,
+        actionUrl: '/contractor/dashboard?tab=contract',
+      });
+    }
+
     if (updatedContract.status === 'active') {
       await markTalentRequestAsTalentHired(updatedContract);
     }
 
-    if (worker.status !== 'active' || worker.kycStatus !== 'approved') {
-      worker.status = 'active';
-      worker.kycStatus = 'approved';
-      await worker.save();
-    }
-
     logger.info(`MVP contract signed locally: ${updatedContract._id} worker=${worker._id}`);
     ok(res, updatedContract);
+  } catch (err) { next(err); }
+}
+
+export async function rejectMyContract(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const worker = await getWorkerFromReq(req);
+    const contract = await Contract.findOne({ workerId: worker._id });
+    if (!contract) throw new AppError('Contract not found for this contractor', 404, 'CONTRACT_NOT_FOUND');
+    if (contract.workerSigned || contract.companySigned || contract.status === 'active') {
+      throw new AppError('This contract can no longer be rejected.', 400, 'CONTRACT_NOT_REJECTABLE');
+    }
+
+    contract.status = 'rejected';
+    await contract.save();
+
+    worker.status = 'inactive';
+    worker.inviteToken = null;
+    await worker.save();
+
+    ok(res, contract);
   } catch (err) { next(err); }
 }
 
@@ -944,6 +1050,35 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
       onboardingStep:0,
     });
   } catch (err) { next(err); }
+}
+
+export async function listMyNotifications(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const worker = await getWorkerFromReq(req);
+    const notifications = await ContractorNotification.find({ workerId: worker._id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    ok(res, notifications);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function markNotificationRead(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const worker = await getWorkerFromReq(req);
+    const notification = await ContractorNotification.findOneAndUpdate(
+      { _id: req.params.id, workerId: worker._id },
+      { readAt: new Date() },
+      { new: true },
+    );
+    if (!notification) throw Errors.NotFound('Notification');
+    ok(res, notification);
+  } catch (err) {
+    next(err);
+  }
 }
 
 // ─── Invoice — submit ─────────────────────────────────────────────────────────

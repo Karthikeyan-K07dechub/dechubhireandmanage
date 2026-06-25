@@ -5,6 +5,7 @@ import {
   getMarketplaceTalentProfile,
   createMarketplaceOrderDraft,
   createMarketplaceTalentRequest,
+  getMarketplaceTalentRequestSignupPrefill,
   inviteWorker,
   getWorker,
   terminateWorker,
@@ -25,6 +26,7 @@ const inviteLimiter = rateLimit({
 // ── Workers ────────────────────────────────────────────────────────────────────
 router.get  ('/marketplace',      getMarketplaceTalent);
 router.post ('/marketplace/talent-requests', softAuth, createMarketplaceTalentRequest);
+router.get  ('/marketplace/talent-requests/:id/signup-prefill', getMarketplaceTalentRequestSignupPrefill);
 router.get  ('/marketplace/:id',   getMarketplaceTalentProfile);
 router.post ('/marketplace/:id/order-drafts', softAuth, createMarketplaceOrderDraft);
 // All routes below this point require auth.

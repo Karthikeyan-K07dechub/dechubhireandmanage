@@ -146,6 +146,33 @@ function normalizeFaqItems(values: unknown) {
     .filter(Boolean);
 }
 
+function cloneMixedValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+async function findReusableContractorByEmail(email: string, excludedCompanyId: string) {
+  return Worker.findOne({
+    email,
+    companyId: { $ne: excludedCompanyId },
+    status: { $nin: ['invited', 'terminated'] },
+  })
+    .select('+passwordHash')
+    .sort({ updatedAt: -1, createdAt: -1 });
+}
+
+function copyReusableContractorData(
+  target: InstanceType<typeof Worker>,
+  source: InstanceType<typeof Worker>,
+): void {
+  target.phone = source.phone ?? target.phone ?? null;
+  target.country = source.country?.trim() || target.country;
+  target.kycStatus = source.kycStatus;
+  target.passwordHash = source.passwordHash ?? null;
+  target.contractorProfile = source.contractorProfile ? cloneMixedValue(source.contractorProfile) : null;
+  target.kycData = source.kycData ? cloneMixedValue(source.kycData) : null;
+  target.paymentDetails = source.paymentDetails ? cloneMixedValue(source.paymentDetails) : null;
+}
+
 // ─── Email transporter ────────────────────────────────────────────────────────
 
 const transporter = nodemailer.createTransport({
@@ -375,6 +402,37 @@ function hasCompletedMarketplaceProfile(worker: any): boolean {
 async function ensureDraftContract(worker: InstanceType<typeof Worker>, company: InstanceType<typeof Company>) {
   const existing = await Contract.findOne({ workerId: worker._id });
   if (existing) {
+    existing.companyId = company._id;
+    existing.workerName = `${worker.firstName} ${worker.lastName}`;
+    existing.workerEmail = worker.email;
+    existing.companyName = company.companyName ?? 'Your Company';
+    existing.roleTitle = worker.roleTitle;
+    existing.contractType = worker.workerType;
+    existing.track = worker.track;
+    existing.payRate = worker.payRate ?? 0;
+    existing.payCurrency = worker.payCurrency;
+    existing.payFrequency = worker.payFrequency;
+    existing.startDate = worker.startDate ?? existing.startDate ?? new Date();
+    existing.endDate = worker.endDate ?? null;
+    existing.noticePeriodDays = worker.noticePeriodDays;
+    existing.scopeOfWork = worker.scopeOfWork;
+
+    // A fresh invite must always restart the signing flow from an unsigned draft.
+    existing.status = 'draft';
+    existing.workerSigned = false;
+    existing.workerSignedAt = null;
+    existing.companySigned = false;
+    existing.companySignedAt = null;
+    existing.docusignEnvelopeId = null;
+    existing.docusignStatus = null;
+    existing.signingUrl = null;
+    existing.pdfUrl = null;
+    existing.pdfGeneratedAt = null;
+    existing.terminatedAt = null;
+    existing.terminationReason = null;
+
+    await existing.save();
+
     if (!worker.contractId || worker.contractId.toString() !== existing._id.toString()) {
       worker.contractId = existing._id;
       await worker.save();
@@ -597,11 +655,48 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
   }
 }
 
+export async function getMarketplaceTalentRequestSignupPrefill(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const requestId = z.string().min(1).parse(req.params.id);
+    const token = z.string().min(1).parse(req.query.token);
+
+    const item = await TalentRequest.findById(requestId).lean();
+    if (!item) {
+      throw Errors.NotFound('Talent request');
+    }
+
+    if (item.status !== 'shortlisted_sent') {
+      throw new AppError('This talent request is not available for signup prefill.', 400, 'INVALID_REQUEST');
+    }
+
+    if (!item.shortlistTokenHash || !item.shortlistTokenExpiresAt || item.shortlistTokenExpiresAt.getTime() < Date.now()) {
+      throw new AppError('This shortlist link has expired. Please use the latest email from Dechub.', 401, 'INVALID_TOKEN');
+    }
+
+    const providedHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    if (providedHash !== item.shortlistTokenHash) {
+      throw new AppError('This shortlist link is invalid. Please use the latest email from Dechub.', 401, 'INVALID_TOKEN');
+    }
+
+    ok(res, {
+      firstName: item.contactFirstName?.trim() || '',
+      lastName: item.contactLastName?.trim() || '',
+      phone: item.phoneNumber?.trim() || '',
+      email: item.email?.trim().toLowerCase() || '',
+      companyName: item.companyName?.trim() || '',
+      companyWebsite: item.companyWebsite?.trim() || '',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function inviteWorker(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = inviteSchema.parse(req.body);
     const { company } = await getCompanyForUser(req.user!.sub);
     const normalizedEmail = data.email.trim().toLowerCase();
+    const reusableContractor = await findReusableContractorByEmail(normalizedEmail, company._id.toString());
     let linkedTalentRequest = null;
 
     if (data.talentRequestId) {
@@ -626,6 +721,11 @@ export async function inviteWorker(req: Request, res: Response, next: NextFuncti
     // Check duplicate email within same company
     const existing = await Worker.findOne({ companyId: company._id, email: normalizedEmail });
     if (existing) {
+      if (reusableContractor) {
+        copyReusableContractorData(existing, reusableContractor);
+        await existing.save();
+      }
+
       await ensureDraftContract(existing, company);
 
       if (existing.status === 'invited') {
@@ -664,6 +764,7 @@ export async function inviteWorker(req: Request, res: Response, next: NextFuncti
       firstName:        data.firstName,
       lastName:         data.lastName,
       email:            normalizedEmail,
+      phone:            reusableContractor?.phone ?? null,
       country:          data.country,
       track:            data.track,
       workerType:       data.workerType,
@@ -678,9 +779,13 @@ export async function inviteWorker(req: Request, res: Response, next: NextFuncti
       noticePeriodDays: data.noticePeriodDays,
       scopeOfWork:      data.scopeOfWork,
       status:           'invited',
-      kycStatus:        'pending',
+      kycStatus:        reusableContractor?.kycStatus ?? 'pending',
       inviteToken,
       inviteSentAt:     new Date(),
+      passwordHash:     reusableContractor?.passwordHash ?? null,
+      contractorProfile: reusableContractor?.contractorProfile ? cloneMixedValue(reusableContractor.contractorProfile) : null,
+      kycData:          reusableContractor?.kycData ? cloneMixedValue(reusableContractor.kycData) : null,
+      paymentDetails:   reusableContractor?.paymentDetails ? cloneMixedValue(reusableContractor.paymentDetails) : null,
     });
 
     await ensureDraftContract(worker, company);

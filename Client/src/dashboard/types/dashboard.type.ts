@@ -1,7 +1,7 @@
 // ─── Core enums ───────────────────────────────────────────────────────────────
 
 export type WorkerStatus  = 'invited' | 'kyc_pending' | 'active' | 'inactive' | 'terminated';
-export type ContractStatus= 'draft' | 'sent' | 'company_signed' | 'worker_signed' | 'active' | 'terminated';
+export type ContractStatus= 'draft' | 'sent' | 'company_signed' | 'worker_signed' | 'active' | 'rejected' | 'terminated';
 export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'disputed';
 export type Track         = 'track_1_india' | 'track_2_us';
 export type WorkerType    = 'contractor' | 'full_time_employee';

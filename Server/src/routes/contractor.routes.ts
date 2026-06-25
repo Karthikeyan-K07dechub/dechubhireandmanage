@@ -16,8 +16,11 @@ import {
   getMyContract,
   getSigningUrl,
   signMyContract,
+  rejectMyContract,
   docusignWebhook,
   getMe,
+  listMyNotifications,
+  markNotificationRead,
   submitInvoice,
   getMyInvoices,
 } from '../controllers/contractor.controller';
@@ -73,10 +76,13 @@ router.put ('/me/profile',                  updateProfile);
 // Contract + signing
 router.get ('/contract',             getMyContract);
 router.post('/contract/sign',        signMyContract);
+router.post('/contract/reject',      rejectMyContract);
 router.post('/contract/signing-url', getSigningUrl);
 
 // Dashboard
 router.get('/me', getMe);
+router.get('/notifications', listMyNotifications);
+router.post('/notifications/:id/read', markNotificationRead);
 
 // Invoices
 router.get ('/invoices',       getMyInvoices);

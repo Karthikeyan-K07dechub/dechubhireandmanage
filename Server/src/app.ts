@@ -14,6 +14,7 @@ import workersRoutes, { dashboardRouter } from './routes/workers.routes';
 import contractorRoutes from './routes/contractor.routes';
 import adminRoutes from './routes/admin.routes';
 import debugRoutes from './routes/debug.routes';
+import contractsRoutes from './routes/contracts.routes';
 
 
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api/company-auth', companyAuthRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/workers',   workersRoutes);
 app.use('/api/contractor', contractorRoutes);
+app.use('/api/contracts', contractsRoutes);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/debug', debugRoutes);

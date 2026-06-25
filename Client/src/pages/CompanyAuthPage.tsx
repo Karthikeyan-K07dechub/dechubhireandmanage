@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './company-auth.css';
 import { login, redirectToGoogle, register, type AuthResult } from '../api/auth.api';
 import type { ApiError } from '../api/client';
+import { getTalentRequestSignupPrefill } from '../api/talentRequests.api';
 
 type AuthMode = 'login' | 'signup';
 
@@ -42,6 +43,35 @@ function isWorkEmail(email: string): boolean {
   return Boolean(domain && !FREE_EMAIL_DOMAINS.has(domain));
 }
 
+function getShortlistSignupPrefillParams(): { requestId: string; token: string } | null {
+  const searchParams = new URLSearchParams(window.location.search);
+  const requestIdFromUrl = searchParams.get('requestId')?.trim() ?? '';
+  const tokenFromUrl = searchParams.get('token')?.trim() ?? '';
+
+  if (requestIdFromUrl && tokenFromUrl) {
+    return { requestId: requestIdFromUrl, token: tokenFromUrl };
+  }
+
+  try {
+    const raw = sessionStorage.getItem('dechub_pending_shortlist_claim');
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as { requestId?: string; token?: string };
+    const requestId = parsed.requestId?.trim() ?? '';
+    const token = parsed.token?.trim() ?? '';
+
+    if (requestId && token) {
+      return { requestId, token };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export default function CompanyAuthPage({
   mode,
   onModeChange,
@@ -52,6 +82,7 @@ export default function CompanyAuthPage({
   backLabel = 'Back to landing',
   onGoogleStart,
 }: CompanyAuthPageProps) {
+  const isSignupMode = mode === 'signup';
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -59,7 +90,14 @@ export default function CompanyAuthPage({
     email: '',
     password: '',
   });
+  const [shortlistPrefill, setShortlistPrefill] = useState<{
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [prefillLoading, setPrefillLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -135,6 +173,67 @@ export default function CompanyAuthPage({
     });
     setError('');
   };
+
+  useEffect(() => {
+    if (!isSignupMode) {
+      return;
+    }
+
+    const params = getShortlistSignupPrefillParams();
+    if (!params) {
+      return;
+    }
+
+    let cancelled = false;
+    setPrefillLoading(true);
+
+    void getTalentRequestSignupPrefill(params.requestId, params.token)
+      .then((prefill) => {
+        if (cancelled) {
+          return;
+        }
+
+        setShortlistPrefill({
+          firstName: prefill.firstName,
+          lastName: prefill.lastName,
+          phone: prefill.phone,
+          email: prefill.email,
+        });
+        setForm((current) => ({
+          firstName: current.firstName || prefill.firstName,
+          lastName: current.lastName || prefill.lastName,
+          phone: current.phone || prefill.phone,
+          email: current.email || prefill.email,
+          password: current.password,
+        }));
+      })
+      .catch(() => {
+        // If the shortlist link is stale or invalid, keep the form usable with manual entry.
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPrefillLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignupMode]);
+
+  useEffect(() => {
+    if (isSignupMode || !shortlistPrefill) {
+      return;
+    }
+
+    setForm((current) => ({
+      firstName: current.firstName === shortlistPrefill.firstName ? '' : current.firstName,
+      lastName: current.lastName === shortlistPrefill.lastName ? '' : current.lastName,
+      phone: current.phone === shortlistPrefill.phone ? '' : current.phone,
+      email: current.email === shortlistPrefill.email ? '' : current.email,
+      password: current.password,
+    }));
+  }, [isSignupMode, shortlistPrefill]);
 
   const handleSubmit = async () => {
     const nextErrors = validate();
@@ -245,6 +344,11 @@ export default function CompanyAuthPage({
             <p className="cap-sub">{pageCopy.sub}</p>
 
             {error && <div className="cap-error">{error}</div>}
+            {isSignupMode && prefillLoading && (
+              <div className="cap-sub" style={{ marginTop: -4, marginBottom: 12 }}>
+                Checking your shortlist details to prefill matching fields...
+              </div>
+            )}
 
             <button
               type="button"
@@ -267,7 +371,7 @@ export default function CompanyAuthPage({
               <span>or use email</span>
             </div>
 
-            {mode === 'signup' && (
+            {isSignupMode && (
               <>
               <div className="cap-row">
                 <div className="cap-field">
@@ -328,7 +432,7 @@ export default function CompanyAuthPage({
                 value={form.password}
                 onChange={(e) => updateField('password', e.target.value)}
                 className={fieldErrors.password ? 'error' : ''}
-                placeholder={mode === 'login' ? 'Enter your password' : 'Create a password'}
+                    placeholder={isSignupMode ? 'Create a password' : 'Enter your password'}
               />
               {fieldErrors.password && <p>{fieldErrors.password}</p>}
             </div>

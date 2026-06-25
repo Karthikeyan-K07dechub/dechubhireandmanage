@@ -113,3 +113,19 @@ export async function sendPasswordResetEmail(
   `);
   await send(to, 'Reset your Dechub password', html);
 }
+
+export async function sendContractActivatedEmail(
+  to: string,
+  firstName: string,
+  companyName: string,
+): Promise<void> {
+  const html = baseTemplate(`
+    <h1>Your contract is now active</h1>
+    <p>Hi ${firstName},</p>
+    <p>Your contract with <strong>${companyName}</strong> has been fully signed by both parties and is now active.</p>
+    <p>You can open your Dechub dashboard to review the agreement and track next steps.</p>
+    <a href="${env.CLIENT_URL}/contractor/dashboard?tab=contract" class="btn">Open Dashboard</a>
+    <p class="muted">You’ll also see this update inside your Dechub account notifications.</p>
+  `);
+  await send(to, `Your ${companyName} contract is active`, html);
+}

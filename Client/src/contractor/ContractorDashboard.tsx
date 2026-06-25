@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   ContractorContract,
   ContractorInvoice,
+  ContractorNotification,
   ContractorPage,
   ContractorProfile,
   InvoiceStatus,
@@ -9,9 +10,11 @@ import type {
 } from './types/contractor.types';
 import {
   contractorTokenStore,
+  getContractorNotifications,
   getContractorProfile,
   getMyContract,
   getMyInvoices,
+  markContractorNotificationRead,
   submitInvoice,
   updateContractorProfile,
   uploadContractorProfileImage,
@@ -21,6 +24,8 @@ import { imageBackground, resolveImageUrl } from '../utils/imageUrl';
 interface ContractorDashboardProps {
   previewProfile?: ContractorProfile | null;
   onLogoutOverride?: () => void;
+  initialPage?: ContractorPage;
+  flashMessage?: string;
 }
 
 const INVOICE_BADGE: Record<InvoiceStatus, { cls: string; label: string }> = {
@@ -725,7 +730,7 @@ function ContractPage({ profile, readOnly }: { profile: ContractorProfile; readO
   return (
     <div className="cd-page">
       <div className="cd-page-title">My Contract</div>
-      <div className="cd-page-sub">Your active contractor agreement with {profile.companyName}</div>
+      <div className="cd-page-sub">Review the current status of your agreement with {profile.companyName}</div>
 
       {readOnly ? (
         <div className="cd-card" style={{ padding: 32, color: '#64748b' }}>
@@ -740,7 +745,20 @@ function ContractPage({ profile, readOnly }: { profile: ContractorProfile; readO
           <DetailRow label="Role" value={contract.roleTitle} />
           <DetailRow label="Company" value={contract.companyName} />
           <DetailRow label="Pay rate" value={`${contract.payCurrency} ${contract.payRate?.toLocaleString()} / ${contract.payFrequency}`} />
-          <DetailRow label="Status" value={contract.status.toUpperCase()} />
+          <DetailRow
+            label="Status"
+            value={
+              contract.status === 'worker_signed'
+                ? 'Pending company signature'
+                : contract.status === 'company_signed'
+                ? 'Pending your signature'
+                : contract.status === 'active'
+                ? 'Active'
+                : contract.status === 'rejected'
+                ? 'Rejected'
+                : contract.status.replace(/_/g, ' ')
+            }
+          />
           <DetailRow label="Worker signature" value={contract.workerSigned ? 'Signed' : 'Pending'} />
           <DetailRow label="Company signature" value={contract.companySigned ? 'Signed' : 'Pending'} />
         </div>
@@ -1615,29 +1633,126 @@ function ProfilePage({
 export default function ContractorDashboard({
   previewProfile = null,
   onLogoutOverride,
+  initialPage = 'dashboard',
+  flashMessage = '',
 }: ContractorDashboardProps) {
-  const [page, setPage] = useState<ContractorPage>('dashboard');
+  const [page, setPage] = useState<ContractorPage>(initialPage);
   const [profile, setProfile] = useState<ContractorProfile | null>(null);
   const [invoices, setInvoices] = useState<ContractorInvoice[]>([]);
+  const [notifications, setNotifications] = useState<ContractorNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showInvoice, setShowInvoice] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState(flashMessage);
   const isPreviewMode = Boolean(previewProfile);
+
+  useEffect(() => {
+    setPage(initialPage);
+  }, [initialPage]);
+
+  useEffect(() => {
+    setBannerMessage(flashMessage);
+  }, [flashMessage]);
+
+  useEffect(() => {
+    if (!bannerMessage) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setBannerMessage('');
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [bannerMessage]);
 
   useEffect(() => {
     if (previewProfile) {
       setProfile(normalizeContractorProfile(previewProfile));
       setInvoices([]);
+      setNotifications([]);
+      setLoadError('');
       setLoading(false);
       return;
     }
 
-    Promise.all([getContractorProfile(), getMyInvoices()])
-      .then(([contractorProfile, contractorInvoices]) => {
-        setProfile(normalizeContractorProfile(contractorProfile));
-        setInvoices(Array.isArray(contractorInvoices) ? contractorInvoices : []);
+    let isMounted = true;
+
+    const handleSessionExpired = () => {
+      contractorTokenStore.clear();
+      window.location.href = '/freelancer/login';
+    };
+
+    window.addEventListener('dechub:contractor-session-expired', handleSessionExpired);
+
+    (async () => {
+      try {
+        const [profileResult, invoicesResult, notificationsResult] = await Promise.allSettled([
+          getContractorProfile(),
+          getMyInvoices(),
+          getContractorNotifications(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (profileResult.status === 'rejected') {
+          const message = profileResult.reason instanceof Error
+            ? profileResult.reason.message
+            : 'Failed to load your dashboard. Please log in again.';
+
+          if (message.toLowerCase().includes('session expired')) {
+            handleSessionExpired();
+            return;
+          }
+
+          setLoadError(message);
+          setLoading(false);
+          return;
+        }
+
+        setProfile(normalizeContractorProfile(profileResult.value));
+        setLoadError('');
+
+        if (invoicesResult.status === 'fulfilled') {
+          setInvoices(Array.isArray(invoicesResult.value) ? invoicesResult.value : []);
+        } else {
+          setInvoices([]);
+        }
+
+        if (notificationsResult.status === 'fulfilled') {
+          setNotifications(Array.isArray(notificationsResult.value) ? notificationsResult.value : []);
+        } else {
+          setNotifications([]);
+        }
+
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error
+          ? error.message
+          : 'Failed to load your dashboard. Please log in again.';
+
+        if (message.toLowerCase().includes('session expired')) {
+          handleSessionExpired();
+          return;
+        }
+
+        setLoadError(message);
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('dechub:contractor-session-expired', handleSessionExpired);
+    };
   }, [previewProfile]);
 
   const handleInvoiceSuccess = useCallback((invoice: ContractorInvoice) => {
@@ -1697,7 +1812,7 @@ export default function ContractorDashboard({
     setProfile(savedProfile);
   };
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc' }}>
         <div style={{ textAlign: 'center' }}>
@@ -1708,12 +1823,37 @@ export default function ContractorDashboard({
     );
   }
 
+  if (!profile) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc', padding: 24 }}>
+        <div style={{ maxWidth: 420, width: '100%', background: '#ffffff', border: '1px solid #fecaca', borderRadius: 20, padding: 24, boxShadow: '0 20px 45px rgba(15, 23, 42, 0.08)' }}>
+          <h2 style={{ margin: '0 0 12px', color: '#0f172a', fontSize: 24, fontWeight: 800 }}>Unable to load dashboard</h2>
+          <p style={{ margin: '0 0 20px', color: '#475569', lineHeight: 1.7 }}>
+            {loadError || 'We could not finish loading your contractor dashboard. Please log in again and retry.'}
+          </p>
+          <button
+            type="button"
+            className="cp-btn-primary"
+            onClick={() => {
+              contractorTokenStore.clear();
+              window.location.href = '/freelancer/login';
+            }}
+          >
+            Go to login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const initials = `${profile.firstName[0] ?? ''}${profile.lastName[0] ?? ''}`.toUpperCase();
+  const unreadNotificationCount = notifications.filter((item) => !item.readAt).length;
   const nav: { id: ContractorPage; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'invoices', label: 'Invoices' },
     { id: 'contract', label: 'Contract' },
     { id: 'profile', label: 'Profile' },
+    { id: 'notifications', label: unreadNotificationCount > 0 ? `Notifications (${unreadNotificationCount})` : 'Notifications' },
   ];
 
   return (
@@ -1752,6 +1892,12 @@ export default function ContractorDashboard({
         </div>
       </header>
 
+      {bannerMessage ? (
+        <div style={{ margin: '18px 28px 0', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 12, padding: '14px 18px', fontSize: 14, fontWeight: 600 }}>
+          {bannerMessage}
+        </div>
+      ) : null}
+
       {page === 'dashboard' && (
         <DashboardHome
           profile={profile}
@@ -1777,6 +1923,51 @@ export default function ContractorDashboard({
           readOnly={isPreviewMode}
           onSave={handleSaveProfile}
         />
+      )}
+
+      {page === 'notifications' && (
+        <div className="cd-page">
+          <div className="cd-page-title">Notifications</div>
+          <div className="cd-page-sub">Updates about your contracts and account</div>
+          <div className="cd-card" style={{ padding: '8px 0' }}>
+            {notifications.length === 0 ? (
+              <div style={{ padding: 32, color: '#64748b' }}>You do not have any notifications yet.</div>
+            ) : notifications.map((notification) => (
+              <button
+                key={notification._id}
+                type="button"
+                onClick={async () => {
+                  if (!notification.readAt) {
+                    await markContractorNotificationRead(notification._id);
+                    setNotifications((current) => current.map((item) => (
+                      item._id === notification._id ? { ...item, readAt: new Date().toISOString() } : item
+                    )));
+                  }
+                  if (notification.actionUrl?.includes('contract')) {
+                    setPage('contract');
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  border: 'none',
+                  borderBottom: '1px solid #eef2f7',
+                  background: notification.readAt ? '#fff' : '#f8fbff',
+                  padding: '18px 24px',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{notification.title}</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                    {new Date(notification.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.6 }}>{notification.message}</div>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {showInvoice && !isPreviewMode && (

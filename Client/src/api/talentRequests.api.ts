@@ -24,6 +24,15 @@ export interface PublicTalentRequestPayload {
   phoneNumber?: string;
 }
 
+export interface TalentRequestSignupPrefill {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  companyName: string;
+  companyWebsite: string;
+}
+
 export interface CompanyTalentRequestItem {
   _id: string;
   workerId: string | null;
@@ -126,6 +135,21 @@ export async function claimShortlistedTalentRequest(
 ): Promise<CompanyTalentRequestItem> {
   try {
     const res = await api.post<ApiResponse<CompanyTalentRequestItem>>(`/company/talent-requests/${id}/claim-shortlist`, payload);
+    return unwrapApiData(res.data);
+  } catch (err) {
+    throw normalizeError(err);
+  }
+}
+
+export async function getTalentRequestSignupPrefill(
+  id: string,
+  token: string,
+): Promise<TalentRequestSignupPrefill> {
+  try {
+    const res = await api.get<ApiResponse<TalentRequestSignupPrefill>>(
+      `/workers/marketplace/talent-requests/${id}/signup-prefill`,
+      { params: { token } },
+    );
     return unwrapApiData(res.data);
   } catch (err) {
     throw normalizeError(err);

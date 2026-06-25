@@ -5,6 +5,7 @@ import type {
   ContractorTokenInfo,
   ContractorContract,
   ContractorInvoice,
+  ContractorNotification,
   SubmitInvoicePayload,
   ContractorProfile,
 } from '../types/contractor.types';
@@ -321,6 +322,17 @@ export async function signContractForMvp(): Promise<ContractorContract | null> {
   }
 }
 
+export async function rejectContractForMvp(): Promise<ContractorContract> {
+  try {
+    const res = await contractorApi.post<{ success: boolean; data: ContractorContract }>(
+      '/contract/reject',
+    );
+    return res.data.data;
+  } catch (err) {
+    throw normalizeError(err);
+  }
+}
+
 // ─── Contractor profile / dashboard ──────────────────────────────────────────
 
 export async function getContractorProfile(): Promise<ContractorProfile> {
@@ -403,5 +415,18 @@ export async function saveDraftInvoice(data: Partial<SubmitInvoicePayload>): Pro
       data,
     );
     return res.data.data;
+  } catch (err) { throw normalizeError(err); }
+}
+
+export async function getContractorNotifications(): Promise<ContractorNotification[]> {
+  try {
+    const res = await contractorApi.get<{ success: boolean; data: ContractorNotification[] }>('/notifications');
+    return res.data.data;
+  } catch (err) { throw normalizeError(err); }
+}
+
+export async function markContractorNotificationRead(id: string): Promise<void> {
+  try {
+    await contractorApi.post(`/notifications/${id}/read`);
   } catch (err) { throw normalizeError(err); }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import type { Contract, ContractStatus, Invoice, InvoiceStatus } from '../types/dashboard.type';
-import { getContracts, getInvoices, approveInvoice, disputeInvoice } from '../api/dashboard.api';
+import { getContracts, getInvoices, approveInvoice, disputeInvoice, countersignContract } from '../api/dashboard.api';
 
 // ─── Shared badge helpers ─────────────────────────────────────────────────────
 
@@ -10,6 +10,7 @@ const CONTRACT_BADGE: Record<ContractStatus, [string, string]> = {
   company_signed: ['db-badge db-badge-pending',  'Your sig needed'],
   worker_signed:  ['db-badge db-badge-pending',  'Worker signed'],
   active:         ['db-badge db-badge-active',   'Active'],
+  rejected:       ['db-badge db-badge-disputed', 'Rejected'],
   terminated:     ['db-badge db-badge-terminated','Terminated'],
 };
 
@@ -30,6 +31,7 @@ export function ContractsPage() {
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState('');
   const [filter,    setFilter]    = useState<ContractStatus | ''>('');
+  const [countersigningId, setCountersigningId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +86,7 @@ export function ContractsPage() {
             <option value="draft">Draft</option>
             <option value="sent">Sent — awaiting signatures</option>
             <option value="active">Active</option>
+            <option value="rejected">Rejected</option>
             <option value="terminated">Terminated</option>
           </select>
           <div className="db-filter-count">{filtered.length} contracts</div>
@@ -152,7 +155,23 @@ export function ContractsPage() {
                         </span>
                       </td>
                       <td>
-                        {c.pdfUrl ? (
+                        {c.status === 'worker_signed' ? (
+                          <button
+                            className="db-btn-primary db-btn-sm"
+                            onClick={async () => {
+                              setCountersigningId(c._id);
+                              try {
+                                const updated = await countersignContract(c._id);
+                                setContracts((current) => current.map((item) => (item._id === c._id ? updated : item)));
+                              } finally {
+                                setCountersigningId(null);
+                              }
+                            }}
+                            disabled={countersigningId === c._id}
+                          >
+                            {countersigningId === c._id ? 'Signing...' : 'Countersign'}
+                          </button>
+                        ) : c.pdfUrl ? (
                           <a
                             href={c.pdfUrl}
                             target="_blank"

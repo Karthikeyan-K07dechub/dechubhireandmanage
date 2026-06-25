@@ -20,9 +20,17 @@ const STEPS = [
   { label: 'Review & Sign',     desc: 'Accept and sign your contract' },
 ];
 
+const REVIEW_ONLY_STEPS = [
+  { label: 'Review & Sign', desc: 'Review this contract and choose to sign or reject' },
+];
+
 // ─── Left panel ───────────────────────────────────────────────────────────────
 
 function LeftPanel({ info, step }: { info: ContractorTokenInfo; step: number }) {
+  const isExistingContractor = Boolean(info.isExistingContractor);
+  const steps = isExistingContractor ? REVIEW_ONLY_STEPS : STEPS;
+  const activeStep = isExistingContractor ? 0 : step;
+
   return (
     <aside className="cp-left">
       {/* Logo */}
@@ -38,16 +46,22 @@ function LeftPanel({ info, step }: { info: ContractorTokenInfo; step: number }) 
 
       {/* Welcome */}
       <div className="cp-welcome">
-        <div className="cp-welcome-tag">Contractor Onboarding</div>
+        <div className="cp-welcome-tag">{isExistingContractor ? 'Contract Review' : 'Contractor Onboarding'}</div>
         <div className="cp-welcome-company">{info.companyName}</div>
         <div className="cp-welcome-role">
           {info.roleTitle} · {info.payCurrency} {info.payRate?.toLocaleString()}/{info.payFrequency}
         </div>
 
+        {isExistingContractor ? (
+          <div className="cp-welcome-role" style={{ marginTop: 10, lineHeight: 1.6 }}>
+            Your Dechub profile is already complete. Review this contract and choose to sign or reject.
+          </div>
+        ) : null}
+
         {/* Steps */}
         <div className="cp-progress-steps">
-          {STEPS.map((s, i) => {
-            const state = i < step ? 'done' : i === step ? 'active' : 'pending';
+          {steps.map((s, i) => {
+            const state = i < activeStep ? 'done' : i === activeStep ? 'active' : 'pending';
             return (
               <div key={s.label} className={`cp-progress-step ${state}`}>
                 <div className={`cp-step-num ${state}`}>
@@ -142,6 +156,22 @@ function SuccessScreen({ info, onDashboard }: { info: ContractorTokenInfo; onDas
   );
 }
 
+function RejectedScreen() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc' }}>
+      <div style={{ maxWidth: 480, textAlign: 'center', padding: 32 }}>
+        <div style={{ fontSize: 52, marginBottom: 20 }}>Declined</div>
+        <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginBottom: 10 }}>
+          Invitation declined
+        </h2>
+        <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>
+          We recorded your rejection for this contract invitation. If this was unexpected, please contact the company or Dechub support.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface ContractorPortalProps {
@@ -151,12 +181,13 @@ interface ContractorPortalProps {
 
 export default function ContractorPortal({ inviteToken }: ContractorPortalProps) {
   const [state, setState] = useState<
-    'loading' | 'error' | 'onboarding' | 'success' | 'dashboard'
+    'loading' | 'error' | 'onboarding' | 'success' | 'rejected' | 'dashboard'
   >('loading');
 
   const [errorMsg,  setErrorMsg]  = useState('');
   const [info,      setInfo]      = useState<ContractorTokenInfo | null>(null);
   const [step,      setStep]      = useState(0);
+  const [postSignMessage, setPostSignMessage] = useState('');
   const [formData,  setFormData]  = useState<ContractorOnboardingData>(INITIAL_ONBOARDING);
 
   // Extract token from URL if not passed as prop
@@ -177,6 +208,9 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
 
     verifyInviteToken(token)
       .then((info) => {
+        if (info.accessToken) {
+          contractorTokenStore.set(info.accessToken, info.refreshToken ?? undefined);
+        }
         setInfo(info);
         setStep(info.onboardingStep ?? 0);
         setState('onboarding');
@@ -206,10 +240,13 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
 
   if (state === 'loading') return <FullPageLoader />;
   if (state === 'error')   return <FullPageError message={errorMsg} />;
-  if (state === 'dashboard') return <ContractorDashboard />;
+  if (state === 'dashboard') {
+    return <ContractorDashboard initialPage="contract" flashMessage={postSignMessage} />;
+  }
   if (state === 'success' && info) {
     return <SuccessScreen info={info} onDashboard={() => setState('dashboard')} />;
   }
+  if (state === 'rejected') return <RejectedScreen />;
 
   if (!info) return <FullPageError message="Unexpected error. Please try again." />;
 
@@ -256,8 +293,13 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
           )}
           {step === 4 && (
             <Step5ReviewSign
-              onComplete={() => setState('success')}
-              onBack={() => setStep(3)}
+              onComplete={(message) => {
+                setPostSignMessage(message ?? 'Contract signed successfully. Redirecting to your contracts...');
+                setState('dashboard');
+              }}
+              onBack={step > 0 ? () => setStep(3) : undefined}
+              allowBack={!info.isExistingContractor}
+              onReject={() => setState('rejected')}
             />
           )}
         </div>

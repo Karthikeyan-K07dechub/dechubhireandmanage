@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import type { ContractorContract } from '../types/contractor.types';
-import { getMyContract, signContractForMvp } from '../api/contractor.api';
+import { getMyContract, rejectContractForMvp, signContractForMvp } from '../api/contractor.api';
 
 interface Props {
-  onComplete: () => void;
-  onBack: () => void;
+  onComplete: (message?: string) => void;
+  onBack?: () => void;
+  allowBack?: boolean;
+  onReject?: () => void;
 }
 
-export default function Step5ReviewSign({ onComplete, onBack }: Props) {
+export default function Step5ReviewSign({ onComplete, onBack, allowBack = true, onReject }: Props) {
   const [contract, setContract] = useState<ContractorContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
 
@@ -21,7 +24,12 @@ export default function Step5ReviewSign({ onComplete, onBack }: Props) {
         setLoading(false);
       })
       .catch((err: unknown) => {
-        setError((err as Error).message ?? 'Failed to load contract. Please refresh.');
+        const message = (err as Error).message ?? 'Failed to load contract. Please refresh.';
+        if (message.toLowerCase().includes('session expired')) {
+          window.location.href = '/freelancer/login';
+          return;
+        }
+        setError(message);
         setLoading(false);
       });
   }, []);
@@ -34,13 +42,31 @@ export default function Step5ReviewSign({ onComplete, onBack }: Props) {
     try {
       const signedContract = await signContractForMvp();
       setContract((prev) => signedContract ?? (prev
-        ? { ...prev, workerSigned: true, companySigned: true, status: 'active' }
+        ? { ...prev, workerSigned: true, status: 'worker_signed' }
         : prev));
-      onComplete();
+      onComplete('Contract signed successfully. Redirecting to your contracts...');
     } catch (err: unknown) {
       setError((err as Error).message ?? 'Failed to sign contract. Please try again.');
     } finally {
       setSigning(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (rejecting || signing) return;
+    const confirmed = window.confirm('Reject this contract invitation? This will decline the engagement.');
+    if (!confirmed) return;
+
+    setRejecting(true);
+    setError(null);
+    try {
+      const rejectedContract = await rejectContractForMvp();
+      setContract(rejectedContract);
+      onReject?.();
+    } catch (err: unknown) {
+      setError((err as Error).message ?? 'Failed to reject contract. Please try again.');
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -69,8 +95,7 @@ export default function Step5ReviewSign({ onComplete, onBack }: Props) {
     <div className="cp-form-card">
       <div className="cp-form-title">Review your contract</div>
       <div className="cp-form-sub">
-        Read your contractor agreement carefully before signing.
-        For this MVP, Accept & Sign records both contractor and company signatures.
+        Your Dechub profile is already complete. Review this contract and choose to sign or reject this invitation.
       </div>
 
       {error && <div className="cp-error">{error}</div>}
@@ -191,9 +216,7 @@ export default function Step5ReviewSign({ onComplete, onBack }: Props) {
             {agreed && <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>✓</span>}
           </div>
           <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: 0 }}>
-            I have read and agree to the contractor agreement above. I understand this MVP
-            signing action records acceptance for both parties and can later be replaced by
-            production e-signing.
+            I have read and agree to the contractor agreement above. After you sign, this contract will appear in your dashboard while waiting for company countersignature.
           </p>
         </div>
       )}
@@ -204,10 +227,19 @@ export default function Step5ReviewSign({ onComplete, onBack }: Props) {
         </div>
       )}
 
-      {!contract.workerSigned ? (
+      {contract.status === 'rejected' ? (
+        <div className="cp-success" style={{ background: '#fef2f2', borderColor: '#fecaca', color: '#b91c1c' }}>
+          This invitation has been rejected. If this was a mistake, please contact support or the company team.
+        </div>
+      ) : !contract.workerSigned ? (
         <div className="cp-btn-row">
-          <button type="button" className="cp-btn-secondary" onClick={onBack}>
-            Back
+          {allowBack && onBack ? (
+            <button type="button" className="cp-btn-secondary" onClick={onBack}>
+              Back
+            </button>
+          ) : null}
+          <button type="button" className="cp-btn-secondary" onClick={handleReject} disabled={rejecting || signing}>
+            {rejecting ? 'Rejecting...' : 'Reject'}
           </button>
           <button
             type="button"
@@ -237,12 +269,12 @@ export default function Step5ReviewSign({ onComplete, onBack }: Props) {
               You've signed the contract. Your company still needs to countersign.
             </div>
           </div>
-          <button type="button" className="cp-btn-primary" onClick={onComplete}>
+          <button type="button" className="cp-btn-primary" onClick={() => onComplete()}>
             Continue to your dashboard
           </button>
         </div>
       ) : (
-        <button type="button" className="cp-btn-primary" onClick={onComplete}>
+        <button type="button" className="cp-btn-primary" onClick={() => onComplete()}>
           Continue to your dashboard
         </button>
       )}

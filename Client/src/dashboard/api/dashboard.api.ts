@@ -114,6 +114,15 @@ export async function resendContractSignature(contractId: string): Promise<void>
   }
 }
 
+export async function countersignContract(contractId: string): Promise<Contract> {
+  try {
+    const res = await api.post<ApiResponse<Contract>>(`/contracts/${contractId}/countersign`);
+    return unwrapApiData(res.data);
+  } catch (err) {
+    throw normalizeError(err);
+  }
+}
+
 // ─── Invoices ──────────────────────────────────────────────────────────────────
 
 export async function getInvoices(): Promise<Invoice[]> {

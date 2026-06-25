@@ -68,6 +68,9 @@ export interface ContractorTokenInfo {
   startDate: string;
   scopeOfWork: string;
   onboardingStep: number;
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  isExistingContractor?: boolean;
 }
 
 export interface ContractorContract {
@@ -116,7 +119,17 @@ export interface SubmitInvoicePayload {
   hoursWorked?: number;
 }
 
-export type ContractorPage = 'dashboard' | 'invoices' | 'contract' | 'profile';
+export type ContractorPage = 'dashboard' | 'invoices' | 'contract' | 'profile' | 'notifications';
+
+export interface ContractorNotification {
+  _id: string;
+  type: 'contract_activated' | 'contract_pending' | 'general';
+  title: string;
+  message: string;
+  actionUrl: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
 
 export interface ContractorPortfolioProject {
   title: string;

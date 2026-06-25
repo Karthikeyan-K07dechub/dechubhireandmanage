@@ -6,6 +6,7 @@ export type ContractStatus =
   | 'worker_signed'
   | 'company_signed'
   | 'active'
+  | 'rejected'
   | 'terminated'
   | 'expired';
 
@@ -67,7 +68,7 @@ const contractSchema = new Schema<IContract>(
     nonCompete:         { type: Boolean, default: false },
     nonSolicitation:    { type: Boolean, default: false },
     confidentiality:    { type: Boolean, default: true },
-    status:             { type: String, enum: ['draft','sent','worker_signed','company_signed','active','terminated','expired'], default: 'draft' },
+    status:             { type: String, enum: ['draft','sent','worker_signed','company_signed','active','rejected','terminated','expired'], default: 'draft' },
     workerSigned:       { type: Boolean, default: false },
     workerSignedAt:     { type: Date, default: null },
     companySigned:      { type: Boolean, default: false },

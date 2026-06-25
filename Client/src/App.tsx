@@ -199,6 +199,14 @@ function getActiveShortlistClaimContext(): PendingShortlistClaim | null {
   return getPendingShortlistClaimFromUrl() ?? readSessionJson<PendingShortlistClaim>(PENDING_SHORTLIST_CLAIM_KEY);
 }
 
+function buildShortlistClaimQuery(claim: PendingShortlistClaim | null): string {
+  if (!claim?.requestId || !claim?.token) {
+    return '';
+  }
+
+  return `?requestId=${encodeURIComponent(claim.requestId)}&token=${encodeURIComponent(claim.token)}`;
+}
+
 function getUserNameFromToken(): string {
   const accessToken = tokenStore.getAccess();
   if (!accessToken) return 'Company User';
@@ -384,6 +392,7 @@ export default function App() {
 
   useEffect(() => {
     let targetPath = authMode === 'signup' ? '/company/signup' : '/company/login';
+    const shortlistClaimQuery = buildShortlistClaimQuery(getActiveShortlistClaimContext());
 
     switch (page) {
       case 'landing':
@@ -396,13 +405,13 @@ export default function App() {
         targetPath = '/company';
         break;
       case 'company-dashboard-auth':
-        targetPath = '/company/login';
+        targetPath = `/company/login${shortlistClaimQuery}`;
         break;
       case 'company-onboarding':
         targetPath = '/company/onboarding';
         break;
       case 'auth':
-        targetPath = '/company/signup';
+        targetPath = `/company/signup${shortlistClaimQuery}`;
         break;
       case 'marketplace':
         targetPath = `/marketplace${marketplaceQuery ? `?q=${encodeURIComponent(marketplaceQuery)}` : ''}`;
