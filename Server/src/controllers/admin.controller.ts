@@ -639,6 +639,11 @@ export async function sendTalentRequestShortlist(req: Request, res: Response, ne
     item.shortlistTokenExpiresAt = expiresAt;
     item.shortlistSentAt = new Date();
     item.reviewNotes = typeof reviewNotes === 'string' ? reviewNotes.trim() : item.reviewNotes;
+    item.workerId = null;
+    item.workerProfileUrl = '';
+    item.suggestedWorkerId = null;
+    item.hiredAt = null;
+    item.talentHiredAt = null;
     item.status = 'shortlisted_sent';
     item.reviewedAt = new Date();
     item.approvedAt = null;

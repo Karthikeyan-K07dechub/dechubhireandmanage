@@ -23,7 +23,10 @@ import { getMyCompany } from './api/company.api';
 import { contractorTokenStore } from './contractor/api/contractor.api';
 import type { Step } from './types/signup';
 import type { MarketplaceCheckoutSelection, MarketplaceOrderDraft } from './api/marketplace.api';
-import { claimShortlistedTalentRequest } from './api/talentRequests.api';
+import {
+  claimShortlistedTalentRequest,
+  getCompanyTalentRequest,
+} from './api/talentRequests.api';
 
 type AppPage =
   | 'landing'
@@ -438,7 +441,7 @@ export default function App() {
         targetPath = `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}/payment`;
         break;
       case 'marketplace-profile':
-        targetPath = `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}`;
+        targetPath = `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}${shortlistClaimQuery}`;
         break;
       case 'freelancer-login':
         targetPath = '/freelancer/login';
@@ -460,6 +463,8 @@ export default function App() {
     if (currentPath !== targetPath) {
       window.history.pushState({}, '', targetPath);
     }
+
+    setPendingShortlistClaimFromUrl(getActiveShortlistClaimContext());
   }, [authMode, marketplaceQuery, page, selectedAdminRequestId, selectedMarketplaceProfileId]);
 
   const handleAuthSuccess = async (result: { signupStep?: number }) => {
@@ -568,6 +573,12 @@ export default function App() {
 
   const handleShortlistProfileContinue = async (claim: PendingShortlistClaim) => {
     writeSessionJson(PENDING_SHORTLIST_CLAIM_KEY, claim);
+    setPendingShortlistClaimFromUrl(claim);
+    const openDashboardHireFlow = (requestId: string) => {
+      writeSessionJson(PENDING_SHORTLIST_CLAIM_KEY, null);
+      setPendingShortlistClaimFromUrl(null);
+      window.location.replace(`/dashboard?hireRequest=${encodeURIComponent(requestId)}`);
+    };
 
     if (!tokenStore.getAccess()) {
       setCompanyDestination('dashboard');
@@ -587,9 +598,36 @@ export default function App() {
       }
     }
 
-    const claimed = await completePendingShortlistClaim();
-    if (!claimed) {
-      setPage('marketplace-profile');
+    try {
+      const request = await getCompanyTalentRequest(claim.requestId);
+      const hasPendingSelection = ['candidate_selected', 'hire_started'].includes(request.status)
+        && Boolean(request.workerId);
+
+      if (hasPendingSelection && request.workerId === claim.workerId) {
+        openDashboardHireFlow(claim.requestId);
+        return;
+      }
+
+      if (hasPendingSelection && request.workerId !== claim.workerId) {
+        window.alert(
+          `You have already chosen ${request.workerName || 'one shortlisted profile'}, but you did not complete that hiring flow. Please ask Dechub to resend the profiles if you want to choose a different candidate.`,
+        );
+        return;
+      }
+    } catch {
+      // If the request lookup fails, fall back to the claim flow below.
+    }
+
+    try {
+      const result = await claimShortlistedTalentRequest(claim.requestId, {
+        token: claim.token,
+        workerId: claim.workerId,
+      });
+      openDashboardHireFlow(result._id);
+      return;
+    } catch {
+      openDashboardHireFlow(claim.requestId);
+      return;
     }
   };
 

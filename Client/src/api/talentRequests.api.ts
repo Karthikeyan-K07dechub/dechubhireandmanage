@@ -141,6 +141,21 @@ export async function claimShortlistedTalentRequest(
   }
 }
 
+export async function switchShortlistedTalentRequestProfile(
+  id: string,
+  payload: { workerId: string },
+): Promise<CompanyTalentRequestItem> {
+  try {
+    const res = await api.post<ApiResponse<CompanyTalentRequestItem>>(
+      `/company/talent-requests/${id}/switch-shortlist-profile`,
+      payload,
+    );
+    return unwrapApiData(res.data);
+  } catch (err) {
+    throw normalizeError(err);
+  }
+}
+
 export async function getTalentRequestSignupPrefill(
   id: string,
   token: string,

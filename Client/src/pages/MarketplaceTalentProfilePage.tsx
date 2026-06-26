@@ -339,12 +339,11 @@ export default function MarketplaceTalentProfilePage({
                           type="button"
                           className="mpp-primary-action"
                           onClick={async () => {
-                            if (
-                              shortlistClaimContext
-                              && shortlistClaimContext.workerId === workerId
-                              && onContinueFromShortlist
-                            ) {
-                              await onContinueFromShortlist(shortlistClaimContext);
+                            if (shortlistClaimContext && onContinueFromShortlist) {
+                              await onContinueFromShortlist({
+                                ...shortlistClaimContext,
+                                workerId,
+                              });
                               return;
                             }
 

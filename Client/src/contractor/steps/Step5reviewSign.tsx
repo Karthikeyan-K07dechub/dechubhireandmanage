@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import type { ContractorContract } from '../types/contractor.types';
 import { getMyContract, rejectContractForMvp, signContractForMvp } from '../api/contractor.api';
 
+function getContractDownloadName(contract: ContractorContract): string {
+  const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const worker = slugify(contract.workerName || 'worker');
+  return `${worker}-contract.pdf`;
+}
+
 interface Props {
   onComplete: (message?: string) => void;
   onBack?: () => void;
@@ -145,6 +151,7 @@ export default function Step5ReviewSign({ onComplete, onBack, allowBack = true, 
             href={contract.pdfUrl}
             target="_blank"
             rel="noreferrer"
+            download={getContractDownloadName(contract)}
             style={{
               display: 'flex',
               alignItems: 'center',

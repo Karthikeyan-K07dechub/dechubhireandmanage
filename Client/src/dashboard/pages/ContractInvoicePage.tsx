@@ -2,6 +2,55 @@ import { useEffect, useState, useMemo } from 'react';
 import type { Contract, ContractStatus, Invoice, InvoiceStatus } from '../types/dashboard.type';
 import { getContracts, getInvoices, approveInvoice, disputeInvoice, countersignContract } from '../api/dashboard.api';
 
+function getContractDownloadName(contract: Contract): string {
+  const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const worker = slugify(contract.workerName || 'worker');
+  return `${worker}-contract.pdf`;
+}
+
+function getPdfCellContent(
+  contract: Contract,
+  countersigningId: string | null,
+  onCountersign: () => Promise<void>,
+) {
+  if (contract.status === 'worker_signed') {
+    return (
+      <button
+        className="db-btn-primary db-btn-sm"
+        onClick={() => { void onCountersign(); }}
+        disabled={countersigningId === contract._id}
+      >
+        {countersigningId === contract._id ? 'Signing...' : 'Countersign'}
+      </button>
+    );
+  }
+
+  if (contract.pdfUrl) {
+    return (
+      <a
+        href={contract.pdfUrl}
+        target="_blank"
+        rel="noreferrer"
+        download={getContractDownloadName(contract)}
+        className="db-card-link"
+      >
+        Download
+      </a>
+    );
+  }
+
+  const pendingLabel =
+    contract.status === 'draft'
+      ? 'Created after invite acceptance'
+      : contract.status === 'sent'
+      ? 'Waiting for signatures'
+      : contract.status === 'company_signed'
+      ? 'Waiting for worker signature'
+      : 'Preparing...';
+
+  return <span style={{ color: '#94a3b8', fontSize: 12 }}>{pendingLabel}</span>;
+}
+
 // ─── Shared badge helpers ─────────────────────────────────────────────────────
 
 const CONTRACT_BADGE: Record<ContractStatus, [string, string]> = {
@@ -155,34 +204,15 @@ export function ContractsPage() {
                         </span>
                       </td>
                       <td>
-                        {c.status === 'worker_signed' ? (
-                          <button
-                            className="db-btn-primary db-btn-sm"
-                            onClick={async () => {
-                              setCountersigningId(c._id);
-                              try {
-                                const updated = await countersignContract(c._id);
-                                setContracts((current) => current.map((item) => (item._id === c._id ? updated : item)));
-                              } finally {
-                                setCountersigningId(null);
-                              }
-                            }}
-                            disabled={countersigningId === c._id}
-                          >
-                            {countersigningId === c._id ? 'Signing...' : 'Countersign'}
-                          </button>
-                        ) : c.pdfUrl ? (
-                          <a
-                            href={c.pdfUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="db-card-link"
-                          >
-                            Download
-                          </a>
-                        ) : (
-                          <span style={{ color: '#cbd5e1', fontSize: 12 }}>Generating…</span>
-                        )}
+                        {getPdfCellContent(c, countersigningId, async () => {
+                          setCountersigningId(c._id);
+                          try {
+                            const updated = await countersignContract(c._id);
+                            setContracts((current) => current.map((item) => (item._id === c._id ? updated : item)));
+                          } finally {
+                            setCountersigningId(null);
+                          }
+                        })}
                       </td>
                     </tr>
                   );

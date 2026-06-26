@@ -81,6 +81,18 @@ export default function TalentRequestDetailPage({
   } | null>(null);
 
   useEffect(() => {
+    if (!actionSuccess) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setActionSuccess('');
+    }, 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [actionSuccess]);
+
+  useEffect(() => {
     let active = true;
 
     const load = async () => {
@@ -228,10 +240,21 @@ export default function TalentRequestDetailPage({
     return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'NA';
   };
   const currentTone = statusTone[request?.status || ''] || 'new';
-  const isGeneralRequest = !request?.workerId;
-  const isGeneralShortlistTracking = Boolean(
-    isGeneralRequest && request && ['shortlisted_sent', 'candidate_selected', 'hire_started', 'hired', 'talent_hired'].includes(request.status),
+  const shortlistHistory = request?.shortlistHistory ?? [];
+  const sentProfiles = request?.shortlistedTalentProfiles ?? [];
+  const isShortlistFlowRequest = Boolean(
+    request && (
+      Boolean(request.shortlistSentAt)
+      || sentProfiles.length > 0
+      || shortlistHistory.length > 0
+    ),
   );
+  const isGeneralRequest = Boolean(request && !request.workerId && !isShortlistFlowRequest);
+  const isGeneralShortlistTracking = Boolean(
+    isShortlistFlowRequest && request && ['shortlisted_sent', 'candidate_selected', 'hire_started', 'hired', 'talent_hired'].includes(request.status),
+  );
+  const isShortlistEditable = Boolean(request && request.status === 'shortlisted_sent');
+  const showShortlistExperience = Boolean(request && (isShortlistFlowRequest || !request.workerId));
   const portfolioProjects = request?.talentProfile?.portfolioProjects ?? [];
   const servicePackages = request?.talentProfile?.servicePackages ?? [];
   const visiblePortfolioProjects = showFullPortfolio ? portfolioProjects : portfolioProjects.slice(0, 2);
@@ -260,21 +283,57 @@ export default function TalentRequestDetailPage({
       .map((id) => byId.get(id))
       .filter(Boolean) as ShortlistPreviewProfile[];
   }, [availableProfiles, request?.shortlistedTalentProfiles, selectedShortlistIds]);
-  const sentProfiles = request?.shortlistedTalentProfiles ?? [];
-  const visibleSidebarProfiles = isGeneralShortlistTracking && !editingShortlist
-    ? sentProfiles
-    : selectedProfiles;
+  const hasActiveChosenCandidate = Boolean(
+    request
+    && request.status !== 'shortlisted_sent'
+    && request.workerId,
+  );
+  const selectedCandidateProfile = hasActiveChosenCandidate
+    ? (request.shortlistedTalentProfiles ?? []).find((profile) => profile.workerId === request.workerId) ?? null
+    : null;
+  const visibleSidebarProfiles = isShortlistEditable && editingShortlist
+    ? selectedProfiles
+      : isShortlistEditable
+      ? sentProfiles
+      : selectedCandidateProfile
+        ? [
+            selectedCandidateProfile,
+            ...sentProfiles.filter((profile) => profile.workerId !== selectedCandidateProfile.workerId),
+          ]
+        : [];
   const sidebarPreviewProfiles = visibleSidebarProfiles.slice(0, 3);
   const hiddenSidebarCount = Math.max(0, visibleSidebarProfiles.length - sidebarPreviewProfiles.length);
-  const shortlistHistory = request?.shortlistHistory ?? [];
   const latestShortlistHistory = shortlistHistory.length > 0 ? shortlistHistory[shortlistHistory.length - 1] : null;
   const previousShortlistHistory = shortlistHistory.length > 1 ? shortlistHistory.slice(0, -1).reverse() : [];
   const missingPreviousHistory = isGeneralShortlistTracking && Boolean(request?.shortlistSentAt) && shortlistHistory.length <= 1;
 
   const totalCandidatePages = Math.max(1, Math.ceil(candidateTotal / 12));
-  const selectedCandidateProfile = request?.workerId
-    ? (request.shortlistedTalentProfiles ?? []).find((profile) => profile.workerId === request.workerId) ?? null
-    : null;
+  const selectedCandidateTitle = request?.status === 'talent_hired'
+    ? 'Hired candidate'
+    : request?.status === 'hired'
+      ? 'Invited candidate'
+      : 'Selected candidate';
+  const detailedCandidateTitle = request?.status === 'talent_hired'
+    ? 'Hired candidate profile'
+    : request?.status === 'hired'
+      ? 'Invited candidate profile'
+      : 'Chosen candidate profile';
+  const canReopenShortlist = Boolean(request && isGeneralShortlistTracking && request.status !== 'talent_hired');
+  const openShortlistEditor = () => {
+    setSelectedShortlistIds(sentProfiles.map((profile) => profile.workerId));
+    setEditingShortlist(true);
+    setShowPreviousSends(false);
+    setReviewNotes('');
+    setActionError('');
+    setActionSuccess('');
+  };
+  const closeShortlistEditor = () => {
+    setSelectedShortlistIds(sentProfiles.map((profile) => profile.workerId));
+    setEditingShortlist(false);
+    setShowPreviousSends(false);
+    setReviewNotes(request?.reviewNotes ?? '');
+    setActionError('');
+  };
 
   const trackerSteps = request ? [
     {
@@ -328,7 +387,7 @@ export default function TalentRequestDetailPage({
         {!loading && request ? (
           <div
             className="atd-header-meta"
-            style={isGeneralRequest ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' } : undefined}
+            style={showShortlistExperience ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' } : undefined}
           >
             <div className="atd-header-card">
               <span>Request ID</span>
@@ -342,7 +401,7 @@ export default function TalentRequestDetailPage({
               <span>Request status</span>
               <strong className={`atd-header-status ${currentTone}`}>{formatStatus(request.status)}</strong>
             </div>
-            {!isGeneralRequest ? (
+            {!showShortlistExperience ? (
               <div className="atd-header-card atd-header-card-select" style={{ minWidth: 320 }}>
               <label className="atd-select-label" htmlFor="atd-review-notes">Admin decision</label>
               <textarea
@@ -417,7 +476,7 @@ export default function TalentRequestDetailPage({
         <main className="atd-shell">
           <section className="atd-grid-layout">
             <div className="atd-column">
-              {!isGeneralRequest ? (
+              {!showShortlistExperience ? (
                 <article className="atd-card">
                   <h2>Talent profile</h2>
                   <div className="atd-profile-top">
@@ -612,7 +671,7 @@ export default function TalentRequestDetailPage({
 
                         {selectedCandidateProfile ? (
                           <div className="atd-selected-candidate-card">
-                            <div className="atd-body-label">Selected candidate</div>
+                            <div className="atd-body-label">{selectedCandidateTitle}</div>
                             <div className="atd-selected-candidate-head">
                               <div>
                                 <strong>{selectedCandidateProfile.workerName}</strong>
@@ -644,13 +703,9 @@ export default function TalentRequestDetailPage({
                             <button
                               type="button"
                               className="atd-inline-button"
-                              onClick={() => {
-                                setSelectedShortlistIds(sentProfiles.map((profile) => profile.workerId));
-                                setEditingShortlist(false);
-                                setActionError('');
-                              }}
+                              onClick={closeShortlistEditor}
                             >
-                              Back to company progress
+                              Close
                             </button>
                           ) : null}
                         </div>
@@ -808,17 +863,31 @@ export default function TalentRequestDetailPage({
 
                     <aside className="atd-shortlist-sidebar">
                       <div className="atd-shortlist-sidebar-label">
-                        {isGeneralShortlistTracking ? 'Profiles sent' : 'Selected profiles'}
+                        {isShortlistEditable ? 'Profiles sent' : selectedCandidateProfile ? 'Chosen candidate' : 'Selected profiles'}
                       </div>
                       <div className="atd-shortlist-sidebar-count">{visibleSidebarProfiles.length}</div>
                       <p className="atd-helper-copy" style={{ marginTop: 8 }}>
-                        {isGeneralShortlistTracking
+                        {isShortlistEditable
                           ? 'This is the shortlist currently tied to the email flow for this request.'
-                          : 'These are the candidates that will be emailed to the company for review.'}
+                          : selectedCandidateProfile
+                            ? 'This is the profile the company moved forward with from the shortlist.'
+                            : 'These are the candidates that will be emailed to the company for review.'}
                       </p>
 
                       {actionSuccess ? (
-                        <div className="atd-action-success">{actionSuccess}</div>
+                        <div className="atd-action-success">
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                            <span>{actionSuccess}</span>
+                            <button
+                              type="button"
+                              className="atd-inline-button"
+                              style={{ minWidth: 72, height: 32, fontSize: 12, padding: '0 12px' }}
+                              onClick={() => setActionSuccess('')}
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
                       ) : null}
 
                       <div className="atd-shortlist-sidebar-list">
@@ -827,12 +896,12 @@ export default function TalentRequestDetailPage({
                             Select one or more matched profiles to build the shortlist.
                           </div>
                         ) : sidebarPreviewProfiles.map((profile) => {
-                          const isChosen = request.workerId === profile.workerId;
+                          const isChosen = hasActiveChosenCandidate && request.workerId === profile.workerId;
                           return (
                             <div key={profile.workerId} className={`atd-shortlist-sidebar-card ${isChosen ? 'chosen' : ''}`}>
                             <div style={{ fontWeight: 700, color: '#fff' }}>{profile.workerName}</div>
                             <div style={{ marginTop: 4, color: 'rgba(255,255,255,0.72)', fontSize: 13 }}>{profile.workerRole}</div>
-                            {isGeneralShortlistTracking && isChosen ? (
+                            {request?.status !== 'shortlisted_sent' && isGeneralShortlistTracking && isChosen ? (
                               <div className="atd-shortlist-sidebar-badge">Chosen by company</div>
                             ) : null}
                             <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.56)', fontSize: 12 }}>{profile.location} · {profile.availabilityLabel}</div>
@@ -844,20 +913,20 @@ export default function TalentRequestDetailPage({
                             +{hiddenSidebarCount} more profiles in this shortlist
                           </div>
                         ) : null}
-                        {isGeneralShortlistTracking && visibleSidebarProfiles.length > 3 ? (
+                        {hiddenSidebarCount > 0 ? (
                           <button
                             type="button"
                             className="atd-inline-button atd-shortlist-history-button"
                             onClick={() => {
                               setHistoryPreview({
-                                title: 'Latest shortlist',
+                                title: 'Current shortlist',
                                 sentAt: latestShortlistHistory?.sentAt ?? request?.shortlistSentAt ?? undefined,
-                                note: latestShortlistHistory?.note ?? reviewNotes,
+                                note: latestShortlistHistory?.note ?? '',
                                 profiles: visibleSidebarProfiles,
                               });
                             }}
                           >
-                            View all latest profiles
+                            Show all current profiles
                           </button>
                         ) : null}
                       </div>
@@ -915,6 +984,7 @@ export default function TalentRequestDetailPage({
                         </div>
                       )}
 
+                      {editingShortlist ? (
                       <div className="atd-shortlist-sidebar-actions">
                         <label className="atd-select-label" htmlFor="atd-sidebar-review-notes">Admin decision</label>
                         <textarea
@@ -924,19 +994,6 @@ export default function TalentRequestDetailPage({
                           placeholder="Optional note for the company"
                           className="atd-sidebar-textarea"
                         />
-                        {isGeneralShortlistTracking && !editingShortlist ? (
-                          <button
-                            type="button"
-                            className="atd-inline-button atd-sidebar-button"
-                            onClick={() => {
-                              setEditingShortlist(true);
-                              setActionError('');
-                              setActionSuccess('');
-                            }}
-                          >
-                            Add or update profiles
-                          </button>
-                        ) : null}
                         <button
                           type="button"
                           className="atd-inline-button atd-sidebar-button"
@@ -952,19 +1009,116 @@ export default function TalentRequestDetailPage({
                         <button
                           type="button"
                           className="atd-inline-button atd-sidebar-button"
-                          onClick={() => void handleStatusChange('rejected')}
-                          disabled={savingAction === 'rejected'}
+                          onClick={closeShortlistEditor}
                         >
-                          {savingAction === 'rejected' ? 'Saving...' : 'Reject request'}
+                          Close
                         </button>
                         {actionError ? (
                           <p className="atd-action-error">{actionError}</p>
                         ) : null}
                       </div>
+                      ) : canReopenShortlist ? (
+                      <div className="atd-shortlist-sidebar-actions">
+                          <button
+                            type="button"
+                            className="atd-inline-button atd-sidebar-button"
+                            onClick={openShortlistEditor}
+                          >
+                            Add or update profiles
+                          </button>
+                        {actionError ? (
+                          <p className="atd-action-error">{actionError}</p>
+                        ) : null}
+                      </div>
+                      ) : null}
                     </aside>
                   </div>
                 </article>
               )}
+
+              {isGeneralShortlistTracking && selectedCandidateProfile && request.talentProfile ? (
+                <article className="atd-card">
+                  <h2>{detailedCandidateTitle}</h2>
+                  <div className="atd-profile-top">
+                    <div className="atd-talent-head">
+                      {request.talentProfile.profilePhotoUrl ? (
+                        <img
+                          className="atd-talent-photo"
+                          src={request.talentProfile.profilePhotoUrl}
+                          alt={selectedCandidateProfile.workerName || 'Selected candidate'}
+                        />
+                      ) : (
+                        <div className="atd-talent-photo atd-talent-photo-fallback" aria-hidden="true">
+                          {getInitials(selectedCandidateProfile.workerName)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="atd-info-grid atd-info-grid-profile">
+                      <div>
+                        <span>Name</span>
+                        <strong>{selectedCandidateProfile.workerName || 'Not provided'}</strong>
+                      </div>
+                      <div>
+                        <span>Role</span>
+                        <strong>{selectedCandidateProfile.workerRole || 'Not provided'}</strong>
+                      </div>
+                      <div>
+                        <span>Location</span>
+                        <strong>{request.talentProfile.location || 'Not provided'}</strong>
+                      </div>
+                      <div>
+                        <span>Availability</span>
+                        <strong>{request.talentProfile.availabilityLabel || 'Not provided'}</strong>
+                      </div>
+                      <div>
+                        <span>Phone number</span>
+                        <strong>{request.talentProfile.phone || 'Not provided'}</strong>
+                      </div>
+                      <div>
+                        <span>Email</span>
+                        <strong>{request.talentProfile.email || 'Not provided'}</strong>
+                      </div>
+                      <div>
+                        <span>Response time</span>
+                        <strong>
+                          {request.talentProfile.responseTimeHours
+                            ? `${request.talentProfile.responseTimeHours} hours`
+                            : 'Not provided'}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="atd-talent-groups">
+                    <div>
+                      <span>Skills</span>
+                      {request.talentProfile.skills?.length ? (
+                        <div className="atd-pill-list">
+                          {request.talentProfile.skills.map((skill) => (
+                            <span key={skill} className="atd-pill">{skill}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="atd-helper-copy">No skills added yet.</p>
+                      )}
+                    </div>
+                    <div>
+                      <span>Languages</span>
+                      {request.talentProfile.languages?.length ? (
+                        <div className="atd-pill-list">
+                          {request.talentProfile.languages.map((language) => (
+                            <span key={language} className="atd-pill">{language}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="atd-helper-copy">No languages added yet.</p>
+                      )}
+                    </div>
+                  </div>
+                  <p className="atd-body-copy">
+                    {request.talentProfile.profileOverview || 'No profile overview provided yet.'}
+                  </p>
+                </article>
+              ) : null}
 
               <article className="atd-card">
                 <h2>Project brief</h2>
@@ -1071,7 +1225,7 @@ export default function TalentRequestDetailPage({
 
             <div className="atd-history-modal-grid">
               {historyPreview.profiles.map((profile) => {
-                const isChosen = request?.workerId === profile.workerId;
+                const isChosen = hasActiveChosenCandidate && request?.workerId === profile.workerId;
                 return (
                   <div key={`${historyPreview.title}-${profile.workerId}`} className={`atd-shortlist-sidebar-card ${isChosen ? 'chosen' : ''}`}>
                     <div style={{ fontWeight: 700, color: '#fff' }}>{profile.workerName}</div>

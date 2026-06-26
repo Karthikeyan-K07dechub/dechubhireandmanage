@@ -8,7 +8,6 @@ import Step2PersonalDetails from './steps/Step2PersonalDetails';
 import Step3KYC            from './steps/Step3Kyc';
 import Step4BankDetails    from './steps/Step4BankDetails';
 import Step5ReviewSign     from './steps/Step5reviewSign';
-import ContractorDashboard from './ContractorDashboard';
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 
@@ -179,6 +178,10 @@ interface ContractorPortalProps {
   inviteToken?: string;
 }
 
+function redirectToContractorDashboard() {
+  window.location.replace('/contractor/dashboard?tab=contract');
+}
+
 export default function ContractorPortal({ inviteToken }: ContractorPortalProps) {
   const [state, setState] = useState<
     'loading' | 'error' | 'onboarding' | 'success' | 'rejected' | 'dashboard'
@@ -187,7 +190,6 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
   const [errorMsg,  setErrorMsg]  = useState('');
   const [info,      setInfo]      = useState<ContractorTokenInfo | null>(null);
   const [step,      setStep]      = useState(0);
-  const [postSignMessage, setPostSignMessage] = useState('');
   const [formData,  setFormData]  = useState<ContractorOnboardingData>(INITIAL_ONBOARDING);
 
   // Extract token from URL if not passed as prop
@@ -196,7 +198,7 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
   useEffect(() => {
     // If already logged in as contractor — show dashboard
     if (contractorTokenStore.get() && !token) {
-      setState('dashboard');
+      redirectToContractorDashboard();
       return;
     }
 
@@ -227,6 +229,12 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
       });
   }, [token]);
 
+  useEffect(() => {
+    if (state === 'dashboard') {
+      redirectToContractorDashboard();
+    }
+  }, [state]);
+
   const handleChange = <K extends keyof ContractorOnboardingData>(
     key: K,
     value: ContractorOnboardingData[K],
@@ -240,11 +248,9 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
 
   if (state === 'loading') return <FullPageLoader />;
   if (state === 'error')   return <FullPageError message={errorMsg} />;
-  if (state === 'dashboard') {
-    return <ContractorDashboard initialPage="contract" flashMessage={postSignMessage} />;
-  }
+  if (state === 'dashboard') return <FullPageLoader />;
   if (state === 'success' && info) {
-    return <SuccessScreen info={info} onDashboard={() => setState('dashboard')} />;
+    return <SuccessScreen info={info} onDashboard={() => redirectToContractorDashboard()} />;
   }
   if (state === 'rejected') return <RejectedScreen />;
 
@@ -293,9 +299,8 @@ export default function ContractorPortal({ inviteToken }: ContractorPortalProps)
           )}
           {step === 4 && (
             <Step5ReviewSign
-              onComplete={(message) => {
-                setPostSignMessage(message ?? 'Contract signed successfully. Redirecting to your contracts...');
-                setState('dashboard');
+              onComplete={() => {
+                redirectToContractorDashboard();
               }}
               onBack={step > 0 ? () => setStep(3) : undefined}
               allowBack={!info.isExistingContractor}

@@ -175,9 +175,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
     setShowModal(false);
     setModalSeed(undefined);
     setModalRequestId(undefined);
-    if (window.location.search) {
-      window.history.replaceState({}, '', window.location.pathname);
-    }
+    window.location.replace('/dashboard?tab=contracts');
   }, []);
 
   const activeWorkers = workers.filter((w) => w.status === 'active').length;

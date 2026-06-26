@@ -14,6 +14,7 @@ import { logger } from '../utils/logger';
 import { env } from '../config/env';
 import { createEnvelopeAndGetSigningUrl, parseWebhookEvent } from '../services/docusign.service';
 import { locallySignContract } from '../services/contractSigning.service';
+import { syncContractPdf } from '../services/contractPdf.service';
 
 // ─── Helper — get worker from JWT ─────────────────────────────────────────────
 
@@ -709,6 +710,9 @@ export async function getMyContract(req: Request, res: Response, next: NextFunct
   try {
     const worker   = await getWorkerFromReq(req);
     const contract = await ensureContractForWorker(worker);
+    if (!contract.pdfUrl && (contract.workerSigned || contract.companySigned || contract.status === 'active')) {
+      await syncContractPdf(contract, `${req.protocol}://${req.get('host')}`);
+    }
     ok(res, contract);
   } catch (err) { next(err); }
 }
@@ -913,6 +917,7 @@ export async function signMyContract(req: Request, res: Response, next: NextFunc
     if (!contract) throw new AppError('Contract not found for this contractor', 404, 'CONTRACT_NOT_FOUND');
 
     const updatedContract = await locallySignContract(contract);
+    await syncContractPdf(updatedContract, `${req.protocol}://${req.get('host')}`, { force: true });
     worker.kycStatus = 'approved';
     worker.status = updatedContract.status === 'active' ? 'active' : 'inactive';
     worker.inviteToken = null;
@@ -960,6 +965,7 @@ export async function rejectMyContract(req: Request, res: Response, next: NextFu
 export async function docusignWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const event = parseWebhookEvent(req.body as Record<string, unknown>);
+    const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
     logger.info(`DocuSign webhook: ${event.type} envelope=${event.envelopeId}`);
 
     if (!event.envelopeId) { res.sendStatus(200); return; }
@@ -975,6 +981,7 @@ export async function docusignWebhook(req: Request, res: Response, next: NextFun
         contract.workerSignedAt = new Date();
         contract.status         = 'worker_signed';
         await contract.save();
+        await syncContractPdf(contract, serverBaseUrl, { force: true });
 
         // Update worker status
         await Worker.findByIdAndUpdate(contract.workerId, { kycStatus: 'approved', status: 'active' });
@@ -987,6 +994,7 @@ export async function docusignWebhook(req: Request, res: Response, next: NextFun
         contract.companySignedAt = new Date();
         contract.status          = 'active';
         await contract.save();
+        await syncContractPdf(contract, serverBaseUrl, { force: true });
 
         // Activate worker
         await Worker.findByIdAndUpdate(contract.workerId, { status: 'active' });
@@ -1001,6 +1009,7 @@ export async function docusignWebhook(req: Request, res: Response, next: NextFun
       contract.companySigned = true;
       contract.status        = 'active';
       await contract.save();
+      await syncContractPdf(contract, serverBaseUrl, { force: true });
       await Worker.findByIdAndUpdate(contract.workerId, { status: 'active' });
       await markTalentRequestAsTalentHired(contract);
       logger.info(`Envelope fully completed: ${contract._id}`);

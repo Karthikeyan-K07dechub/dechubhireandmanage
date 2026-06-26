@@ -74,6 +74,11 @@ async function serializeRequest(item: any) {
 
   return {
     ...source,
+    _id: source._id?.toString?.() ?? source._id,
+    companyId: source.companyId?.toString?.() ?? source.companyId ?? null,
+    workerId: source.workerId?.toString?.() ?? source.workerId ?? null,
+    originalWorkerId: source.originalWorkerId?.toString?.() ?? source.originalWorkerId ?? null,
+    suggestedWorkerId: source.suggestedWorkerId?.toString?.() ?? source.suggestedWorkerId ?? null,
     talentProfile: buildProfileSummary(worker),
     suggestedTalentProfile: buildProfileSummary(suggestedWorker),
     shortlistedTalentProfiles: Array.isArray(shortlistedWorkers)
@@ -203,21 +208,35 @@ export async function claimShortlistedTalentRequest(req: Request, res: Response,
     const item = await TalentRequest.findById(req.params.id);
     if (!item) throw Errors.NotFound('Talent request');
 
-    if (item.status !== 'shortlisted_sent') {
+    const canResumePendingHire = ['candidate_selected', 'hire_started'].includes(item.status);
+    if (!['shortlisted_sent', 'candidate_selected', 'hire_started'].includes(item.status)) {
       throw new AppError('This talent request is not waiting for shortlisted profile selection.', 400, 'INVALID_REQUEST');
     }
 
-    if (!item.shortlistTokenHash || !item.shortlistTokenExpiresAt || item.shortlistTokenExpiresAt.getTime() < Date.now()) {
-      throw new AppError('This shortlist link has expired. Please ask Dechub to send a fresh shortlist email.', 401, 'INVALID_TOKEN');
+    if (item.status === 'shortlisted_sent') {
+      if (!item.shortlistTokenHash || !item.shortlistTokenExpiresAt || item.shortlistTokenExpiresAt.getTime() < Date.now()) {
+        throw new AppError('This shortlist link has expired. Please ask Dechub to send a fresh shortlist email.', 401, 'INVALID_TOKEN');
+      }
+
+      const providedHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+      if (providedHash !== item.shortlistTokenHash) {
+        throw new AppError('This shortlist link is invalid. Please use the latest email from Dechub.', 401, 'INVALID_TOKEN');
+      }
+    } else if (!canResumePendingHire) {
+      throw new AppError('This shortlist link is no longer active. Please ask Dechub to send a fresh shortlist email.', 401, 'INVALID_TOKEN');
     }
 
-    const providedHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
-    if (providedHash !== item.shortlistTokenHash) {
-      throw new AppError('This shortlist link is invalid. Please use the latest email from Dechub.', 401, 'INVALID_TOKEN');
-    }
+    const itemEmail = item.email.trim().toLowerCase();
+    const accountEmail = account.email.trim().toLowerCase();
+    const itemCompanyId = item.companyId?.toString?.() ?? item.companyId?.toString?.() ?? null;
+    const currentCompanyId = company._id.toString();
 
-    if (item.email.trim().toLowerCase() !== account.email.trim().toLowerCase()) {
-      throw new AppError('Please log in with the same company email that received the shortlist.', 403, 'EMAIL_MISMATCH');
+    if (item.status === 'shortlisted_sent') {
+      if (itemEmail !== accountEmail) {
+        throw new AppError('Please log in with the same company email that received the shortlist.', 403, 'EMAIL_MISMATCH');
+      }
+    } else if (itemCompanyId && itemCompanyId !== currentCompanyId) {
+      throw new AppError('This shortlist is already linked to a different company workspace.', 403, 'EMAIL_MISMATCH');
     }
 
     const shortlistedIds = (item.shortlistedWorkerIds ?? []).map((entry) => entry.toString());
@@ -235,8 +254,44 @@ export async function claimShortlistedTalentRequest(req: Request, res: Response,
     item.workerProfileUrl = `/marketplace/${worker._id}`;
     item.status = 'candidate_selected';
     item.approvedAt = new Date();
-    item.shortlistTokenHash = null;
-    item.shortlistTokenExpiresAt = null;
+    await item.save();
+
+    ok(res, await serializeRequest(item));
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function switchShortlistedTalentRequestProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { company } = await getCompanyForUser(req.user!.sub);
+    const { workerId } = req.body as { workerId?: string };
+
+    if (!workerId?.trim()) {
+      throw new AppError('Worker selection is required.', 400, 'INVALID_REQUEST');
+    }
+
+    const item = await TalentRequest.findOne({ _id: req.params.id, companyId: company._id });
+    if (!item) throw Errors.NotFound('Talent request');
+
+    if (!['candidate_selected', 'hire_started'].includes(item.status)) {
+      throw new AppError('This talent request is not in a switchable shortlist state.', 400, 'INVALID_REQUEST');
+    }
+
+    const shortlistedIds = (item.shortlistedWorkerIds ?? []).map((entry) => entry.toString());
+    if (!shortlistedIds.includes(workerId.trim())) {
+      throw new AppError('This candidate was not part of the shortlisted profiles for this request.', 400, 'INVALID_REQUEST');
+    }
+
+    const worker = await Worker.findById(workerId.trim());
+    if (!worker) throw Errors.NotFound('Talent profile');
+
+    item.workerId = worker._id;
+    item.workerName = `${worker.firstName} ${worker.lastName}`.trim();
+    item.workerRole = worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer';
+    item.workerProfileUrl = `/marketplace/${worker._id}`;
+    item.status = 'candidate_selected';
+    item.approvedAt = new Date();
     await item.save();
 
     ok(res, await serializeRequest(item));

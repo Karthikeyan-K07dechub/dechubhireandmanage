@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './dashboard.css';
 import type { DashboardPage } from './types/dashboard.type';
 import DashboardHome from './pages/DashboardHome';
@@ -35,6 +35,19 @@ const PAGE_TITLES: Record<DashboardPage, string> = {
   documents: 'Documents',
   settings:  'Settings',
 };
+
+function getDashboardPageFromQuery(initialPage: DashboardPage, hireRequestId: string): DashboardPage {
+  const tab = new URLSearchParams(window.location.search).get('tab')?.trim() ?? '';
+
+  if (tab === 'contracts') return 'contracts';
+  if (tab === 'workers') return 'workers';
+  if (tab === 'invoices') return 'invoices';
+  if (tab === 'documents') return 'documents';
+  if (tab === 'settings') return 'settings';
+  if (tab === 'home') return 'home';
+
+  return hireRequestId ? 'workers' : initialPage;
+}
 
 // ─── Simple placeholder pages ─────────────────────────────────────────────────
 
@@ -139,9 +152,28 @@ export default function Dashboard({
   initialPage = 'home',
 }: DashboardProps) {
   const initialHireRequestId = new URLSearchParams(window.location.search).get('hireRequest')?.trim() ?? '';
-  const [page,           setPage]           = useState<DashboardPage>(initialHireRequestId ? 'workers' : initialPage);
+  const [page,           setPage]           = useState<DashboardPage>(() => getDashboardPageFromQuery(initialPage, initialHireRequestId));
   const [notifCount,     setNotifCount]     = useState(3);
   const [searchQuery,    setSearchQuery]    = useState('');
+
+  useEffect(() => {
+    const nextPage = getDashboardPageFromQuery(initialPage, initialHireRequestId);
+    setPage(nextPage);
+  }, [initialHireRequestId, initialPage]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', page);
+    if (page !== 'workers') {
+      params.delete('hireRequest');
+    }
+    const nextQuery = params.toString();
+    const nextUrl = nextQuery ? `/dashboard?${nextQuery}` : '/dashboard';
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (currentUrl !== nextUrl) {
+      window.history.replaceState({}, '', nextUrl);
+    }
+  }, [page]);
 
   const handleLogout = () => {
     tokenStore.clear();

@@ -28,6 +28,18 @@ interface ContractorDashboardProps {
   flashMessage?: string;
 }
 
+function getContractorPageFromQuery(initialPage: ContractorPage): ContractorPage {
+  const tab = new URLSearchParams(window.location.search).get('tab')?.trim() ?? '';
+
+  if (tab === 'contract') return 'contract';
+  if (tab === 'invoices') return 'invoices';
+  if (tab === 'profile') return 'profile';
+  if (tab === 'notifications') return 'notifications';
+  if (tab === 'dashboard') return 'dashboard';
+
+  return initialPage;
+}
+
 const INVOICE_BADGE: Record<InvoiceStatus, { cls: string; label: string }> = {
   draft: { cls: 'inv-badge inv-badge-draft', label: 'Draft' },
   submitted: { cls: 'inv-badge inv-badge-submitted', label: 'Submitted' },
@@ -1636,7 +1648,7 @@ export default function ContractorDashboard({
   initialPage = 'dashboard',
   flashMessage = '',
 }: ContractorDashboardProps) {
-  const [page, setPage] = useState<ContractorPage>(initialPage);
+  const [page, setPage] = useState<ContractorPage>(() => getContractorPageFromQuery(initialPage));
   const [profile, setProfile] = useState<ContractorProfile | null>(null);
   const [invoices, setInvoices] = useState<ContractorInvoice[]>([]);
   const [notifications, setNotifications] = useState<ContractorNotification[]>([]);
@@ -1647,8 +1659,19 @@ export default function ContractorDashboard({
   const isPreviewMode = Boolean(previewProfile);
 
   useEffect(() => {
-    setPage(initialPage);
+    setPage(getContractorPageFromQuery(initialPage));
   }, [initialPage]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', page);
+    const nextQuery = params.toString();
+    const nextUrl = nextQuery ? `/contractor/dashboard?${nextQuery}` : '/contractor/dashboard';
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (currentUrl !== nextUrl) {
+      window.history.replaceState({}, '', nextUrl);
+    }
+  }, [page]);
 
   useEffect(() => {
     setBannerMessage(flashMessage);

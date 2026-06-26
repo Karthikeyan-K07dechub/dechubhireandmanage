@@ -15,6 +15,7 @@ import {
   acceptSuggestedTalent,
   getTalentRequestHirePrefill,
   claimShortlistedTalentRequest,
+  switchShortlistedTalentRequestProfile,
 } from '../controllers/companyTalentRequests.controller';
 import { requireAuth } from '../middleware/auth.middleware';
 import { kybUpload } from '../middleware/upload.middleware';
@@ -36,6 +37,7 @@ router.get  ('/talent-requests', listCompanyTalentRequests);
 router.get  ('/talent-requests/:id', getCompanyTalentRequest);
 router.post ('/talent-requests/:id/accept-suggestion', acceptSuggestedTalent);
 router.post ('/talent-requests/:id/claim-shortlist', claimShortlistedTalentRequest);
+router.post ('/talent-requests/:id/switch-shortlist-profile', switchShortlistedTalentRequestProfile);
 router.get  ('/talent-requests/:id/hire-prefill', getTalentRequestHirePrefill);
 
 export default router;

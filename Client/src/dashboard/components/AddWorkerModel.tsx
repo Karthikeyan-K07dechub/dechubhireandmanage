@@ -135,12 +135,34 @@ const COUNTRIES = [
   'France', 'India', 'Singapore', 'Netherlands', 'UAE', 'Sweden', 'Brazil',
 ];
 
+function normalizeCountryValue(country: string, track: AddWorkerFormData['track']): string {
+  const normalized = country.trim();
+  if (!normalized) {
+    return track === 'track_2_us' ? 'United States' : track === 'track_1_india' ? 'India' : '';
+  }
+
+  const exactMatch = COUNTRIES.find((entry) => entry.toLowerCase() === normalized.toLowerCase());
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  if (normalized.toLowerCase() === 'usa' || normalized.toLowerCase() === 'us' || normalized.toLowerCase() === 'united states of america') {
+    return 'United States';
+  }
+
+  return normalized;
+}
+
 function Step2Details({ data, onChange, errors, locked }: {
   data: AddWorkerFormData;
   onChange: (k: keyof AddWorkerFormData, v: string) => void;
   errors: Record<string, string>;
   locked?: boolean;
 }) {
+  const countryOptions = data.country && !COUNTRIES.includes(data.country) && data.country !== 'Other'
+    ? [data.country, ...COUNTRIES]
+    : COUNTRIES;
+
   return (
     <div>
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.6 }}>
@@ -221,12 +243,17 @@ function Step2Details({ data, onChange, errors, locked }: {
           onChange={(e) => onChange('country', e.target.value)}
         >
           <option value="">Select country…</option>
-          {COUNTRIES.map((c) => (
+          {countryOptions.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
           <option value="Other">Other</option>
         </select>
         {errors.country && <p className="db-field-error">{errors.country}</p>}
+        {locked ? (
+          <p style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>
+            Country is locked from the approved talent profile for this hire.
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -589,7 +616,11 @@ export default function AddWorkerModal({
   const hasLockedTalent = Boolean(talentRequestId);
 
   useEffect(() => {
-    setData(initialData ?? INITIAL_ADD_WORKER);
+    const seed = initialData ?? INITIAL_ADD_WORKER;
+    setData({
+      ...seed,
+      country: normalizeCountryValue(seed.country, seed.track),
+    });
     setStep(0);
     setErrors({});
     setApiError(null);
@@ -604,8 +635,34 @@ export default function AddWorkerModal({
   }, []);
 
   const handleStringChange = useCallback((key: keyof AddWorkerFormData, value: string) => {
+    if (key === 'track') {
+      const nextTrack = value as AddWorkerFormData['track'];
+      setData((prev) => {
+        const nextCountry = hasLockedTalent
+          ? normalizeCountryValue(prev.country, nextTrack)
+          : prev.country;
+        return {
+          ...prev,
+          track: nextTrack,
+          country: nextCountry,
+        };
+      });
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.track;
+        delete next.country;
+        return next;
+      });
+      return;
+    }
+
+    if (key === 'country') {
+      handleChange(key, normalizeCountryValue(value, data.track) as AddWorkerFormData[typeof key]);
+      return;
+    }
+
     handleChange(key, value as AddWorkerFormData[typeof key]);
-  }, [handleChange]);
+  }, [data.track, handleChange, hasLockedTalent]);
 
   const toggleService = useCallback((id: string) => {
     setData((prev) => {

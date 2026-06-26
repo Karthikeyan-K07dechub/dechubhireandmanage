@@ -6,6 +6,7 @@ import { TalentRequest } from '../models/TalentRequest';
 import { ContractorNotification } from '../models/ContractorNotification';
 import { ok, AppError, Errors } from '../utils/response';
 import { sendContractActivatedEmail } from '../utils/email';
+import { syncContractPdf } from '../services/contractPdf.service';
 
 async function getCompanyForUser(userId: string) {
   const company = await Company.findOne({ ownerId: userId });
@@ -32,10 +33,17 @@ async function markTalentRequestAsTalentHired(contract: { companyId: unknown; wo
 export async function listContracts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const company = await getCompanyForUser(req.user!.sub);
-    const contracts = await Contract.find({ companyId: company._id }).sort({ createdAt: -1 }).lean();
+    const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
+    const contracts = await Contract.find({ companyId: company._id }).sort({ createdAt: -1 });
+
+    await Promise.all(contracts.map(async (contract) => {
+      if (!contract.pdfUrl && (contract.workerSigned || contract.companySigned || contract.status === 'active')) {
+        await syncContractPdf(contract, serverBaseUrl);
+      }
+    }));
 
     ok(res, contracts.map((contract) => ({
-      ...contract,
+      ...contract.toObject(),
       workerRole: contract.roleTitle,
       track: contract.track === 'track_2_us' ? 'track_2' : 'track_1',
       contractType: contract.contractType === 'full_time_employee' ? 'employment' : 'contractor',
@@ -48,6 +56,7 @@ export async function listContracts(req: Request, res: Response, next: NextFunct
 export async function countersignContract(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const company = await getCompanyForUser(req.user!.sub);
+    const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
     const contract = await Contract.findOne({ _id: req.params.id, companyId: company._id });
     if (!contract) throw Errors.NotFound('Contract');
     if (!contract.workerSigned) {
@@ -62,6 +71,7 @@ export async function countersignContract(req: Request, res: Response, next: Nex
     contract.companySignedAt = contract.companySignedAt ?? new Date();
     contract.status = 'active';
     await contract.save();
+    await syncContractPdf(contract, serverBaseUrl, { force: true });
 
     const worker = await Worker.findById(contract.workerId);
     if (!worker) throw Errors.NotFound('Worker');
