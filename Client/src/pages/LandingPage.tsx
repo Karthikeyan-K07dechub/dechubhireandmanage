@@ -118,6 +118,35 @@ function buildLandingMarkup(): string {
     .split('Covergae')
     .join('Coverage')
     .replace(
+      '<img data-uid="4vI55LXSCxqQzjK2" class="global-contractors" src="https://c.animaapp.com/mpdmfpod17G5Pz/img/global-contractors.svg">',
+      '<div data-uid="4vI55LXSCxqQzjK2" class="global-contractors">Global Contractors</div>',
+    )
+    .replace(
+      '<div data-uid="VElckwnoJgZyzynm" class="text-wrapper-158">without the chaos.</div>',
+      '<div data-uid="VElckwnoJgZyzynm" class="text-wrapper-158">without the chaos</div>',
+    )
+    .replace(
+      '<div data-uid="d5M2KxfQ0Cd6tqMh" class="text-wrapper-161">Marketplace</div>',
+      '<div data-uid="d5M2KxfQ0Cd6tqMh" class="text-wrapper-161">Get Started</div>',
+    )
+    .replace('<div data-uid="ah3NPVC6bhpWgpvS" class="text-wrapper-162">Get Started</div>', '<div data-uid="ah3NPVC6bhpWgpvS" class="text-wrapper-162">Book a demo</div>')
+    .replace(
+      '<div data-uid="oS4DYtmmko6gmSN6" class="button-4"><p data-uid="1ANXJxLkUlkLj3N3" class="text-wrapper-157">Start hiring for free â†’</p></div>',
+      '<div data-uid="oS4DYtmmko6gmSN6" class="button-4"><p data-uid="1ANXJxLkUlkLj3N3" class="text-wrapper-157">Book a demo</p></div>',
+    )
+    .replace(
+      '<div data-uid="vDuWMIPVFf11Amqa" class="a"><div data-uid="p6EjCbx5RtG8d19J" class="div-4"><div data-uid="xTK6tuILGF64yz4j" class="p-erink"><a data-uid="uvwZ6wu72lLopAA6" href="https://www.fiverr.com/categories/graphics-design/architectural-design-services" target="_blank" rel="noopener noreferrer"><div data-uid="McjkPpod9COrNUFO" class="text-wrapper-164">Full-Stack Developer</div></a></div>',
+      '<div data-uid="vDuWMIPVFf11Amqa" class="a"><div data-uid="p6EjCbx5RtG8d19J" class="div-4"><div data-uid="xTK6tuILGF64yz4j" class="p-erink"><a data-uid="uvwZ6wu72lLopAA6" href="https://www.fiverr.com/categories/graphics-design/architectural-design-services" target="_blank" rel="noopener noreferrer"><div data-uid="McjkPpod9COrNUFO" class="text-wrapper-164">Architecture &amp; Interior Design</div></a></div>',
+    )
+    .replace(
+      '<div data-uid="qOWZUJ8v4t1V5BRM" class="a-erinr"><div data-uid="YgZogK7n8Ss9VrCL" class="div-5"><div data-uid="6bgT6A3gJ9PaEhCu" class="p-2"><div data-uid="k1D8J6o8mp9htsGg" class="text-wrapper-164">Graphic Designer</div></div>',
+      '<div data-uid="qOWZUJ8v4t1V5BRM" class="a-erinr"><div data-uid="YgZogK7n8Ss9VrCL" class="div-5"><div data-uid="6bgT6A3gJ9PaEhCu" class="p-2"><div data-uid="k1D8J6o8mp9htsGg" class="text-wrapper-164">Graphic Design</div></div>',
+    )
+    .replace(
+      '<div data-uid="qlS5nOMQkWqG1wvp" class="div-gwtp-wrapper"><div data-uid="ch56JCUVf0Pr40Ps" class="div-6"><div data-uid="c86DaoBKP1tpG3i6" class="p-2"><div data-uid="IEtFgc9BUHHM0mVh" class="text-wrapper-164">Front-End Developer</div></div>',
+      '<div data-uid="qlS5nOMQkWqG1wvp" class="div-gwtp-wrapper"><div data-uid="ch56JCUVf0Pr40Ps" class="div-6"><div data-uid="c86DaoBKP1tpG3i6" class="p-2"><div data-uid="IEtFgc9BUHHM0mVh" class="text-wrapper-164">Website Developer</div></div>',
+    )
+    .replace(
       '<div data-uid="nEYRtSq34kIX9zZZ" class="container-32">',
       `${modernExperienceSection}<div data-uid="nEYRtSq34kIX9zZZ" class="container-32">`,
     );
@@ -150,7 +179,7 @@ export default function LandingPage(props: LandingPageProps) {
         return {
           role: 'button',
           tabIndex: 0,
-          onClick: props.onMarketplace,
+          onClick: props.onGetStarted,
         };
       }
 

@@ -636,6 +636,321 @@
   cursor: pointer;
 }
 
+.landing-template-root .container-79 {
+  top: 28px;
+    left: 80px;
+    width: 1200px;
+    height: 52px;
+    align-items: center;
+    z-index: 3;
+    display: flex;
+    justify-content: space-between;
+}
+
+.landing-template-root .image-5 {
+  margin-top: 0;
+  margin-left: 0;
+  width: 145px;
+  height: auto;
+}
+
+.landing-template-root .navbar {
+  width: auto;
+  margin-top: 0;
+  align-items: center;
+  gap: 24px;
+}
+
+.landing-template-root .text-wrapper-160 {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: rgba(255, 236, 255, 0.92);
+}
+
+.landing-template-root .frame-11 {
+  margin-left: 18px;
+  gap: 16px;
+  align-items: center;
+}
+
+.landing-template-root .frame-12 {
+  padding: 0;
+}
+
+.landing-template-root .text-wrapper-161 {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 236, 255, 0.92);
+}
+
+.landing-template-root .frame-13 {
+  width: auto;
+  height: 36px;
+  padding: 0 16px 0 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: #5a554d;
+  box-shadow: none;
+}
+
+.landing-template-root .frame-13::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  flex: 0 0 22px;
+  background: url('./assets/group-70.png') center / cover no-repeat;
+}
+
+.landing-template-root .text-wrapper-162 {
+  margin: 0;
+  width: auto;
+  height: auto;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.landing-template-root .frame-10 {
+  top: 0;
+  left: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+.landing-template-root .frame-10::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 19% 92%, rgba(132, 98, 255, 0.34), rgba(132, 98, 255, 0) 24%),
+    linear-gradient(180deg, rgba(115, 86, 204, 0.06) 0%, rgba(115, 86, 204, 0.04) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.landing-template-root .image-3 {
+  filter: saturate(0.82) brightness(1.08);
+}
+
+.landing-template-root .group-2 {
+  display: none;
+}
+
+.landing-template-root .button-5 {
+  top: 124px;
+  left: 64px;
+  width: 282px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(117, 96, 171, 0.88) 0%, rgba(146, 120, 192, 0.72) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.landing-template-root .now-live-track-US {
+  position: absolute;
+  top: 133px;
+  left: 58px;
+  width: 282px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 8px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.18px;
+  color: #f2c8ee;
+}
+
+.landing-template-root .h {
+  top: 198px;
+  left: 64px;
+  width: 860px;
+  height: 168px;
+}
+
+.landing-template-root .hire-pay-manage {
+  top: 0;
+  left: 0;
+  width: auto;
+  font-size: 40px;
+  line-height: 1.02;
+  letter-spacing: -2.2px;
+  color: #f2e7ff;
+  white-space: nowrap;
+}
+
+.landing-template-root .global-contractors {
+  position: absolute;
+  top: 0;
+  left: 350px;
+  width: auto;
+  height: auto;
+  font-family: "Inter", Helvetica;
+  font-size: 40px;
+  line-height: 1.02;
+  letter-spacing: -2.2px;
+  font-weight: 800;
+  color: #d854e9;
+  white-space: nowrap;
+}
+
+.landing-template-root .text-wrapper-158 {
+  top: 54px;
+  left: 0;
+  width: auto;
+  font-size: 40px;
+  line-height: 1.02;
+  letter-spacing: -2.2px;
+  color: #f8f2ff;
+  white-space: nowrap;
+}
+
+.landing-template-root .text-wrapper-159 {
+  top: 128px;
+  left: 1px;
+  width: 610px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.42;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.landing-template-root .form-search-form {
+  width: 464px;
+  height: 38px;
+  top: 426px;
+  left: 64px;
+}
+
+.landing-template-root .input-long {
+  padding: 0 44px 0 14px;
+  border-radius: 999px;
+  border: 0;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1;
+  color: #6d6881;
+}
+
+.landing-template-root .input-long::placeholder {
+  color: #9791ab;
+}
+
+.landing-template-root .div-submit-button-wrapper {
+  right: 4px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #e6e6e6;
+}
+
+.landing-template-root .component-12 {
+  width: 13px;
+  height: 13px;
+  filter: brightness(0.52);
+}
+
+.landing-template-root .service-chip-row {
+  top: 486px;
+  left: 64px;
+  gap: 9px;
+}
+
+.landing-template-root .service-chip-row .a,
+.landing-template-root .service-chip-row .a-erinr,
+.landing-template-root .service-chip-row .div-gwtp-wrapper {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(236, 225, 255, 0.38);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.landing-template-root .service-chip-row .text-wrapper-164 {
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 400;
+  color: #f8edff;
+}
+
+.landing-template-root .service-chip-row .vector-wrapper {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
+.landing-template-root .button-4 {
+  top: 544px;
+  left: 64px;
+  width: auto;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px 0 9px;
+  border-radius: 999px;
+  background: #433f39;
+  box-shadow: none;
+}
+
+.landing-template-root .button-4::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  flex: 0 0 18px;
+  background: url('./assets/group-70.png') center / cover no-repeat;
+}
+
+.landing-template-root .text-wrapper-157 {
+  margin: 0;
+  width: auto;
+  height: auto;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.landing-template-root .hero-trust-note {
+  top: 600px;
+  left: 64px;
+  gap: 6px;
+}
+
+.landing-template-root .text-wrapper-165 {
+  font-size: 12px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.landing-template-root .hero-laptop {
+  right: -1%;
+  top: 18%;
+  width: 75%;
+  object-fit: cover;
+  object-position: 46% 44%;
+}
+
 @supports not (zoom: 1) {
   .landing-template-root .main-landing-page {
     width: calc(var(--page-design-width) * 1px);
