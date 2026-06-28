@@ -116,6 +116,30 @@
   flex: 0 0 auto;
 }
 
+/* Show native-like dot bullets for generated `.ul`/`.li` structures */
+.main-landing-page .ul {
+  /* padding-left: 22px; */
+}
+
+.main-landing-page .li {
+  position: relative;
+}
+
+.main-landing-page .li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: currentColor;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.main-landing-page .text {
+  left: 22px;
+}
+
 .main-landing-page .li {
   position: relative;
   align-self: stretch;
@@ -2032,7 +2056,7 @@
 .main-landing-page .tracks {
 
   position: absolute;
-  top: 6100px;
+  top: 6420px;
   left: -1px;
   width: 1450px;
   height: 781px;

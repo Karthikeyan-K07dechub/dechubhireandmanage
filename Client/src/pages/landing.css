@@ -24,6 +24,25 @@
   box-sizing: border-box;
 }
 
+/* Ensure unordered lists show disc bullets by default */
+/* Strongly enforce disc bullets inside the landing area to override resets */
+.landing-root ul,
+.landing-root ol,
+.landing-template-root .main-landing-page .ul,
+ul.email-invite-to-join,
+ul.live-dashboard-track {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  padding-left: 22px !important;
+}
+
+/* Global override: force disc bullets everywhere (uses !important to beat reset) */
+ul,
+ol {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+}
+
 .landing-root button,
 .landing-root input {
   font: inherit;
@@ -1290,6 +1309,70 @@
   padding: 0;
   display: grid;
   gap: 10px;
+}
+
+/* Restore simple dot bullets for landing lists where appropriate */
+.landing-feature-card ul,
+.landing-partner-copy ul,
+.landing-pricing-card ul,
+.landing-audience-card ul {
+  list-style: disc;
+  list-style-position: outside;
+  padding-left: 22px;
+  margin-top: 18px;
+}
+
+/* Style for template lists created from design exports */
+ul.email-invite-to-join,
+ul.live-dashboard-track {
+  list-style: disc !important;
+  list-style-position: outside !important;
+  padding-left: 22px !important;
+  margin: 12px 0 !important;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Force native markers and provide a visible color/size */
+ul.email-invite-to-join > li,
+ul.live-dashboard-track > li {
+  display: list-item !important;
+  margin: 0 0 6px 0 !important;
+  padding-left: 0 !important;
+}
+
+ul.email-invite-to-join > li::marker,
+ul.live-dashboard-track > li::marker {
+  color: rgba(255,255,255,0.95) !important;
+  font-size: 10px !important;
+}
+
+/* Fallback for environments where ::marker isn't applied: use ::before */
+ul.email-invite-to-join > li::before,
+ul.live-dashboard-track > li::before {
+  content: '•' !important;
+  display: inline-block !important;
+  width: 12px !important;
+  margin-left: -22px !important;
+  margin-right: 8px !important;
+  color: rgba(255,255,255,0.95) !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+/* Hide custom pseudo markers (checks) when using native bullets */
+.landing-feature-card li::before,
+.landing-pricing-card li::before {
+  display: none;
+}
+
+/* Ensure list items don't keep extra left padding from previous styles */
+.landing-feature-card li,
+.landing-partner-copy li,
+.landing-pricing-card li,
+.landing-audience-card li {
+  padding-left: 0;
 }
 
 .landing-feature-card li {

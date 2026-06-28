@@ -1,8 +1,17 @@
 import { Fragment, createElement, useCallback, useMemo, useState, type ReactNode } from 'react';
 import landingTemplate from '../landing/landing-template.html?raw';
 import heroBackground from '../landing/assets/back_img.png';
+import heroBannerClock from '../landing/assets/hero-banner-clock.png';
+import featureIconAccountBox from '../landing/assets/feature-icon-account-box.png';
+import featureIconArticle from '../landing/assets/feature-icon-article.png';
+import featureIconAttachMoney from '../landing/assets/feature-icon-attach-money.png';
+import featureIconBalance from '../landing/assets/feature-icon-balance.png';
+import featureIconEdit from '../landing/assets/feature-icon-edit.png';
+import featureIconInbox from '../landing/assets/feature-icon-inbox.png';
 import heroLaptop from '../landing/assets/laptop.png';
 import modernExperienceImage from '../modern-experience-generated.png';
+import usFlag from '../landing/assets/us-flag.svg';
+import inFlag from '../landing/assets/in-flag.svg';
 import LandingTalentRequestModal from '../components/common/LandingTalentRequestModal';
 import '../landing/landing-globals.css';
 import '../landing/landing-styleguide.css';
@@ -25,12 +34,43 @@ const SECTION_SELECTORS: Record<string, string> = {
   Pricing: '.pricing',
 };
 
+const FEATURE_ICON_REPLACEMENTS = [
+  { uid: 'WmW59NGSi5bfhGzu', src: featureIconArticle },
+  { uid: 'u2Q4oigrnaLNKofS', src: featureIconEdit },
+  { uid: '5U0EC7xyyDUB13qt', src: featureIconAccountBox },
+  { uid: 'vMFWKRG62ZgJ6EAs', src: featureIconAttachMoney },
+  { uid: '32BFrkUgP77ojXdb', src: featureIconInbox },
+  { uid: '92ok09PafYHSWMoI', src: featureIconBalance },
+] as const;
+
 function extractBodyMarkup(template: string): string {
   const bodyMatch = template.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   return bodyMatch?.[1] ?? template;
 }
 
 function buildLandingMarkup(): string {
+  const heroPromoBanner = `
+    <section class="hero-promo-banner" aria-label="Get a resource in 20 minutes with 10 days free trial">
+      <div class="hero-promo-banner__panel">
+        <div class="hero-promo-banner__media">
+          <img
+            class="hero-promo-banner__clock"
+            src="${heroBannerClock}"
+            alt="20 minute turnaround indicator"
+          />
+        </div>
+        <div class="hero-promo-banner__copy">
+          <p class="hero-promo-banner__line">
+            Get a resource in <strong>20 minutes</strong>
+          </p>
+          <p class="hero-promo-banner__line">
+            with <strong>10 days</strong> free trial
+          </p>
+        </div>
+      </div>
+    </section>
+  `;
+
   const modernExperienceSection = `
     <section class="modern-experience-section" aria-label="One modern experience for today's workforce">
       <div class="modern-experience-section__panel">
@@ -118,6 +158,34 @@ function buildLandingMarkup(): string {
     .split('Covergae')
     .join('Coverage')
     .replace(
+      '<div data-uid="WmW59NGSi5bfhGzu" class="text-wrapper-44">ðŸ“„</div>',
+      `<img data-uid="WmW59NGSi5bfhGzu" class="feature-card-icon" src="${featureIconArticle}" alt="" aria-hidden="true">`,
+    )
+    .split('src="assets/us-flag.png"').join(`src="${usFlag}"`)
+    .split('src="assets/us-flag.svg"').join(`src="${usFlag}"`)
+    .split('src="assets/in-flag.png"').join(`src="${inFlag}"`)
+    .split('src="assets/in-flag.svg"').join(`src="${inFlag}"`)
+    .replace(
+      '<div data-uid="u2Q4oigrnaLNKofS" class="text-wrapper-48">âœï¸</div>',
+      `<img data-uid="u2Q4oigrnaLNKofS" class="feature-card-icon" src="${featureIconEdit}" alt="" aria-hidden="true">`,
+    )
+    .replace(
+      '<div data-uid="5U0EC7xyyDUB13qt" class="text-wrapper-44">ðŸªª</div>',
+      `<img data-uid="5U0EC7xyyDUB13qt" class="feature-card-icon" src="${featureIconAccountBox}" alt="" aria-hidden="true">`,
+    )
+    .replace(
+      '<div data-uid="vMFWKRG62ZgJ6EAs" class="text-wrapper-44">ðŸ’¸</div>',
+      `<img data-uid="vMFWKRG62ZgJ6EAs" class="feature-card-icon" src="${featureIconAttachMoney}" alt="" aria-hidden="true">`,
+    )
+    .replace(
+      '<div data-uid="32BFrkUgP77ojXdb" class="text-wrapper-44">ðŸ§¾</div>',
+      `<img data-uid="32BFrkUgP77ojXdb" class="feature-card-icon" src="${featureIconInbox}" alt="" aria-hidden="true">`,
+    )
+    .replace(
+      '<div data-uid="92ok09PafYHSWMoI" class="text-wrapper-64">âš–ï¸</div>',
+      `<img data-uid="92ok09PafYHSWMoI" class="feature-card-icon" src="${featureIconBalance}" alt="" aria-hidden="true">`,
+    )
+    .replace(
       '<img data-uid="4vI55LXSCxqQzjK2" class="global-contractors" src="https://c.animaapp.com/mpdmfpod17G5Pz/img/global-contractors.svg">',
       '<div data-uid="4vI55LXSCxqQzjK2" class="global-contractors">Global Contractors</div>',
     )
@@ -149,6 +217,10 @@ function buildLandingMarkup(): string {
     .replace(
       '<div data-uid="nEYRtSq34kIX9zZZ" class="container-32">',
       `${modernExperienceSection}<div data-uid="nEYRtSq34kIX9zZZ" class="container-32">`,
+    )
+    .replace(
+      '<div data-uid="kBRPtjkr4BB7msAs" class="container-8">',
+      `${heroPromoBanner}<div data-uid="kBRPtjkr4BB7msAs" class="container-8">`,
     );
 }
 
@@ -167,6 +239,20 @@ export default function LandingPage(props: LandingPageProps) {
   }, [props, searchQuery]);
   const contentWithSearch = useMemo(() => {
     const doc = parser.parseFromString(markup, 'text/html');
+    FEATURE_ICON_REPLACEMENTS.forEach(({ uid, src }) => {
+      const iconNode = doc.querySelector(`[data-uid="${uid}"]`);
+      if (!iconNode?.parentElement) {
+        return;
+      }
+
+      const replacement = doc.createElement('img');
+      replacement.setAttribute('data-uid', uid);
+      replacement.setAttribute('class', 'feature-card-icon');
+      replacement.setAttribute('src', src);
+      replacement.setAttribute('alt', '');
+      replacement.setAttribute('aria-hidden', 'true');
+      iconNode.parentElement.replaceChild(replacement, iconNode);
+    });
     let keyIndex = 0;
 
     const createKey = () => `landing-node-${keyIndex++}`;
