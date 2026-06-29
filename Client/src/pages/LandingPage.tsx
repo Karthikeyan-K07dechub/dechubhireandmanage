@@ -260,6 +260,19 @@ export default function LandingPage(props: LandingPageProps) {
     const getActionProps = (element: Element): Record<string, unknown> => {
       const classList = element.classList;
       const textContent = element.textContent?.trim() ?? '';
+      const dataUid = element.getAttribute('data-uid');
+
+      if (
+        classList.contains('button-2')
+        || dataUid === 'nvYEz0NvOOFegVmL'
+        || dataUid === 'oS4DYtmmko6gmSN6'
+      ) {
+        return {
+          role: 'button',
+          tabIndex: 0,
+          onClick: () => setShowTalentRequestModal(true),
+        };
+      }
 
       if (classList.contains('frame-12')) {
         return {
@@ -280,12 +293,6 @@ export default function LandingPage(props: LandingPageProps) {
           role: 'button',
           tabIndex: 0,
           onClick: props.onGetStarted,
-        };
-      }
-
-      if (classList.contains('button-2')) {
-        return {
-          onClick: () => setShowTalentRequestModal(true),
         };
       }
 
