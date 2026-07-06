@@ -288,8 +288,11 @@ export default function TalentRequestDetailPage({
     && request.status !== 'shortlisted_sent'
     && request.workerId,
   );
-  const selectedCandidateProfile = hasActiveChosenCandidate
-    ? (request.shortlistedTalentProfiles ?? []).find((profile) => profile.workerId === request.workerId) ?? null
+  const activeChosenRequest = hasActiveChosenCandidate ? request : null;
+  const selectedCandidateProfile = activeChosenRequest
+    ? (activeChosenRequest.shortlistedTalentProfiles ?? []).find(
+        (profile) => profile.workerId === activeChosenRequest.workerId,
+      ) ?? null
     : null;
   const visibleSidebarProfiles = isShortlistEditable && editingShortlist
     ? selectedProfiles
