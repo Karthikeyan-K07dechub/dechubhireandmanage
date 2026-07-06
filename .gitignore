@@ -3,6 +3,7 @@ node_modules/
 .env
 .env.local
 dist/
+*.mp4
 
 # Client
 client/node_modules/
