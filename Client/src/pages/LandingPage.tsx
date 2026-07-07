@@ -1,4 +1,4 @@
-import { Fragment, createElement, useCallback, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, createElement, useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import landingTemplate from '../landing/landing-template.html?raw';
 import heroBackground from '../landing/assets/back_img.png';
 import heroBannerClock from '../landing/assets/hero-banner-clock.png';
@@ -45,6 +45,10 @@ const FEATURE_ICON_REPLACEMENTS = [
 
 const CORRUPTED_TRUSTED_BY_BLOCK_PATTERN =
   /<div data-uid="WD0MyufZpF3jp8yi"[\s\S]*?<p data-uid="VGJ7zSjBvrU7jbEY" class="text-wrapper-43">Trusted by companies hiring global talent<\/p><\/div>/;
+const CORRUPTED_TEMPLATE_FRAGMENT_MARKERS = [
+  'modern-experience-section__labels',
+  'Trusted by companies hiring global talent',
+] as const;
 
 function extractBodyMarkup(template: string): string {
   const bodyMatch = template.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -231,8 +235,55 @@ function buildLandingMarkup(): string {
 export default function LandingPage(props: LandingPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTalentRequestModal, setShowTalentRequestModal] = useState(false);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+  const [areHeroAssetsReady, setAreHeroAssetsReady] = useState(false);
   const markup = useMemo(() => buildLandingMarkup(), []);
   const parser = useMemo(() => new DOMParser(), []);
+
+  useLayoutEffect(() => {
+    setIsLayoutReady(true);
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    let pendingAssets = 2;
+
+    const markAssetComplete = () => {
+      pendingAssets -= 1;
+      if (isActive && pendingAssets <= 0) {
+        setAreHeroAssetsReady(true);
+      }
+    };
+
+    const preloadImage = (src: string) => {
+      const image = new Image();
+      let didComplete = false;
+      const handleComplete = () => {
+        if (didComplete) {
+          return;
+        }
+
+        didComplete = true;
+        markAssetComplete();
+      };
+
+      image.onload = handleComplete;
+      image.onerror = handleComplete;
+      image.src = src;
+
+      if (image.complete) {
+        handleComplete();
+      }
+    };
+
+    preloadImage(heroBackground);
+    preloadImage(heroLaptop);
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   const submitMarketplaceSearch = useCallback(() => {
     const normalizedQuery = searchQuery.trim();
     if (!normalizedQuery) {
@@ -397,7 +448,12 @@ export default function LandingPage(props: LandingPageProps) {
 
     const renderNode = (node: ChildNode): ReactNode => {
       if (node.nodeType === Node.TEXT_NODE) {
-        return node.textContent;
+        const textContent = node.textContent ?? '';
+        if (containsCorruptedTemplateMarker(textContent)) {
+          return null;
+        }
+
+        return textContent;
       }
 
       if (node.nodeType !== Node.ELEMENT_NODE) {
@@ -405,6 +461,10 @@ export default function LandingPage(props: LandingPageProps) {
       }
 
       const element = node as Element;
+      if (isCorruptedTemplateElement(element)) {
+        return null;
+      }
+
       const tagName = element.tagName.toLowerCase();
       const reactProps: Record<string, unknown> = {
         key: createKey(),
@@ -449,7 +509,10 @@ export default function LandingPage(props: LandingPageProps) {
 
   return (
     <>
-      <div className="landing-template-root"><Fragment>{contentWithSearch}</Fragment></div>
+      <div
+        className="landing-template-root"
+        style={{ visibility: isLayoutReady && areHeroAssetsReady ? 'visible' : 'hidden' }}
+      ><Fragment>{contentWithSearch}</Fragment></div>
       <LandingTalentRequestModal
         isOpen={showTalentRequestModal}
         onClose={() => setShowTalentRequestModal(false)}
@@ -460,4 +523,20 @@ export default function LandingPage(props: LandingPageProps) {
 
 function classListContains(element: Element, className: string): boolean {
   return element.classList.contains(className);
+}
+
+function containsCorruptedTemplateMarker(value: string): boolean {
+  return CORRUPTED_TEMPLATE_FRAGMENT_MARKERS.some((marker) => value.includes(marker));
+}
+
+function isCorruptedTemplateElement(element: Element): boolean {
+  if (element.getAttribute('data-uid') === 'WD0MyufZpF3jp8yi') {
+    return true;
+  }
+
+  return Array.from(element.attributes).some(
+    (attribute) =>
+      containsCorruptedTemplateMarker(attribute.name)
+      || containsCorruptedTemplateMarker(attribute.value),
+  );
 }
