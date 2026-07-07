@@ -43,6 +43,9 @@ const FEATURE_ICON_REPLACEMENTS = [
   { uid: '92ok09PafYHSWMoI', src: featureIconBalance },
 ] as const;
 
+const CORRUPTED_TRUSTED_BY_BLOCK_PATTERN =
+  /<div data-uid="WD0MyufZpF3jp8yi"[\s\S]*?<p data-uid="VGJ7zSjBvrU7jbEY" class="text-wrapper-43">Trusted by companies hiring global talent<\/p><\/div>/;
+
 function extractBodyMarkup(template: string): string {
   const bodyMatch = template.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   return bodyMatch?.[1] ?? template;
@@ -151,6 +154,7 @@ function buildLandingMarkup(): string {
   `;
 
   return extractBodyMarkup(landingTemplate)
+    .replace(CORRUPTED_TRUSTED_BY_BLOCK_PATTERN, '')
     .split('./back_img.png')
     .join(heroBackground)
     .split('./laptop.png')
