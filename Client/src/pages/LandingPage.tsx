@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import logoImage from './assets/logo.png';
 import './landing.css';
 
 interface LandingPageProps {
@@ -13,6 +14,8 @@ const HERO_SERVICE_CHIPS = [
   'Graphic Design',
   'Website Developer',
 ];
+
+const HERO_TITLE_LINES = ['Hire, Pay & Manage', 'Global Contractors without the chaos'] as const;
 
 const SPEED_SCENARIOS = {
   payroll: {
@@ -215,6 +218,72 @@ export default function LandingPage({
     setActiveTestimonial((current) => (current === TESTIMONIALS.length - 1 ? 0 : current + 1));
   };
 
+  useEffect(() => {
+    const revealElements = Array.from(document.querySelectorAll<HTMLElement>('.landing-reveal'));
+
+    if (revealElements.length === 0) {
+      return;
+    }
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      revealElements.forEach((element) => element.classList.add('is-visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.16,
+        rootMargin: '0px 0px -10% 0px',
+      },
+    );
+
+    revealElements.forEach((element) => observer.observe(element));
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const renderAnimatedHeroLine = (line: string, lineIndex: number) => {
+    let letterIndex = 0;
+
+    return (
+      <span className="landing-hero-v2__title-line" key={line}>
+        {line.split('').map((character, index) => {
+          if (character === ' ') {
+            return (
+              <span key={`${lineIndex}-${index}`} className="landing-hero-v2__title-space" aria-hidden="true">
+                &nbsp;
+              </span>
+            );
+          }
+
+          const delay = `${letterIndex * 0.045}s`;
+          letterIndex += 1;
+
+          return (
+            <span
+              key={`${lineIndex}-${index}`}
+              className="landing-hero-v2__title-letter"
+              style={{ animationDelay: delay }}
+              aria-hidden="true"
+            >
+              {character}
+            </span>
+          );
+        })}
+      </span>
+    );
+  };
+
   return (
     <div className="landing-root">
       <section className="landing-hero landing-hero-v2">
@@ -236,16 +305,18 @@ export default function LandingPage({
             <button type="button">Home</button>
             <button type="button">About</button>
             <button type="button" className="landing-hero-v2__nav-logo" aria-label="Dechub home">
-              <span className="landing-hero-v2__nav-logo-mark" aria-hidden="true" />
+              <img className="landing-hero-v2__nav-logo-image" src={logoImage} alt="" aria-hidden="true" />
             </button>
             <button type="button">Blog</button>
             <button type="button">Contact</button>
           </nav>
 
           <div className="landing-hero-v2__content">
-            <h1 className="landing-hero-v2__title">
-              <span>Hire, Pay &amp; Manage</span>
-              <span>Global Contractors without the chaos</span>
+            <h1
+              className="landing-hero-v2__title"
+              aria-label="Hire, Pay and Manage Global Contractors without the chaos"
+            >
+              {HERO_TITLE_LINES.map((line, index) => renderAnimatedHeroLine(line, index))}
             </h1>
 
             <p className="landing-hero-v2__copy">
@@ -314,23 +385,26 @@ export default function LandingPage({
       </section>
 
       <section className="landing-speed-section" aria-labelledby="landing-speed-title">
-        <div className="landing-speed-section__shell">
+        <div className="landing-speed-section__shell landing-reveal">
           <div className="landing-speed-section__backdrop" aria-hidden="true">
             20M
           </div>
           <h2 id="landing-speed-title" className="landing-speed-section__title">
-            <span>Get a resource in </span>
-            <span className="landing-speed-section__accent">20 minutes</span>
-            <br />
-            <span>with </span>
-            <span className="landing-speed-section__accent">10 days</span>
-            <span> free trial</span>
+            <span className="landing-speed-section__line landing-speed-section__line--left">
+              <span>Get a resource in </span>
+              <span className="landing-speed-section__accent">20 minutes</span>
+            </span>
+            <span className="landing-speed-section__line landing-speed-section__line--right">
+              <span>with </span>
+              <span className="landing-speed-section__accent">10 days</span>
+              <span> free trial</span>
+            </span>
           </h2>
         </div>
       </section>
 
       <section className="landing-how-section" aria-labelledby="landing-how-title">
-        <div className="landing-how-section__shell">
+        <div className="landing-how-section__shell landing-reveal">
           <div className="landing-how-section__intro">
             <span className="landing-how-section__eyebrow">How it works</span>
             <h2 id="landing-how-title" className="landing-how-section__title">
@@ -506,7 +580,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-solutions-section" aria-labelledby="landing-solutions-title">
-        <div className="landing-solutions-section__shell">
+        <div className="landing-solutions-section__shell landing-reveal">
           <div className="landing-solutions-section__intro">
             <span className="landing-solutions-section__eyebrow">Our solutions</span>
             <h2 id="landing-solutions-title" className="landing-solutions-section__title">
@@ -689,7 +763,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-speed-timeline" aria-labelledby="landing-speed-timeline-title">
-        <div className="landing-speed-timeline__shell">
+        <div className="landing-speed-timeline__shell landing-reveal">
           <p className="landing-speed-timeline__eyebrow">DECHUB-BRIDGE SPEED</p>
           <h2 id="landing-speed-timeline-title" className="landing-speed-timeline__title">
             Accomplish more in less time
@@ -736,7 +810,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-case-study-v2" aria-labelledby="landing-case-study-v2-title">
-        <div className="landing-case-study-v2__shell">
+        <div className="landing-case-study-v2__shell landing-reveal">
           <div className="landing-case-study-v2__intro">
             <span className="landing-case-study-v2__eyebrow">Case study</span>
             <h2 id="landing-case-study-v2-title" className="landing-case-study-v2__title">
@@ -786,7 +860,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-benefits-v2" aria-labelledby="landing-benefits-v2-title">
-        <div className="landing-benefits-v2__shell">
+        <div className="landing-benefits-v2__shell landing-reveal">
           <div className="landing-benefits-v2__intro">
             <span className="landing-benefits-v2__eyebrow">Benefits</span>
             <h2 id="landing-benefits-v2-title" className="landing-benefits-v2__title">
@@ -797,43 +871,43 @@ export default function LandingPage({
           </div>
 
           <div className="landing-benefits-v2__layout">
-            <article className="landing-benefits-v2__card landing-benefits-v2__card--time">
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--time landing-reveal" style={{ transitionDelay: '40ms' }}>
               <span className="landing-benefits-v2__icon">⌛</span>
               <h3>Faster onboarding.</h3>
               <p>Move contractors from offer to compliant setup without long manual follow-ups.</p>
             </article>
 
-            <article className="landing-benefits-v2__card landing-benefits-v2__card--cost">
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--cost landing-reveal" style={{ transitionDelay: '90ms' }}>
               <span className="landing-benefits-v2__icon">$</span>
               <h3>Lower admin cost.</h3>
               <p>Reduce repetitive paperwork across contracts, signatures, invoicing, and payouts.</p>
             </article>
 
-            <article className="landing-benefits-v2__center">
+            <article className="landing-benefits-v2__center landing-reveal" style={{ transitionDelay: '140ms' }}>
               <div className="landing-benefits-v2__center-logo">
-                <span className="landing-hero-v2__nav-logo-mark" aria-hidden="true" />
+                <img className="landing-hero-v2__nav-logo-image" src={logoImage} alt="" aria-hidden="true" />
               </div>
             </article>
 
-            <article className="landing-benefits-v2__card landing-benefits-v2__card--insights">
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--insights landing-reveal" style={{ transitionDelay: '190ms' }}>
               <span className="landing-benefits-v2__icon">◔</span>
               <h3>Clearer visibility.</h3>
               <p>Track contractor status, documents, timelines, and payment readiness in one place.</p>
             </article>
 
-            <article className="landing-benefits-v2__card landing-benefits-v2__card--workflow">
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--workflow landing-reveal" style={{ transitionDelay: '240ms' }}>
               <span className="landing-benefits-v2__icon">⏩</span>
               <h3>Smoother workflows.</h3>
               <p>Standardize hiring, onboarding, and contractor operations across every team.</p>
             </article>
 
-            <article className="landing-benefits-v2__card landing-benefits-v2__card--accuracy">
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--accuracy landing-reveal" style={{ transitionDelay: '290ms' }}>
               <span className="landing-benefits-v2__icon">⚙</span>
               <h3>Higher compliance accuracy.</h3>
               <p>Minimize errors in agreements, approvals, contractor details, and payout setup.</p>
             </article>
 
-            <article className="landing-benefits-v2__card landing-benefits-v2__card--scaling">
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--scaling landing-reveal" style={{ transitionDelay: '340ms' }}>
               <span className="landing-benefits-v2__icon">▥</span>
               <h3>Scales with growth.</h3>
               <p>Add more contractors, markets, and workflows without multiplying operational effort.</p>
@@ -843,7 +917,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-testimonial-v2" aria-labelledby="landing-testimonial-v2-title">
-        <div className="landing-testimonial-v2__shell">
+        <div className="landing-testimonial-v2__shell landing-reveal">
           <div className="landing-testimonial-v2__header">
             <div className="landing-testimonial-v2__intro">
               <span className="landing-testimonial-v2__eyebrow">Testimonial</span>
@@ -904,7 +978,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-pricing-v3" aria-labelledby="landing-pricing-v3-title">
-        <div className="landing-pricing-v3__shell">
+        <div className="landing-pricing-v3__shell landing-reveal">
           <div className="landing-pricing-v3__intro">
             <span className="landing-pricing-v3__eyebrow">Pricing</span>
             <h2 id="landing-pricing-v3-title" className="landing-pricing-v3__title">
@@ -915,7 +989,7 @@ export default function LandingPage({
           </div>
 
           <div className="landing-pricing-v3__grid">
-            <article className="landing-pricing-v3__plan landing-pricing-v3__plan--combined">
+            <article className="landing-pricing-v3__plan landing-pricing-v3__plan--combined landing-reveal" style={{ transitionDelay: '40ms' }}>
               <div className="landing-pricing-v3__plan-top">
                 <span className="landing-pricing-v3__plan-badge is-blue">Simple pricing</span>
               </div>
@@ -935,7 +1009,7 @@ export default function LandingPage({
               </button>
             </article>
 
-            <article className="landing-pricing-v3__plan">
+            <article className="landing-pricing-v3__plan landing-reveal" style={{ transitionDelay: '100ms' }}>
               <div className="landing-pricing-v3__plan-top">
                 <span className="landing-pricing-v3__plan-badge is-gold">Included</span>
               </div>
@@ -950,7 +1024,7 @@ export default function LandingPage({
               </div>
             </article>
 
-            <article className="landing-pricing-v3__plan">
+            <article className="landing-pricing-v3__plan landing-reveal" style={{ transitionDelay: '160ms' }}>
               <div className="landing-pricing-v3__plan-top">
                 <span className="landing-pricing-v3__plan-badge is-green">Add-ons</span>
               </div>
@@ -971,7 +1045,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-coverage-v1" aria-labelledby="landing-coverage-v1-title">
-        <div className="landing-coverage-v1__shell">
+        <div className="landing-coverage-v1__shell landing-reveal">
           <div className="landing-coverage-v1__intro">
             <span className="landing-coverage-v1__eyebrow">Coverage</span>
             <h2 id="landing-coverage-v1-title" className="landing-coverage-v1__title">
@@ -993,7 +1067,11 @@ export default function LandingPage({
 
           <div className="landing-coverage-v1__grid">
             {COVERAGE_TRACKS.map((item) => (
-              <article key={item.code} className="landing-coverage-v1__card">
+              <article
+                key={item.code}
+                className="landing-coverage-v1__card landing-reveal"
+                style={{ transitionDelay: item.code === 'US' ? '50ms' : '130ms' }}
+              >
                 <div className="landing-coverage-v1__card-top">
                   <span className="landing-coverage-v1__code">{item.code}</span>
                   <p className="landing-coverage-v1__track">{item.track}</p>
@@ -1021,7 +1099,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-faq-v1" aria-labelledby="landing-faq-v1-title">
-        <div className="landing-faq-v1__shell">
+        <div className="landing-faq-v1__shell landing-reveal">
           <div className="landing-faq-v1__intro">
             <span className="landing-faq-v1__eyebrow">FAQs</span>
             <h2 id="landing-faq-v1-title" className="landing-faq-v1__title">
@@ -1041,7 +1119,8 @@ export default function LandingPage({
               return (
                 <article
                   key={item.question}
-                  className={`landing-faq-v1__item${isOpen ? ' is-open' : ''}`}
+                  className={`landing-faq-v1__item landing-reveal${isOpen ? ' is-open' : ''}`}
+                  style={{ transitionDelay: `${index * 45}ms` }}
                 >
                   <button
                     type="button"
@@ -1064,7 +1143,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-cta-v1" aria-labelledby="landing-cta-v1-title">
-        <div className="landing-cta-v1__shell">
+        <div className="landing-cta-v1__shell landing-reveal">
           <div className="landing-cta-v1__panel">
             <h2 id="landing-cta-v1-title" className="landing-cta-v1__title">
               Ready to hire your
@@ -1090,11 +1169,16 @@ export default function LandingPage({
       </section>
 
       <footer className="landing-footer-v1" aria-labelledby="landing-footer-v1-title">
-        <div className="landing-footer-v1__shell">
+        <div className="landing-footer-v1__shell landing-reveal">
           <div className="landing-footer-v1__card">
             <div className="landing-footer-v1__brandrow">
               <div className="landing-footer-v1__brand">
-                <span className="landing-hero-v2__nav-logo-mark landing-footer-v1__brandmark" aria-hidden="true" />
+                <img
+                  className="landing-hero-v2__nav-logo-image landing-footer-v1__brandmark"
+                  src={logoImage}
+                  alt=""
+                  aria-hidden="true"
+                />
                 <span>Dechub</span>
               </div>
             </div>
