@@ -14,17 +14,65 @@ const HERO_SERVICE_CHIPS = [
   'Website Developer',
 ];
 
+const SPEED_SCENARIOS = {
+  payroll: {
+    label: 'Dechub-Bridge Payroll',
+    theme: 'blue',
+    icon: '◔',
+    points: [
+      { label: 'Today', copy: 'Set up payroll countries and owners' },
+      { label: 'Hours later', copy: 'Configure pay rules, approvals, and cutoffs' },
+      { label: 'Tomorrow', copy: 'Everyone gets paid on time' },
+    ],
+  },
+  hr: {
+    label: 'Dechub-Bridge HR',
+    theme: 'yellow',
+    icon: '▮',
+    points: [
+      { label: 'Today', copy: 'Sofia is added to your HR system' },
+      { label: 'Hours later', copy: 'Assign and track onboarding tasks' },
+      { label: 'Tomorrow', copy: 'Approve and manage time off' },
+    ],
+  },
+  it: {
+    label: 'Dechub-Bridge IT',
+    theme: 'purple',
+    icon: '▣',
+    points: [
+      { label: 'Today', copy: 'Choose a laptop for Sofia' },
+      { label: 'Day 3', copy: 'Dechub-Bridge ships equipment to Spain' },
+      { label: 'Hours later', copy: 'Sofia is ready for her first day' },
+    ],
+  },
+  hire: {
+    label: 'Dechub-Bridge Hire',
+    theme: 'yellow',
+    icon: '↗',
+    points: [
+      { label: 'Today', copy: 'Decide to hire Sofia from Spain' },
+      { label: 'Minutes later', copy: 'Send Sofia a compliant local contract' },
+      { label: 'Same day', copy: 'Sofia starts onboarding in Dechub-Bridge' },
+    ],
+  },
+} as const;
+
+type SpeedScenarioKey = keyof typeof SPEED_SCENARIOS;
+
 export default function LandingPage({
   onLogin,
   onGetStarted,
   onMarketplaceSearch,
 }: LandingPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeSpeedScenario, setActiveSpeedScenario] = useState<SpeedScenarioKey>('hr');
 
   const submitMarketplaceSearch = useMemo(
     () => () => onMarketplaceSearch(searchQuery.trim()),
     [onMarketplaceSearch, searchQuery],
   );
+
+  const speedScenario = SPEED_SCENARIOS[activeSpeedScenario];
 
   return (
     <div className="landing-root">
@@ -495,6 +543,53 @@ export default function LandingPage({
                 </p>
               </div>
             </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-speed-timeline" aria-labelledby="landing-speed-timeline-title">
+        <div className="landing-speed-timeline__shell">
+          <p className="landing-speed-timeline__eyebrow">DECHUB-BRIDGE SPEED</p>
+          <h2 id="landing-speed-timeline-title" className="landing-speed-timeline__title">
+            Accomplish more in less time
+          </h2>
+
+          <div className="landing-speed-timeline__tabs" role="tablist" aria-label="Dechub-Bridge speed scenarios">
+            {(Object.entries(SPEED_SCENARIOS) as Array<[SpeedScenarioKey, (typeof SPEED_SCENARIOS)[SpeedScenarioKey]]>).map(
+              ([key, scenario]) => {
+                const isActive = key === activeSpeedScenario;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`landing-speed-timeline__tab landing-speed-timeline__tab--${scenario.theme}${isActive ? ' is-active' : ''}`}
+                    onClick={() => setActiveSpeedScenario(key)}
+                  >
+                    <span className="landing-speed-timeline__tab-icon" aria-hidden="true">{scenario.icon}</span>
+                    <span>{scenario.label}</span>
+                  </button>
+                );
+              },
+            )}
+          </div>
+
+          <div className="landing-speed-timeline__rail" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+
+          <div className="landing-speed-timeline__grid">
+            {speedScenario.points.map((point) => (
+              <div key={point.label} className="landing-speed-timeline__point">
+                <h3>{point.label}</h3>
+                <div className={`landing-speed-timeline__card landing-speed-timeline__card--${speedScenario.theme}`}>
+                  <p>{point.copy}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
