@@ -59,6 +59,24 @@ const SPEED_SCENARIOS = {
 
 type SpeedScenarioKey = keyof typeof SPEED_SCENARIOS;
 
+const CASE_STUDIES = [
+  {
+    image: '/assets/images/1LSUOyLvfeSzgUYYr4dDm9VzClI.jpg',
+    title: 'Automated internal workflows and reporting systems.',
+    summary: 'Saved 4+ hours daily and reduced manual errors by 60%.',
+  },
+  {
+    image: '/assets/images/0gsPrzDEBrQ4buIPWQfYgibSyVk.jpg',
+    title: 'Streamlined contractor onboarding across distributed teams.',
+    summary: 'Accelerated approvals and improved start-time readiness for every hire.',
+  },
+  {
+    image: '/assets/images/3aBEQKMKuIVrHtOwISRdfetG6c-025d37d2f4.jpg',
+    title: 'Unified hiring operations, documents, and payment setup.',
+    summary: 'Removed handoff friction and helped teams scale contractor workflows faster.',
+  },
+] as const;
+
 export default function LandingPage({
   onLogin,
   onGetStarted,
@@ -66,6 +84,7 @@ export default function LandingPage({
 }: LandingPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSpeedScenario, setActiveSpeedScenario] = useState<SpeedScenarioKey>('hr');
+  const [activeCaseStudy, setActiveCaseStudy] = useState(0);
 
   const submitMarketplaceSearch = useMemo(
     () => () => onMarketplaceSearch(searchQuery.trim()),
@@ -73,6 +92,15 @@ export default function LandingPage({
   );
 
   const speedScenario = SPEED_SCENARIOS[activeSpeedScenario];
+  const caseStudy = CASE_STUDIES[activeCaseStudy];
+
+  const showPreviousCaseStudy = () => {
+    setActiveCaseStudy((current) => (current === 0 ? CASE_STUDIES.length - 1 : current - 1));
+  };
+
+  const showNextCaseStudy = () => {
+    setActiveCaseStudy((current) => (current === CASE_STUDIES.length - 1 ? 0 : current + 1));
+  };
 
   return (
     <div className="landing-root">
@@ -590,6 +618,56 @@ export default function LandingPage({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-case-study-v2" aria-labelledby="landing-case-study-v2-title">
+        <div className="landing-case-study-v2__shell">
+          <div className="landing-case-study-v2__intro">
+            <span className="landing-case-study-v2__eyebrow">Case study</span>
+            <h2 id="landing-case-study-v2-title" className="landing-case-study-v2__title">
+              How Businesses Use
+              <br />
+              Our AI to Scale Faster
+            </h2>
+          </div>
+
+          <div className="landing-case-study-v2__frame">
+            <div className="landing-case-study-v2__image-wrap">
+              <div className="landing-case-study-v2__notch" aria-hidden="true" />
+              <img
+                key={caseStudy.image}
+                className="landing-case-study-v2__image"
+                src={caseStudy.image}
+                alt={caseStudy.title}
+              />
+              <div className="landing-case-study-v2__overlay" />
+              <div className="landing-case-study-v2__caption">
+                <p>
+                  <strong>{caseStudy.title}</strong> {caseStudy.summary}
+                </p>
+              </div>
+            </div>
+
+            <div className="landing-case-study-v2__controls">
+              <button
+                type="button"
+                className="landing-case-study-v2__arrow"
+                aria-label="Previous case study"
+                onClick={showPreviousCaseStudy}
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                className="landing-case-study-v2__arrow"
+                aria-label="Next case study"
+                onClick={showNextCaseStudy}
+              >
+                →
+              </button>
+            </div>
           </div>
         </div>
       </section>
