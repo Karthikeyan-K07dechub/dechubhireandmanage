@@ -148,6 +148,34 @@ const COVERAGE_TRACKS = [
   },
 ] as const;
 
+const FAQ_ITEMS = [
+  {
+    question: 'How does Dechub-Bridge help with US contractor hiring?',
+    answer:
+      'Dechub-Bridge gives teams one flow for contractor onboarding, USD contracts, DocuSign e-signature, KYC verification, and Wise payouts for US-based independent contractors.',
+  },
+  {
+    question: 'Can I use Dechub-Bridge from outside the United States?',
+    answer:
+      'Yes. Foreign companies can use Dechub-Bridge to hire and manage US contractors remotely, while keeping contract records, tax guidance, approvals, and payout steps in one place.',
+  },
+  {
+    question: 'What is included in the current live track?',
+    answer:
+      'The live track covers US contractors with contract generation, W-9 and W-8BEN guidance, identity verification, DocuSign signatures, Wise payout processing, and completion certificates.',
+  },
+  {
+    question: 'When is India payroll support coming?',
+    answer:
+      'India payroll is planned for Q3 2026 with support for INR payroll, TDS deduction, PF and ESI compliance, Form 16 generation, and India banking and UPI integrations.',
+  },
+  {
+    question: 'What kind of support does Dechub-Bridge offer during setup?',
+    answer:
+      'We help teams structure their onboarding flow, configure contractor operations, and standardize payout and document steps so rollout is smooth from the beginning.',
+  },
+] as const;
+
 export default function LandingPage({
   onLogin,
   onGetStarted,
@@ -157,6 +185,7 @@ export default function LandingPage({
   const [activeSpeedScenario, setActiveSpeedScenario] = useState<SpeedScenarioKey>('hr');
   const [activeCaseStudy, setActiveCaseStudy] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
   const submitMarketplaceSearch = useMemo(
     () => () => onMarketplaceSearch(searchQuery.trim()),
@@ -220,7 +249,7 @@ export default function LandingPage({
             </h1>
 
             <p className="landing-hero-v2__copy">
-              Dechub is the all-in-one platform to onboard US contractors, generate contracts,
+              Dechub-Bridge is the all-in-one platform to onboard US contractors, generate contracts,
               collect e-signatures, and process payments via Wise - all from one dashboard.
             </p>
 
@@ -624,7 +653,7 @@ export default function LandingPage({
               <div className="landing-solution-card__visual landing-solution-card__visual--suite">
                 <div className="landing-solution-suite">
                   <div className="landing-solution-suite__top">
-                    <strong>Dechub Workspace</strong>
+                    <strong>Dechub-Bridge Workspace</strong>
                     <span />
                   </div>
                   <div className="landing-solution-suite__search">Search contractor records...</div>
@@ -990,6 +1019,140 @@ export default function LandingPage({
           </div>
         </div>
       </section>
+
+      <section className="landing-faq-v1" aria-labelledby="landing-faq-v1-title">
+        <div className="landing-faq-v1__shell">
+          <div className="landing-faq-v1__intro">
+            <span className="landing-faq-v1__eyebrow">FAQs</span>
+            <h2 id="landing-faq-v1-title" className="landing-faq-v1__title">
+              Frequently
+              <br />
+              Asked Questions
+            </h2>
+            <p className="landing-faq-v1__contact">
+              Got a specific question? <button type="button" onClick={onLogin}>Contact us</button>
+            </p>
+          </div>
+
+          <div className="landing-faq-v1__list">
+            {FAQ_ITEMS.map((item, index) => {
+              const isOpen = openFaqIndex === index;
+
+              return (
+                <article
+                  key={item.question}
+                  className={`landing-faq-v1__item${isOpen ? ' is-open' : ''}`}
+                >
+                  <button
+                    type="button"
+                    className="landing-faq-v1__trigger"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenFaqIndex((current) => (current === index ? -1 : index))}
+                  >
+                    <span>{item.question}</span>
+                    <span className="landing-faq-v1__icon" aria-hidden="true">
+                      {isOpen ? '−' : '+'}
+                    </span>
+                  </button>
+
+                  {isOpen ? <div className="landing-faq-v1__panel"><p>{item.answer}</p></div> : null}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-cta-v1" aria-labelledby="landing-cta-v1-title">
+        <div className="landing-cta-v1__shell">
+          <div className="landing-cta-v1__panel">
+            <h2 id="landing-cta-v1-title" className="landing-cta-v1__title">
+              Ready to hire your
+              <br />
+              first global contractor?
+            </h2>
+
+            <p className="landing-cta-v1__copy">
+              Join companies hiring smarter with Dechub. Set up US contractor onboarding,
+              contracts, signatures, and payouts in one clean workflow.
+            </p>
+
+            <div className="landing-cta-v1__actions">
+              <button type="button" className="landing-cta-v1__primary" onClick={onGetStarted}>
+                Get started for free
+              </button>
+              <button type="button" className="landing-cta-v1__secondary" onClick={onLogin}>
+                Book a demo
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="landing-footer-v1" aria-labelledby="landing-footer-v1-title">
+        <div className="landing-footer-v1__shell">
+          <div className="landing-footer-v1__card">
+            <div className="landing-footer-v1__brandrow">
+              <div className="landing-footer-v1__brand">
+                <span className="landing-hero-v2__nav-logo-mark landing-footer-v1__brandmark" aria-hidden="true" />
+                <span>Dechub</span>
+              </div>
+            </div>
+
+            <div className="landing-footer-v1__content">
+              <div className="landing-footer-v1__main">
+                <div className="landing-footer-v1__intro">
+                  <h2 id="landing-footer-v1-title">
+                    Global contractor
+                    <br />
+                    hiring made simple
+                  </h2>
+
+                  <p>
+                    Join our newsletter for product updates on US contractor operations and India payroll rollout.
+                  </p>
+                </div>
+
+                <form className="landing-footer-v1__subscribe">
+                  <input type="email" placeholder="name@email.com" aria-label="Email address" />
+                  <button type="submit">Subscribe</button>
+                </form>
+              </div>
+
+              <div className="landing-footer-v1__nav">
+                <div className="landing-footer-v1__column">
+                  <h3>Platform</h3>
+                  <a href="#landing-pricing-v3-title">Pricing</a>
+                  <a href="#landing-coverage-v1-title">Coverage</a>
+                  <a href="#landing-faq-v1-title">FAQs</a>
+                  <button type="button" onClick={onGetStarted}>Get started</button>
+                </div>
+
+                <div className="landing-footer-v1__column">
+                  <h3>Coverage</h3>
+                  <span>US contractors</span>
+                  <span>India payroll</span>
+                  <span>Wise payouts</span>
+                  <span>DocuSign flow</span>
+                </div>
+
+                <div className="landing-footer-v1__column">
+                  <h3>Company</h3>
+                  <button type="button" onClick={onLogin}>Book demo</button>
+                  <span>LinkedIn</span>
+                  <span>Privacy policy</span>
+                  <span>support@dechub.com</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="landing-footer-v1__bottom">
+              <p>Built for modern global teams hiring across borders.</p>
+              <p>© 2026 Dechub. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
