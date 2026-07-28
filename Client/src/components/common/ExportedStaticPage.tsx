@@ -175,6 +175,45 @@ function renderCustomHomepageHero(root: ParentNode) {
   `;
 }
 
+function renderCustomIntroCopy(root: ParentNode) {
+  const introSection = root.querySelector('section[data-framer-name="Intro"]');
+  if (!introSection) {
+    return;
+  }
+
+  const textSpan = introSection.querySelector('.framer-1l9vq7t .framer-text');
+  if (!(textSpan instanceof HTMLElement)) {
+    return;
+  }
+
+  if (root instanceof Document && !root.getElementById('custom-intro-copy-style')) {
+    const style = root.createElement('style');
+    style.id = 'custom-intro-copy-style';
+    style.textContent = `
+      .custom-intro-copy {
+        color: rgb(26, 36, 58) !important;
+        background-image: none !important;
+        -webkit-text-fill-color: rgb(26, 36, 58) !important;
+      }
+
+      .custom-intro-copy .intro-accent {
+        color: #d774ff !important;
+        background-image: none !important;
+        -webkit-text-fill-color: #d774ff !important;
+      }
+    `;
+    root.head.appendChild(style);
+  }
+
+  textSpan.removeAttribute('data-text-fill');
+  textSpan.classList.add('custom-intro-copy');
+  textSpan.style.setProperty('background-image', 'none', 'important');
+  textSpan.style.setProperty('-webkit-text-fill-color', 'rgb(26, 36, 58)', 'important');
+  textSpan.style.setProperty('color', 'rgb(26, 36, 58)', 'important');
+  textSpan.innerHTML =
+    'Get a resource in <span class="intro-accent">20 minutes</span> with <span class="intro-accent">10 days</span> free trial';
+}
+
 
 function captureAttributes(element: HTMLElement): AttributeSnapshot {
   return {
@@ -242,10 +281,18 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
       }
 
       const html = await response.text();
-      const parsed = new DOMParser().parseFromString(html, 'text/html');
+      const sanitizedHtml =
+        sourcePath === '/landing-export/index.txt'
+          ? html.replace(
+              'We are Notch we saves team over 10 million hours every years',
+              'Get a resource in 20 minutes with 10 days free trial',
+            )
+          : html;
+      const parsed = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
       normalizeStaticDocument(parsed);
       if (sourcePath === '/landing-export/index.txt') {
         renderCustomHomepageHero(parsed);
+        renderCustomIntroCopy(parsed);
       }
       applyAttributes(document.documentElement, parsed.documentElement);
       applyAttributes(document.body, parsed.body);
@@ -390,6 +437,7 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
 
       if (sourcePath === '/landing-export/index.txt') {
         renderCustomHomepageHero(document);
+        renderCustomIntroCopy(document);
       }
 
       // The exported standalone scripts expect to initialize on document load.
@@ -398,9 +446,14 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
       window.dispatchEvent(new Event('load'));
 
       if (sourcePath === '/landing-export/index.txt') {
-        window.setTimeout(() => renderCustomHomepageHero(document), 0);
-        window.setTimeout(() => renderCustomHomepageHero(document), 250);
-        window.setTimeout(() => renderCustomHomepageHero(document), 1000);
+        const rerenderStandaloneCustomizations = () => {
+          renderCustomHomepageHero(document);
+          renderCustomIntroCopy(document);
+        };
+
+        window.setTimeout(rerenderStandaloneCustomizations, 0);
+        window.setTimeout(rerenderStandaloneCustomizations, 250);
+        window.setTimeout(rerenderStandaloneCustomizations, 1000);
       }
     };
 
