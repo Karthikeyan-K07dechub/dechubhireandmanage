@@ -671,6 +671,63 @@ export default function LandingPage({
           </div>
         </div>
       </section>
+
+      <section className="landing-benefits-v2" aria-labelledby="landing-benefits-v2-title">
+        <div className="landing-benefits-v2__shell">
+          <div className="landing-benefits-v2__intro">
+            <span className="landing-benefits-v2__eyebrow">Benefits</span>
+            <h2 id="landing-benefits-v2-title" className="landing-benefits-v2__title">
+              What Makes Our Platform
+              <br />
+              Better for Your Business
+            </h2>
+          </div>
+
+          <div className="landing-benefits-v2__layout">
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--time">
+              <span className="landing-benefits-v2__icon">⌛</span>
+              <h3>Faster onboarding.</h3>
+              <p>Move contractors from offer to compliant setup without long manual follow-ups.</p>
+            </article>
+
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--cost">
+              <span className="landing-benefits-v2__icon">$</span>
+              <h3>Lower admin cost.</h3>
+              <p>Reduce repetitive paperwork across contracts, signatures, invoicing, and payouts.</p>
+            </article>
+
+            <article className="landing-benefits-v2__center">
+              <div className="landing-benefits-v2__center-logo">
+                <span className="landing-hero-v2__nav-logo-mark" aria-hidden="true" />
+              </div>
+            </article>
+
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--insights">
+              <span className="landing-benefits-v2__icon">◔</span>
+              <h3>Clearer visibility.</h3>
+              <p>Track contractor status, documents, timelines, and payment readiness in one place.</p>
+            </article>
+
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--workflow">
+              <span className="landing-benefits-v2__icon">⏩</span>
+              <h3>Smoother workflows.</h3>
+              <p>Standardize hiring, onboarding, and contractor operations across every team.</p>
+            </article>
+
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--accuracy">
+              <span className="landing-benefits-v2__icon">⚙</span>
+              <h3>Higher compliance accuracy.</h3>
+              <p>Minimize errors in agreements, approvals, contractor details, and payout setup.</p>
+            </article>
+
+            <article className="landing-benefits-v2__card landing-benefits-v2__card--scaling">
+              <span className="landing-benefits-v2__icon">▥</span>
+              <h3>Scales with growth.</h3>
+              <p>Add more contractors, markets, and workflows without multiplying operational effort.</p>
+            </article>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

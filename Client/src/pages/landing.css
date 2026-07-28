@@ -3774,6 +3774,158 @@ ul.live-dashboard-track > li::before {
   background: #ffffff;
 }
 
+.landing-benefits-v2 {
+  background: #ffffff;
+  padding: 34px 24px 104px;
+}
+
+.landing-benefits-v2__shell {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+}
+
+.landing-benefits-v2__intro {
+  max-width: 640px;
+}
+
+.landing-benefits-v2__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(203, 209, 220, 0.88);
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(30, 38, 56, 0.08);
+  color: #1f2840;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.landing-benefits-v2__title {
+  margin: 20px 0 0;
+  color: #121a2f;
+  font-size: clamp(42px, 5vw, 66px);
+  line-height: 0.98;
+  letter-spacing: -0.075em;
+  font-weight: 700;
+}
+
+.landing-benefits-v2__layout {
+  margin-top: 58px;
+  display: grid;
+  grid-template-columns: 1.22fr 1.22fr 1.38fr 1.22fr 1.22fr;
+  gap: 14px;
+  align-items: stretch;
+  grid-template-rows: 50% 55%;
+}
+
+.landing-benefits-v2__center {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  border-radius: 22px;
+  border: 1px solid rgba(28, 38, 56, 0.78);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 16px 40px rgba(36, 43, 56, 0.06);
+}
+
+.landing-benefits-v2__center-logo {
+  width: 126px;
+  height: 126px;
+  border-radius: 16px;
+  border: 1px solid rgba(26, 35, 53, 0.78);
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 28px 46px rgba(36, 43, 56, 0.12);
+}
+
+.landing-benefits-v2__center-logo .landing-hero-v2__nav-logo-mark {
+  width: 52px;
+  height: 52px;
+}
+
+.landing-benefits-v2__center-logo .landing-hero-v2__nav-logo-mark::before {
+  width: 18px;
+  height: 52px;
+}
+
+.landing-benefits-v2__center-logo .landing-hero-v2__nav-logo-mark::after {
+  width: 52px;
+  height: 18px;
+}
+
+.landing-benefits-v2__card {
+  border-radius: 20px;
+  border: 1px solid rgba(228, 232, 239, 0.95);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+  padding: 22px 20px 18px;
+  box-shadow: 0 10px 30px rgba(37, 44, 58, 0.04);
+}
+
+.landing-benefits-v2__card--time {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.landing-benefits-v2__card--cost {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.landing-benefits-v2__card--insights {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.landing-benefits-v2__card--workflow {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.landing-benefits-v2__card--accuracy {
+  grid-column: 4;
+  grid-row: 2;
+}
+
+.landing-benefits-v2__card--scaling {
+  grid-column: 5;
+  grid-row: 2;
+}
+
+.landing-benefits-v2__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #eef1f6 0%, #e7ebf2 100%);
+  color: #2d3750;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.landing-benefits-v2__card h3 {
+  margin: 18px 0 0;
+  color: #273046;
+  font-size: clamp(22px, 2vw, 26px);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  font-weight: 700;
+  max-width: 11ch;
+}
+
+.landing-benefits-v2__card p {
+  margin: 4px 0 0;
+  color: #2f394f;
+  font-size: clamp(16px, 1.55vw, 18px);
+  line-height: 1.18;
+  letter-spacing: -0.035em;
+  max-width: 22ch;
+}
+
 @media (max-width: 1180px) {
   .landing-speed-timeline__grid {
     gap: 28px;
@@ -3909,6 +4061,28 @@ ul.live-dashboard-track > li::before {
 
   .landing-hero-v2__title {
     max-width: 820px;
+  }
+
+  .landing-benefits-v2__layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    gap: 16px;
+  }
+
+  .landing-benefits-v2__center {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    min-height: 220px;
+  }
+
+  .landing-benefits-v2__card--time,
+  .landing-benefits-v2__card--cost,
+  .landing-benefits-v2__card--insights,
+  .landing-benefits-v2__card--workflow,
+  .landing-benefits-v2__card--accuracy,
+  .landing-benefits-v2__card--scaling {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 
@@ -4465,5 +4639,56 @@ ul.live-dashboard-track > li::before {
     justify-content: flex-end;
     width: fit-content;
     margin: -18px 8px 0 auto;
+  }
+
+  .landing-benefits-v2 {
+    padding: 24px 12px 72px;
+  }
+
+  .landing-benefits-v2__title {
+    font-size: 34px;
+    line-height: 1.04;
+  }
+
+  .landing-benefits-v2__layout {
+    grid-template-columns: 1fr;
+    margin-top: 30px;
+  }
+
+  .landing-benefits-v2__center {
+    min-height: 180px;
+  }
+
+  .landing-benefits-v2__center-logo {
+    width: 96px;
+    height: 96px;
+  }
+
+  .landing-benefits-v2__center-logo .landing-hero-v2__nav-logo-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .landing-benefits-v2__center-logo .landing-hero-v2__nav-logo-mark::before {
+    width: 14px;
+    height: 40px;
+  }
+
+  .landing-benefits-v2__center-logo .landing-hero-v2__nav-logo-mark::after {
+    width: 40px;
+    height: 14px;
+  }
+
+  .landing-benefits-v2__card {
+    padding: 18px 16px 16px;
+  }
+
+  .landing-benefits-v2__card h3 {
+    font-size: 24px;
+  }
+
+  .landing-benefits-v2__card p {
+    font-size: 16px;
+    line-height: 1.25;
   }
 }
