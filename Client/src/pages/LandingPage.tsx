@@ -77,6 +77,44 @@ const CASE_STUDIES = [
   },
 ] as const;
 
+const TESTIMONIALS = [
+  {
+    image: '/assets/images/1LSUOyLvfeSzgUYYr4dDm9VzClI.jpg',
+    name: 'Daniel Roy',
+    role: 'Operations Manager, BrightStack',
+    quote:
+      'Dechub-Bridge helped us structure contractor onboarding fast. Contracts, approvals, and payment prep all moved in one smooth workflow.',
+  },
+  {
+    image: '/assets/images/3aBEQKMKuIVrHtOwISRdfetG6c-2872eb0f92.jpg',
+    name: 'Rhea D’Souza',
+    role: 'Founder, Studio Rhea',
+    quote:
+      'We stopped chasing documents across email. Dechub-Bridge gave us a cleaner system for onboarding, signatures, and contractor coordination.',
+  },
+  {
+    image: '/assets/images/0gsPrzDEBrQ4buIPWQfYgibSyVk.jpg',
+    name: 'Michael Evans',
+    role: 'Marketing Lead, Nova',
+    quote:
+      'The platform made contractor operations far more reliable. We now track every hiring step and payment milestone without the old confusion.',
+  },
+  {
+    image: '/assets/images/3aBEQKMKuIVrHtOwISRdfetG6c-5dbb33a2a2.jpg',
+    name: 'Sofia Turner',
+    role: 'People Ops, Ember Lane',
+    quote:
+      'Our hiring team finally has one place for contractor records, onboarding status, and next actions. It cut manual follow-up dramatically.',
+  },
+  {
+    image: '/assets/images/3aBEQKMKuIVrHtOwISRdfetG6c-fd3457e43a.jpg',
+    name: 'Chris Nolan',
+    role: 'Finance Manager, Greyfield',
+    quote:
+      'Dechub-Bridge made payout setup and approval flow much easier to manage. The visibility alone saved our team hours every week.',
+  },
+] as const;
+
 export default function LandingPage({
   onLogin,
   onGetStarted,
@@ -85,6 +123,7 @@ export default function LandingPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSpeedScenario, setActiveSpeedScenario] = useState<SpeedScenarioKey>('hr');
   const [activeCaseStudy, setActiveCaseStudy] = useState(0);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
 
   const submitMarketplaceSearch = useMemo(
     () => () => onMarketplaceSearch(searchQuery.trim()),
@@ -100,6 +139,18 @@ export default function LandingPage({
 
   const showNextCaseStudy = () => {
     setActiveCaseStudy((current) => (current === CASE_STUDIES.length - 1 ? 0 : current + 1));
+  };
+
+  const visibleTestimonials = Array.from({ length: 3 }, (_, offset) =>
+    TESTIMONIALS[(activeTestimonial + offset) % TESTIMONIALS.length],
+  );
+
+  const showPreviousTestimonials = () => {
+    setActiveTestimonial((current) => (current === 0 ? TESTIMONIALS.length - 1 : current - 1));
+  };
+
+  const showNextTestimonials = () => {
+    setActiveTestimonial((current) => (current === TESTIMONIALS.length - 1 ? 0 : current + 1));
   };
 
   return (
@@ -724,6 +775,134 @@ export default function LandingPage({
               <span className="landing-benefits-v2__icon">▥</span>
               <h3>Scales with growth.</h3>
               <p>Add more contractors, markets, and workflows without multiplying operational effort.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-testimonial-v2" aria-labelledby="landing-testimonial-v2-title">
+        <div className="landing-testimonial-v2__shell">
+          <div className="landing-testimonial-v2__header">
+            <div className="landing-testimonial-v2__intro">
+              <span className="landing-testimonial-v2__eyebrow">Testimonial</span>
+              <h2 id="landing-testimonial-v2-title" className="landing-testimonial-v2__title">
+                Clients Who&apos;ve
+                <br />
+                Seen the Difference
+              </h2>
+            </div>
+
+            <div className="landing-testimonial-v2__controls">
+              <button
+                type="button"
+                className="landing-testimonial-v2__arrow"
+                aria-label="Previous testimonials"
+                onClick={showPreviousTestimonials}
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                className="landing-testimonial-v2__arrow"
+                aria-label="Next testimonials"
+                onClick={showNextTestimonials}
+              >
+                →
+              </button>
+            </div>
+          </div>
+
+          <div className="landing-testimonial-v2__grid">
+            {visibleTestimonials.map((item) => (
+              <article key={`${item.name}-${item.role}`} className="landing-testimonial-v2__card">
+                <img className="landing-testimonial-v2__image" src={item.image} alt={item.name} />
+                <div className="landing-testimonial-v2__overlay" />
+
+                <div className="landing-testimonial-v2__meta">
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>{item.role}</span>
+                  </div>
+                  <div className="landing-testimonial-v2__stars" aria-label="5 out of 5 stars">
+                    <span>★</span>
+                    <span>★</span>
+                    <span>★</span>
+                    <span>★</span>
+                    <span>★</span>
+                  </div>
+                </div>
+
+                <blockquote className="landing-testimonial-v2__quote">
+                  “{item.quote}”
+                </blockquote>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-pricing-v3" aria-labelledby="landing-pricing-v3-title">
+        <div className="landing-pricing-v3__shell">
+          <div className="landing-pricing-v3__intro">
+            <span className="landing-pricing-v3__eyebrow">Pricing</span>
+            <h2 id="landing-pricing-v3-title" className="landing-pricing-v3__title">
+              One Price
+              <br />
+              No Surprices
+            </h2>
+          </div>
+
+          <div className="landing-pricing-v3__grid">
+            <article className="landing-pricing-v3__plan landing-pricing-v3__plan--combined">
+              <div className="landing-pricing-v3__plan-top">
+                <span className="landing-pricing-v3__plan-badge is-blue">Simple pricing</span>
+              </div>
+              <div className="landing-pricing-v3__plan-body">
+                <div className="landing-pricing-v3__price-row">
+                  <span className="landing-pricing-v3__price-prefix">$</span>
+                  <strong className="landing-pricing-v3__price">49</strong>
+                  <span className="landing-pricing-v3__price-suffix">/worker/month</span>
+                </div>
+                <p className="landing-pricing-v3__billing">
+                  Billed monthly per active worker. Pay per active worker. No setup fee, no annual commitment, no
+                  hidden charges.
+                </p>
+              </div>
+              <button type="button" className="landing-pricing-v3__plan-button" onClick={onGetStarted}>
+                Start free - first contractor on us
+              </button>
+            </article>
+
+            <article className="landing-pricing-v3__plan">
+              <div className="landing-pricing-v3__plan-top">
+                <span className="landing-pricing-v3__plan-badge is-gold">Included</span>
+              </div>
+              <div className="landing-pricing-v3__plan-body">
+                <h3 className="landing-pricing-v3__plan-title is-compact">Included in every active worker plan</h3>
+                <ul className="landing-pricing-v3__features">
+                  <li>Contract generation &amp; PDF</li>
+                  <li>DocuSign e-signature (both parties)</li>
+                  <li>KYC identity verification ($1.50/check)</li>
+                  <li>Invoice management &amp; approval flow</li>
+                </ul>
+              </div>
+            </article>
+
+            <article className="landing-pricing-v3__plan">
+              <div className="landing-pricing-v3__plan-top">
+                <span className="landing-pricing-v3__plan-badge is-green">Add-ons</span>
+              </div>
+              <div className="landing-pricing-v3__plan-body">
+                <h3 className="landing-pricing-v3__plan-title is-compact">Scale your contractor operations with optional extras</h3>
+                <ul className="landing-pricing-v3__features">
+                  <li>Wise payment processing</li>
+                  <li>AES-256 encrypted document storage</li>
+                  <li>Completion certificate</li>
+                </ul>
+                <p className="landing-pricing-v3__addons">
+                  Optional add-ons: Compliance advisory +$5/mo | HRMS +$5/mo (coming soon)
+                </p>
+              </div>
             </article>
           </div>
         </div>
