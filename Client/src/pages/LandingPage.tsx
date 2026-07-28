@@ -115,6 +115,39 @@ const TESTIMONIALS = [
   },
 ] as const;
 
+const COVERAGE_TRACKS = [
+  {
+    code: 'US',
+    track: 'Track 2 - US Contractors',
+    status: 'Live now',
+    statusTone: 'live',
+    title: 'Hire US-based independent contractors from any country.',
+    description:
+      'Full contract, KYC, e-sign, and Wise payout pipeline - production ready.',
+    bullets: [
+      'USD contracts with DocuSign e-signature',
+      'W-9 / W-8BEN tax form guidance',
+      'Wise global payout in 1-2 business days',
+      'KYC identity verification',
+      'Completion certificate at contract end',
+    ],
+  },
+  {
+    code: 'IN',
+    track: 'Track 1 - India Payroll',
+    status: 'Coming Q3 2026',
+    statusTone: 'soon',
+    title: 'Full India statutory payroll with TDS, PF, ESI, and Form 16.',
+    description: 'For Indian employees hired by foreign companies.',
+    bullets: [
+      'INR payroll with TDS deduction',
+      'PF & ESI compliance',
+      'Form 16 auto-generation',
+      'India banking & UPI integration',
+    ],
+  },
+] as const;
+
 export default function LandingPage({
   onLogin,
   onGetStarted,
@@ -904,6 +937,56 @@ export default function LandingPage({
                 </p>
               </div>
             </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-coverage-v1" aria-labelledby="landing-coverage-v1-title">
+        <div className="landing-coverage-v1__shell">
+          <div className="landing-coverage-v1__intro">
+            <span className="landing-coverage-v1__eyebrow">Coverage</span>
+            <h2 id="landing-coverage-v1-title" className="landing-coverage-v1__title">
+              Global hiring, phased rollout
+            </h2>
+          </div>
+
+          <div className="landing-coverage-v1__trackbar" aria-hidden="true">
+            <span className="landing-coverage-v1__trackpill">
+              <strong>US</strong>
+              <span>Track 2 - US Contractors</span>
+            </span>
+            <span className="landing-coverage-v1__trackdot" />
+            <span className="landing-coverage-v1__trackpill landing-coverage-v1__trackpill--right">
+              <strong>IN</strong>
+              <span>Track 1 - India Payroll</span>
+            </span>
+          </div>
+
+          <div className="landing-coverage-v1__grid">
+            {COVERAGE_TRACKS.map((item) => (
+              <article key={item.code} className="landing-coverage-v1__card">
+                <div className="landing-coverage-v1__card-top">
+                  <span className="landing-coverage-v1__code">{item.code}</span>
+                  <p className="landing-coverage-v1__track">{item.track}</p>
+                  <span
+                    className={`landing-coverage-v1__status landing-coverage-v1__status--${item.statusTone}`}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+
+                <div className="landing-coverage-v1__card-body">
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+
+                  <ul className="landing-coverage-v1__list">
+                    {item.bullets.map((bullet) => (
+                      <li key={bullet}>{bullet}</li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
