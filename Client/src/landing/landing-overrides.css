@@ -1134,6 +1134,58 @@ ul {
 }
 
 @media (max-width: 1024px) {
+  .landing-motion-reveal {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+    transition:
+      opacity 0.7s ease,
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .landing-motion-reveal--left {
+    transform: translate3d(-26px, 22px, 0);
+  }
+
+  .landing-motion-reveal--right {
+    transform: translate3d(26px, 22px, 0);
+  }
+
+  .landing-motion-reveal--lift {
+    transform: translate3d(0, 32px, 0) scale(0.985);
+  }
+
+  .landing-motion-reveal.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  .landing-responsive-modern__stat:nth-child(2),
+  .landing-responsive-feature-card:nth-child(2),
+  .landing-responsive-coverage-card:nth-child(2),
+  .landing-responsive-testimonial-card:nth-child(2) {
+    transition-delay: 0.08s;
+  }
+
+  .landing-responsive-modern__stat:nth-child(3),
+  .landing-responsive-feature-card:nth-child(3),
+  .landing-responsive-testimonial-card:nth-child(3) {
+    transition-delay: 0.16s;
+  }
+
+  .landing-responsive-modern__stat:nth-child(4),
+  .landing-responsive-feature-card:nth-child(4) {
+    transition-delay: 0.24s;
+  }
+
+  .landing-responsive-feature-card:nth-child(5) {
+    transition-delay: 0.32s;
+  }
+
+  .landing-responsive-feature-card:nth-child(6) {
+    transition-delay: 0.4s;
+  }
+
   .landing-responsive-page {
     display: block;
     min-height: 100vh;
@@ -1168,6 +1220,25 @@ ul {
   .landing-responsive-hero__action,
   .landing-responsive-hero__search button {
     cursor: pointer;
+  }
+
+  .landing-responsive-nav__link,
+  .landing-responsive-cta,
+  .landing-responsive-menu,
+  .landing-responsive-drawer__link,
+  .landing-responsive-hero__chip,
+  .landing-responsive-hero__action,
+  .landing-responsive-hero__search button,
+  .landing-responsive-audience-card__cta,
+  .landing-responsive-pricing-card__cta,
+  .landing-responsive-closing-cta__actions button {
+    transition:
+      transform 0.22s ease,
+      box-shadow 0.22s ease,
+      background-color 0.22s ease,
+      border-color 0.22s ease,
+      color 0.22s ease,
+      opacity 0.22s ease;
   }
 
   .landing-responsive-logo {
@@ -1422,6 +1493,7 @@ ul {
     height: auto;
     display: block;
     filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.34));
+    animation: landing-responsive-float 6.5s ease-in-out infinite;
   }
 
   .landing-responsive-promo,
@@ -1608,6 +1680,10 @@ ul {
     border-radius: 28px;
     background: #ffffff;
     box-shadow: 0 16px 40px rgba(36, 25, 64, 0.08);
+    transition:
+      transform 0.24s ease,
+      box-shadow 0.24s ease,
+      border-color 0.24s ease;
   }
 
   .landing-responsive-feature-card__icon {
@@ -2058,6 +2134,105 @@ ul {
     font-size: 13px;
     font-weight: 700;
     color: #6244a8;
+  }
+
+  .landing-responsive-nav__link:hover,
+  .landing-responsive-nav__link:focus-visible,
+  .landing-responsive-drawer__link:hover,
+  .landing-responsive-drawer__link:focus-visible {
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .landing-responsive-cta:hover,
+  .landing-responsive-cta:focus-visible,
+  .landing-responsive-hero__action:hover,
+  .landing-responsive-hero__action:focus-visible,
+  .landing-responsive-hero__search button:hover,
+  .landing-responsive-hero__search button:focus-visible,
+  .landing-responsive-audience-card__cta:hover,
+  .landing-responsive-audience-card__cta:focus-visible,
+  .landing-responsive-pricing-card__cta:hover,
+  .landing-responsive-pricing-card__cta:focus-visible,
+  .landing-responsive-closing-cta__actions button:hover,
+  .landing-responsive-closing-cta__actions button:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 28px rgba(40, 20, 73, 0.18);
+  }
+
+  .landing-responsive-menu:hover,
+  .landing-responsive-menu:focus-visible,
+  .landing-responsive-hero__chip:hover,
+  .landing-responsive-hero__chip:focus-visible {
+    transform: translateY(-2px);
+  }
+
+  .landing-responsive-feature-card:hover,
+  .landing-responsive-feature-card:focus-within,
+  .landing-responsive-coverage-card:hover,
+  .landing-responsive-coverage-card:focus-within,
+  .landing-responsive-audience-card:hover,
+  .landing-responsive-audience-card:focus-within,
+  .landing-responsive-pricing-card:hover,
+  .landing-responsive-pricing-card:focus-within,
+  .landing-responsive-testimonial-card:hover,
+  .landing-responsive-testimonial-card:focus-within {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 44px rgba(36, 25, 64, 0.12);
+  }
+
+  .landing-responsive-menu:focus-visible,
+  .landing-responsive-nav__link:focus-visible,
+  .landing-responsive-drawer__link:focus-visible,
+  .landing-responsive-cta:focus-visible,
+  .landing-responsive-hero__chip:focus-visible,
+  .landing-responsive-hero__action:focus-visible,
+  .landing-responsive-hero__search input:focus-visible,
+  .landing-responsive-hero__search button:focus-visible,
+  .landing-responsive-audience-card__cta:focus-visible,
+  .landing-responsive-pricing-card__cta:focus-visible,
+  .landing-responsive-closing-cta__actions button:focus-visible {
+    outline: 2px solid rgba(228, 129, 255, 0.95);
+    outline-offset: 3px;
+  }
+}
+
+@keyframes landing-responsive-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-motion-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .landing-responsive-hero__visual img,
+  .landing-responsive-nav__link,
+  .landing-responsive-cta,
+  .landing-responsive-menu,
+  .landing-responsive-drawer__link,
+  .landing-responsive-hero__chip,
+  .landing-responsive-hero__action,
+  .landing-responsive-hero__search button,
+  .landing-responsive-feature-card,
+  .landing-responsive-coverage-card,
+  .landing-responsive-audience-card,
+  .landing-responsive-pricing-card,
+  .landing-responsive-testimonial-card,
+  .landing-responsive-audience-card__cta,
+  .landing-responsive-pricing-card__cta,
+  .landing-responsive-closing-cta__actions button {
+    animation: none !important;
+    transition: none !important;
   }
 }
 

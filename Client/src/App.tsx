@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import './styles.css';
-import LandingPage from './pages/LandingPage';
 import CompanyAuthPage from './pages/CompanyAuthPage';
 import CompanyChoicePage from './pages/CompanyChoicePage';
 import CompanyOnboardingPage from './pages/CompanyOnboardingPage';
@@ -17,6 +16,8 @@ import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
 import FreelancerSignupPage from './pages/FreelancerSignupPage';
 import FreelancerSignupSuccessPage from './pages/FreelancerSignupSuccessPage';
+import ExportedStaticPage from './components/common/ExportedStaticPage';
+import StandaloneDocumentPage from './components/common/StandaloneDocumentPage';
 import { tokenStore, adminTokenStore } from './api/client';
 import { handleGoogleCallback } from './api/auth.api';
 import { getMyCompany } from './api/company.api';
@@ -30,6 +31,11 @@ import {
 
 type AppPage =
   | 'landing'
+  | 'landing-about'
+  | 'landing-blog'
+  | 'landing-blog-post'
+  | 'landing-contact'
+  | 'landing-privacy'
   | 'role-select'
   | 'company-choice'
   | 'company-dashboard-auth'
@@ -83,6 +89,26 @@ function writeSessionJson<T>(key: string, value: T | null): void {
 
 function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+
+  if (/^\/blog\/[^/]+$/.test(normalizedPath)) {
+    return { page: 'landing-blog-post', mode: 'login' };
+  }
+
+  if (normalizedPath === '/about') {
+    return { page: 'landing-about', mode: 'login' };
+  }
+
+  if (normalizedPath === '/blog') {
+    return { page: 'landing-blog', mode: 'login' };
+  }
+
+  if (normalizedPath === '/contact') {
+    return { page: 'landing-contact', mode: 'login' };
+  }
+
+  if (normalizedPath === '/legal-pages/privacy-policy') {
+    return { page: 'landing-privacy', mode: 'login' };
+  }
 
   if (normalizedPath === '/marketplace/requests') {
     return { page: 'marketplace-requests', mode: 'login' };
@@ -167,6 +193,12 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
 
 function getMarketplaceQueryFromUrl(): string {
   return new URLSearchParams(window.location.search).get('q')?.trim() ?? '';
+}
+
+function getLandingBlogSlugFromUrl(): string {
+  const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
+  const match = normalizedPath.match(/^\/blog\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1]).trim() : '';
 }
 
 function getMarketplaceProfileIdFromUrl(): string {
@@ -401,6 +433,21 @@ export default function App() {
       case 'landing':
         targetPath = '/';
         break;
+      case 'landing-about':
+        targetPath = '/about';
+        break;
+      case 'landing-blog':
+        targetPath = '/blog';
+        break;
+      case 'landing-blog-post':
+        targetPath = `/blog/${encodeURIComponent(getLandingBlogSlugFromUrl())}`;
+        break;
+      case 'landing-contact':
+        targetPath = '/contact';
+        break;
+      case 'landing-privacy':
+        targetPath = '/legal-pages/privacy-policy';
+        break;
       case 'role-select':
         targetPath = '/get-started';
         break;
@@ -632,28 +679,28 @@ export default function App() {
   };
 
   if (page === 'landing') {
-    return (
-      <LandingPage
-        onLogin={() => {
-          setPage('role-select');
-        }}
-        onGetStarted={() => {
-          setPage('role-select');
-        }}
-        onMarketplace={() => {
-          setCompanyDestination('marketplace');
-          setMarketplaceQuery('');
-          setSelectedMarketplaceProfileId('');
-          setPage('marketplace');
-        }}
-        onMarketplaceSearch={(query) => {
-          setCompanyDestination('marketplace');
-          setMarketplaceQuery(query.trim());
-          setSelectedMarketplaceProfileId('');
-          setPage('marketplace');
-        }}
-      />
-    );
+    return <ExportedStaticPage sourcePath="/landing-export/index.txt" />;
+  }
+
+  if (page === 'landing-about') {
+    return <StandaloneDocumentPage sourcePath="/about/index.html" />;
+  }
+
+  if (page === 'landing-blog') {
+    return <StandaloneDocumentPage sourcePath="/blog/index.html" />;
+  }
+
+  if (page === 'landing-blog-post') {
+    const blogSlug = getLandingBlogSlugFromUrl();
+    return <StandaloneDocumentPage sourcePath={`/blog/${blogSlug}/index.html`} />;
+  }
+
+  if (page === 'landing-contact') {
+    return <StandaloneDocumentPage sourcePath="/contact/index.html" />;
+  }
+
+  if (page === 'landing-privacy') {
+    return <StandaloneDocumentPage sourcePath="/legal-pages/privacy-policy/index.html" />;
   }
 
   if (page === 'role-select') {
