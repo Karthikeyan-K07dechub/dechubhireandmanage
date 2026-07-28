@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import './talent-marketplace.css';
-import { getMarketplaceTalent, type MarketplaceTalentProfile } from '../api/marketplace.api';
+import { FALLBACK_MARKETPLACE_TALENT, getMarketplaceTalent, type MarketplaceTalentProfile } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
 import { resolveImageUrl } from '../utils/imageUrl';
 import UserMenu from '../components/common/UserMenu';
@@ -95,7 +95,13 @@ export default function TalentMarketplacePage({
       })
       .catch((err) => {
         const apiError = err as ApiError;
-        setError(apiError.message ?? 'Failed to load marketplace talent.');
+        const fallbackProfiles = FALLBACK_MARKETPLACE_TALENT.filter((profile) => isCompletedMarketplaceProfile(profile));
+        if (fallbackProfiles.length > 0) {
+          setTalentPool(fallbackProfiles);
+          setError('');
+        } else {
+          setError(apiError.message ?? 'Failed to load marketplace talent.');
+        }
         setLoading(false);
       });
   }, []);

@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import {
   STANDALONE_LIGHT_THEME_CLASS,
   STANDALONE_LIGHT_THEME_CSS,
   shouldApplyStandaloneLightTheme,
 } from './standaloneLightTheme';
+import LandingTalentRequestModal from './LandingTalentRequestModal';
 
 interface ExportedStaticPageProps {
   sourcePath: string;
@@ -132,6 +133,49 @@ function waitForScriptLoad(script: HTMLScriptElement) {
   });
 }
 
+function renderCustomHomepageHero(root: ParentNode) {
+  const heroSection = root.querySelector('section[data-framer-name="Hero"]');
+  if (!heroSection) {
+    return;
+  }
+
+  const contentHost = heroSection.querySelector('[data-framer-name="content"]');
+  if (!(contentHost instanceof HTMLElement)) {
+    return;
+  }
+
+  contentHost.setAttribute('data-static-custom-hero', 'true');
+  contentHost.innerHTML = `
+    <div class="static-hero-copy">
+      <h1 class="static-hero-title">
+        <span>Hire, Pay &amp; <em>Manage</em></span>
+        <span>Global Contractors <em>without the chaos</em></span>
+      </h1>
+      <p class="static-hero-description">
+        Dechub is the all-in-one platform to onboard US contractors, generate contracts, collect e-signatures, and process payments via Wise - all from one dashboard.
+      </p>
+      <form class="static-hero-search" action="/marketplace" method="get">
+        <input type="text" name="q" placeholder="Search for any service..." aria-label="Search for any service" />
+        <button type="submit" aria-label="Search">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"></path>
+          </svg>
+        </button>
+      </form>
+      <div class="static-hero-tags" aria-label="Popular services">
+        <a href="/marketplace?q=Architecture%20%26%20Interior%20Design" class="static-hero-tag">Architecture &amp; Interior Design <span aria-hidden="true">&rarr;</span></a>
+        <a href="/marketplace?q=Graphic%20Design" class="static-hero-tag">Graphic Design <span aria-hidden="true">&rarr;</span></a>
+        <a href="/marketplace?q=Website%20Developer" class="static-hero-tag">Website Developer <span aria-hidden="true">&rarr;</span></a>
+      </div>
+      <div class="static-hero-actions">
+        <a href="/get-started" class="static-hero-button static-hero-button-primary">Get Started</a>
+        <a href="/contact" class="static-hero-button static-hero-button-secondary">Book a demo</a>
+      </div>
+    </div>
+  `;
+}
+
+
 function captureAttributes(element: HTMLElement): AttributeSnapshot {
   return {
     className: element.className,
@@ -171,7 +215,12 @@ function applyAttributes(target: HTMLElement, source: HTMLElement) {
 export default function ExportedStaticPage({ sourcePath }: ExportedStaticPageProps) {
   const mountNodeRef = useRef<HTMLDivElement | null>(null);
   const [markup, setMarkup] = useState('');
+  const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
   const scriptTemplatesRef = useRef<HTMLScriptElement[]>([]);
+
+  useEffect(() => {
+    setIsTalentRequestModalOpen(false);
+  }, [sourcePath]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -195,6 +244,9 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
       const html = await response.text();
       const parsed = new DOMParser().parseFromString(html, 'text/html');
       normalizeStaticDocument(parsed);
+      if (sourcePath === '/landing-export/index.txt') {
+        renderCustomHomepageHero(parsed);
+      }
       applyAttributes(document.documentElement, parsed.documentElement);
       applyAttributes(document.body, parsed.body);
       if (shouldApplyLightTheme) {
@@ -284,6 +336,13 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
         return;
       }
 
+      if (clickable.matches('.static-hero-button-secondary')) {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsTalentRequestModalOpen(true);
+        return;
+      }
+
       const rawHref = clickable.getAttribute('href');
       const nextHref = rawHref ? resolveStandaloneNavigationHref(rawHref) : null;
       if (!nextHref) {
@@ -329,10 +388,20 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
         return;
       }
 
+      if (sourcePath === '/landing-export/index.txt') {
+        renderCustomHomepageHero(document);
+      }
+
       // The exported standalone scripts expect to initialize on document load.
       // Re-dispatching these events lets route changes behave like a fresh page load.
       document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
       window.dispatchEvent(new Event('load'));
+
+      if (sourcePath === '/landing-export/index.txt') {
+        window.setTimeout(() => renderCustomHomepageHero(document), 0);
+        window.setTimeout(() => renderCustomHomepageHero(document), 250);
+        window.setTimeout(() => renderCustomHomepageHero(document), 1000);
+      }
     };
 
     void initializeScripts();
@@ -348,5 +417,11 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
     };
   }, [markup, sourcePath]);
 
-  return null;
+  return (
+    <LandingTalentRequestModal
+      isOpen={isTalentRequestModalOpen}
+      onClose={() => setIsTalentRequestModalOpen(false)}
+    />
+  );
 }
+

@@ -127,12 +127,65 @@ function setupStaticMenu() {
     return /Open/i.test(variant.textContent || "") && variant.querySelector("a[href='/about/']");
   });
 
-  if (!menuPanel) return;
+  if (menuPanel) {
+    menuPanel.setAttribute("data-static-menu-panel", "true");
+  }
 
-  menuPanel.setAttribute("data-static-menu-panel", "true");
   menuButton.setAttribute("role", "button");
   menuButton.setAttribute("aria-expanded", "false");
   menuButton.setAttribute("aria-label", "Toggle menu");
+
+  const nav = menuButton.closest("nav");
+  const navLinks = nav
+    ? [
+        nav.querySelector(".framer-kbmi72-container a"),
+        nav.querySelector(".framer-mez1yj-container a"),
+        nav.querySelector(".framer-d3zajn-container a"),
+        nav.querySelector(".framer-1yhtuvl-container a"),
+      ].filter(Boolean)
+    : [];
+
+  const fallbackHrefByLabel = {
+    Home: "/",
+    About: "/about",
+    Blog: "/blog",
+    Contact: "/contact",
+  };
+
+  let customMenu = document.querySelector("[data-static-mobile-menu]");
+  if (!customMenu) {
+    customMenu = document.createElement("div");
+    customMenu.setAttribute("data-static-mobile-menu", "true");
+    customMenu.innerHTML = `
+      <div class="static-mobile-menu-card">
+        <div class="static-mobile-menu-head">
+          <a href="/" class="static-mobile-menu-logo" aria-label="Home"></a>
+          <button type="button" class="static-mobile-menu-close" aria-label="Close menu">&times;</button>
+        </div>
+        <nav class="static-mobile-menu-links" aria-label="Mobile navigation"></nav>
+      </div>
+    `;
+    document.body.appendChild(customMenu);
+  }
+
+  const logoSource = nav?.querySelector(".framer-xb6sci");
+  const logoTarget = customMenu.querySelector(".static-mobile-menu-logo");
+  if (logoSource && logoTarget && !logoTarget.querySelector(".framer-yjtsf1")) {
+    logoTarget.innerHTML = logoSource.innerHTML;
+  }
+
+  const linksHost = customMenu.querySelector(".static-mobile-menu-links");
+  if (linksHost && !linksHost.children.length) {
+    navLinks.forEach((sourceLink) => {
+      const labelText = (sourceLink.textContent || "").trim();
+      const sourceHref = sourceLink.getAttribute("href");
+      const link = document.createElement("a");
+      link.className = "static-mobile-menu-link";
+      link.href = sourceHref && sourceHref !== "#" ? sourceHref : (fallbackHrefByLabel[labelText] || "/");
+      link.textContent = labelText;
+      linksHost.appendChild(link);
+    });
+  }
 
   const closeMenu = () => {
     document.body.dataset.menuOpen = "false";
@@ -145,9 +198,15 @@ function setupStaticMenu() {
     menuButton.setAttribute("aria-expanded", nextState);
   });
 
-  menuPanel.querySelectorAll("a").forEach((link) => {
+  menuPanel?.querySelectorAll("a").forEach((link) => {
     link.addEventListener("click", closeMenu);
   });
+
+  customMenu.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", closeMenu);
+  });
+
+  customMenu.querySelector(".static-mobile-menu-close")?.addEventListener("click", closeMenu);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -162,7 +221,8 @@ function setupDesktopHeaderHover() {
     .forEach((nav) => {
       if (
         !nav.classList.contains("framer-v-14epcrf") &&
-        !nav.classList.contains("framer-v-1pw3m48")
+        !nav.classList.contains("framer-v-1pw3m48") &&
+        !nav.classList.contains("framer-v-16hxzu9")
       ) {
         return;
       }
@@ -230,7 +290,25 @@ function setupDesktopHeaderHover() {
           logoClone.setAttribute("href", "/");
         }
 
+        const tabletMenuButton = document.createElement("button");
+        tabletMenuButton.type = "button";
+        tabletMenuButton.className = "static-tablet-menu-button";
+        tabletMenuButton.setAttribute("aria-label", "Open menu");
+        tabletMenuButton.setAttribute("aria-expanded", "false");
+        tabletMenuButton.innerHTML = `
+          <span></span>
+          <span></span>
+          <span></span>
+        `;
+
+        tabletMenuButton.addEventListener("click", () => {
+          const nextState = document.body.dataset.menuOpen === "true" ? "false" : "true";
+          document.body.dataset.menuOpen = nextState;
+          tabletMenuButton.setAttribute("aria-expanded", nextState);
+        });
+
         header.append(leftGroup, logoClone, rightGroup);
+        header.appendChild(tabletMenuButton);
         nav.appendChild(header);
       }
 
@@ -296,6 +374,206 @@ function maintainDesktopHeaderEnhancement() {
     for (const mutation of mutations) {
       if (mutation.type === "childList" && (mutation.addedNodes.length || mutation.removedNodes.length)) {
         scheduleDesktopHeaderRefresh();
+        break;
+      }
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+function setupCustomHomepageHero() {
+  const heroSection = document.querySelector('section[data-framer-name="Hero"]');
+  if (!heroSection) return;
+
+  const contentHost = heroSection.querySelector('[data-framer-name="content"]');
+  if (!(contentHost instanceof HTMLElement)) return;
+
+  const existingHero = contentHost.querySelector(".static-hero-copy");
+  if (existingHero) {
+    const existingTitle = existingHero.querySelector(".static-hero-title");
+    if (existingTitle instanceof HTMLElement) {
+      setupHeroTitleTypewriter(existingTitle);
+    }
+    return;
+  }
+
+  contentHost.setAttribute("data-static-custom-hero", "true");
+  contentHost.innerHTML = `
+    <div class="static-hero-copy">
+      <h1 class="static-hero-title">
+        <span>Hire, Pay &amp; <em>Manage</em></span>
+        <span>Global Contractors <em>without the chaos</em></span>
+      </h1>
+      <p class="static-hero-description">
+        Dechub is the all-in-one platform to onboard US contractors, generate contracts, collect e-signatures, and process payments via Wise - all from one dashboard.
+      </p>
+      <form class="static-hero-search" action="#" method="get">
+        <input type="text" placeholder="Search for any service..." aria-label="Search for any service" />
+        <button type="submit" aria-label="Search">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"></path>
+          </svg>
+        </button>
+      </form>
+      <div class="static-hero-tags" aria-label="Popular services">
+        <a href="/contact" class="static-hero-tag">Architecture &amp; Interior Design <span aria-hidden="true">→</span></a>
+        <a href="/contact" class="static-hero-tag">Graphic Design <span aria-hidden="true">→</span></a>
+        <a href="/contact" class="static-hero-tag">Website Developer <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="static-hero-actions">
+        <a href="/get-started" class="static-hero-button static-hero-button-primary">Get Started</a>
+        <a href="/contact" class="static-hero-button static-hero-button-secondary">Book a demo</a>
+      </div>
+    </div>
+  `;
+
+  const searchForm = contentHost.querySelector(".static-hero-search");
+  if (searchForm instanceof HTMLFormElement) {
+    searchForm.setAttribute("action", "/marketplace");
+    searchForm.setAttribute("method", "get");
+  }
+
+  const searchInput = contentHost.querySelector('.static-hero-search input[type="text"]');
+  if (searchInput instanceof HTMLInputElement) {
+    searchInput.setAttribute("name", "q");
+  }
+
+  const marketplaceHrefByLabel = {
+    "Architecture & Interior Design": "/marketplace?q=Architecture%20%26%20Interior%20Design",
+    "Graphic Design": "/marketplace?q=Graphic%20Design",
+    "Website Developer": "/marketplace?q=Website%20Developer",
+  };
+
+  contentHost.querySelectorAll(".static-hero-tag").forEach((tag) => {
+    if (!(tag instanceof HTMLAnchorElement)) return;
+
+    const label = Array.from(tag.childNodes)
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent || "")
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const href = marketplaceHrefByLabel[label];
+    if (href) {
+      tag.setAttribute("href", href);
+    }
+
+    const icon = tag.querySelector('span[aria-hidden="true"]');
+    if (icon instanceof HTMLElement) {
+      icon.innerHTML = "&rarr;";
+    }
+  });
+  const title = contentHost.querySelector(".static-hero-title");
+  if (title instanceof HTMLElement) {
+    setupHeroTitleTypewriter(title);
+  }
+}
+
+function setupHeroTitleTypewriter(title) {
+  if (title.__heroTypeTimer) {
+    window.clearTimeout(title.__heroTypeTimer);
+    title.__heroTypeTimer = null;
+  }
+
+  title.querySelector(".static-hero-title-overlay")?.remove();
+
+  const sourceLines = Array.from(title.children).filter(
+    (node) => node instanceof HTMLElement && node.tagName.toLowerCase() === "span",
+  );
+
+  if (!sourceLines.length) return;
+
+  const overlay = document.createElement("span");
+  overlay.className = "static-hero-title-overlay";
+  overlay.setAttribute("aria-hidden", "true");
+
+  const lines = sourceLines.map((lineNode) => {
+    const line = document.createElement("span");
+    line.className = "static-hero-title-overlay-line";
+    overlay.appendChild(line);
+    return {
+      element: line,
+      text: lineNode.textContent || "",
+    };
+  });
+
+  title.dataset.typewriterActive = "true";
+  title.appendChild(overlay);
+
+  const totalCharacters = lines.reduce((sum, line) => sum + line.text.length, 0);
+
+  const renderCount = (visibleCount) => {
+    let remaining = visibleCount;
+    lines.forEach(({ element, text }) => {
+      const count = Math.max(0, Math.min(remaining, text.length));
+      element.textContent = text.slice(0, count);
+      remaining -= text.length;
+    });
+  };
+
+  const loop = () => {
+    let visibleCount = 0;
+
+    const typeNext = () => {
+      renderCount(visibleCount);
+      if (visibleCount < totalCharacters) {
+        visibleCount += 1;
+        title.__heroTypeTimer = window.setTimeout(typeNext, 55);
+        return;
+      }
+
+      title.__heroTypeTimer = window.setTimeout(() => {
+        renderCount(0);
+        title.__heroTypeTimer = window.setTimeout(loop, 400);
+      }, 1400);
+    };
+
+    typeNext();
+  };
+
+  renderCount(0);
+  title.__heroTypeTimer = window.setTimeout(loop, 180);
+}
+
+let customHeroRefreshScheduled = false;
+let customHeroObserverStarted = false;
+
+function scheduleCustomHeroRefresh() {
+  if (customHeroRefreshScheduled) return;
+  customHeroRefreshScheduled = true;
+
+  requestAnimationFrame(() => {
+    customHeroRefreshScheduled = false;
+    setupCustomHomepageHero();
+  });
+}
+
+function maintainCustomHomepageHero() {
+  if (customHeroObserverStarted) return;
+  customHeroObserverStarted = true;
+
+  scheduleCustomHeroRefresh();
+  window.addEventListener("load", scheduleCustomHeroRefresh);
+  window.setTimeout(scheduleCustomHeroRefresh, 300);
+  window.setTimeout(scheduleCustomHeroRefresh, 1200);
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type !== "childList") continue;
+      if (!mutation.addedNodes.length && !mutation.removedNodes.length) continue;
+
+      const touchesHero = [mutation.target, ...mutation.addedNodes, ...mutation.removedNodes].some((node) => (
+        node instanceof Element
+        && (node.matches?.('section[data-framer-name="Hero"]') || node.closest?.('section[data-framer-name="Hero"]'))
+      ));
+
+      if (touchesHero) {
+        scheduleCustomHeroRefresh();
         break;
       }
     }
@@ -643,9 +921,11 @@ document.addEventListener("DOMContentLoaded", () => {
   setupRevealAnimations();
   setupAutoMedia();
   setupLogoMarquees();
+  setupCustomHomepageHero();
   setupStaticMenu();
   setupDesktopHeaderHover();
   maintainDesktopHeaderEnhancement();
+  maintainCustomHomepageHero();
   setupTestimonialCarousel();
   setupCaseStudyCarousel();
   setupFaqAccordion();

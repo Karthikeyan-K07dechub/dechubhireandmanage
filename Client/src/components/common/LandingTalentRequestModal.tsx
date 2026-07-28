@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { getMyCompany } from '../../api/company.api';
 import type { ApiError } from '../../api/client';
@@ -44,6 +45,9 @@ export default function LandingTalentRequestModal({
   isOpen,
   onClose,
 }: LandingTalentRequestModalProps) {
+  const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
   const {
     register,
     reset,
@@ -67,8 +71,24 @@ export default function LandingTalentRequestModal({
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
+    const host = document.createElement('div');
+    host.className = 'ltrm-portal-root';
+    document.documentElement.appendChild(host);
+    setPortalHost(host);
+
+    return () => {
+      host.remove();
+      setPortalHost(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
     if (!isOpen) {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       setSubmitError('');
       setIsSubmitted(false);
       reset();
@@ -76,6 +96,7 @@ export default function LandingTalentRequestModal({
     }
 
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
 
     let cancelled = false;
 
@@ -109,7 +130,8 @@ export default function LandingTalentRequestModal({
 
     return () => {
       cancelled = true;
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
     };
   }, [isOpen, reset]);
 
@@ -137,12 +159,60 @@ export default function LandingTalentRequestModal({
     }
   });
 
-  if (!isOpen) {
+  const scrollOverlayBy = (delta: number) => {
+    const overlay = overlayRef.current;
+    if (!overlay || !delta) {
+      return;
+    }
+
+    overlay.scrollTop += delta;
+  };
+
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    scrollOverlayBy(event.deltaY);
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    touchStartYRef.current = event.touches[0]?.clientY ?? null;
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    const currentY = event.touches[0]?.clientY;
+    const startY = touchStartYRef.current;
+    if (currentY == null || startY == null) {
+      return;
+    }
+
+    scrollOverlayBy(startY - currentY);
+    touchStartYRef.current = currentY;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleTouchEnd = () => {
+    touchStartYRef.current = null;
+  };
+
+  if (!isOpen || !portalHost) {
     return null;
   }
 
-  return (
-    <div className="ltrm-overlay" role="dialog" aria-modal="true" aria-labelledby="landing-talent-request-title" onClick={onClose}>
+  return createPortal(
+    <div
+      ref={overlayRef}
+      className="ltrm-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="landing-talent-request-title"
+      onClick={onClose}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       <div className="ltrm-card" onClick={(event) => event.stopPropagation()}>
         <button type="button" className="ltrm-close" onClick={onClose} aria-label="Close request form">
           ×
@@ -310,6 +380,7 @@ export default function LandingTalentRequestModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    portalHost,
   );
 }

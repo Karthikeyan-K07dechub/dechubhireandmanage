@@ -91,8 +91,7 @@ body.${STANDALONE_LIGHT_THEME_CLASS} video {
 
 body.${STANDALONE_LIGHT_THEME_CLASS} [data-framer-name="Masking"],
 body.${STANDALONE_LIGHT_THEME_CLASS} [data-framer-name="BG"] {
-  background:
-    linear-gradient(180deg, rgba(252, 250, 246, 0.68) 0%, rgba(243, 236, 226, 0.94) 100%) !important;
+  background: transparent !important;
 }
 
 body.${STANDALONE_LIGHT_THEME_CLASS} nav.framer-ejdAz,
