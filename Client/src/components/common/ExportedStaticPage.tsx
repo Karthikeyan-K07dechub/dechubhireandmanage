@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import {
+  STANDALONE_LIGHT_THEME_CLASS,
+  STANDALONE_LIGHT_THEME_CSS,
+  shouldApplyStandaloneLightTheme,
+} from './standaloneLightTheme';
 
 interface ExportedStaticPageProps {
   sourcePath: string;
@@ -116,6 +121,17 @@ function recreateScript(source: HTMLScriptElement) {
   return script;
 }
 
+function waitForScriptLoad(script: HTMLScriptElement) {
+  if (!script.src || script.type === 'module') {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    script.addEventListener('load', () => resolve(), { once: true });
+    script.addEventListener('error', () => reject(new Error(`Failed to load script: ${script.src}`)), { once: true });
+  });
+}
+
 function captureAttributes(element: HTMLElement): AttributeSnapshot {
   return {
     className: element.className,
@@ -160,6 +176,8 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
   useEffect(() => {
     const controller = new AbortController();
     const appendedHeadNodes: HTMLElement[] = [];
+    const shouldApplyLightTheme = shouldApplyStandaloneLightTheme(sourcePath);
+    const shouldInjectStandaloneEnhancer = sourcePath === '/landing-export/index.txt';
     const previousTitle = document.title;
     const htmlSnapshot = captureAttributes(document.documentElement);
     const bodySnapshot = captureAttributes(document.body);
@@ -179,6 +197,9 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
       normalizeStaticDocument(parsed);
       applyAttributes(document.documentElement, parsed.documentElement);
       applyAttributes(document.body, parsed.body);
+      if (shouldApplyLightTheme) {
+        document.body.classList.add(STANDALONE_LIGHT_THEME_CLASS);
+      }
 
       document.title = parsed.title || previousTitle;
 
@@ -191,6 +212,23 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
         document.head.appendChild(clone);
         appendedHeadNodes.push(clone);
       });
+
+      if (shouldInjectStandaloneEnhancer && !parsed.head.querySelector('link[href="/assets/css/site.css"]')) {
+        const enhancerStylesheet = document.createElement('link');
+        enhancerStylesheet.rel = 'stylesheet';
+        enhancerStylesheet.href = '/assets/css/site.css';
+        enhancerStylesheet.setAttribute('data-exported-static-head', `${sourcePath}:site-enhancer`);
+        document.head.appendChild(enhancerStylesheet);
+        appendedHeadNodes.push(enhancerStylesheet);
+      }
+
+      if (shouldApplyLightTheme) {
+        const themeStyle = document.createElement('style');
+        themeStyle.setAttribute('data-exported-static-theme', sourcePath);
+        themeStyle.textContent = STANDALONE_LIGHT_THEME_CSS;
+        document.head.appendChild(themeStyle);
+        appendedHeadNodes.push(themeStyle);
+      }
 
       setMarkup(parsed.body.innerHTML);
     };
@@ -220,6 +258,8 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
     mountNode.innerHTML = markup;
     const appendedScripts: HTMLScriptElement[] = [];
     const shouldForceStandaloneNavigation = sourcePath === '/landing-export/index.txt';
+    const shouldInjectStandaloneEnhancer = sourcePath === '/landing-export/index.txt';
+    let cancelled = false;
 
     const handleStandaloneNavigation = (event: MouseEvent) => {
       if (!shouldForceStandaloneNavigation) {
@@ -259,19 +299,46 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
       mountNode.addEventListener('click', handleStandaloneNavigation, true);
     }
 
-    for (const template of scriptTemplatesRef.current) {
-      const script = recreateScript(template);
-      script.setAttribute('data-exported-static-script', sourcePath);
-      document.body.appendChild(script);
-      appendedScripts.push(script);
-    }
+    const initializeScripts = async () => {
+      const blockingLoads: Array<Promise<void>> = [];
 
-    // The exported standalone scripts expect to initialize on document load.
-    // Re-dispatching these events lets route changes behave like a fresh page load.
-    document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
-    window.dispatchEvent(new Event('load'));
+      for (const template of scriptTemplatesRef.current) {
+        const script = recreateScript(template);
+        script.setAttribute('data-exported-static-script', sourcePath);
+        document.body.appendChild(script);
+        appendedScripts.push(script);
+        blockingLoads.push(waitForScriptLoad(script));
+      }
+
+      if (shouldInjectStandaloneEnhancer) {
+        const enhancerScript = document.createElement('script');
+        enhancerScript.src = '/assets/js/site.js';
+        enhancerScript.setAttribute('data-exported-static-script', `${sourcePath}:site-enhancer`);
+        document.body.appendChild(enhancerScript);
+        appendedScripts.push(enhancerScript);
+        blockingLoads.push(waitForScriptLoad(enhancerScript));
+      }
+
+      try {
+        await Promise.all(blockingLoads);
+      } catch {
+        // Keep the page usable even if one enhancer script fails to load.
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      // The exported standalone scripts expect to initialize on document load.
+      // Re-dispatching these events lets route changes behave like a fresh page load.
+      document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
+      window.dispatchEvent(new Event('load'));
+    };
+
+    void initializeScripts();
 
     return () => {
+      cancelled = true;
       if (shouldForceStandaloneNavigation) {
         mountNode.removeEventListener('click', handleStandaloneNavigation, true);
       }

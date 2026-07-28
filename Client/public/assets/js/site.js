@@ -195,10 +195,19 @@ function setupDesktopHeaderHover() {
         const rightGroup = document.createElement("div");
         rightGroup.className = "static-desktop-links static-desktop-links-right";
 
+        const fallbackHrefByLabel = {
+          Home: "/",
+          About: "/about",
+          Blog: "/blog",
+          Contact: "/contact",
+        };
+
         const createLink = (sourceLink) => {
           const anchor = document.createElement("a");
           anchor.className = "static-desktop-link";
-          anchor.href = sourceLink.getAttribute("href") || "#";
+          const labelText = (sourceLink.textContent || "").trim();
+          const sourceHref = sourceLink.getAttribute("href");
+          anchor.href = sourceHref && sourceHref !== "#" ? sourceHref : (fallbackHrefByLabel[labelText] || "/");
 
           if (sourceLink.hasAttribute("data-framer-page-link-current")) {
             anchor.setAttribute("aria-current", "page");
@@ -206,7 +215,7 @@ function setupDesktopHeaderHover() {
 
           const label = document.createElement("span");
           label.className = "static-desktop-link-label";
-          label.textContent = (sourceLink.textContent || "").trim();
+          label.textContent = labelText;
           anchor.appendChild(label);
           return anchor;
         };
@@ -217,6 +226,9 @@ function setupDesktopHeaderHover() {
         const logoClone = originalLogo.cloneNode(true);
         logoClone.classList.add("static-desktop-logo");
         logoClone.removeAttribute("data-framer-page-link-current");
+        if (!logoClone.getAttribute("href") || logoClone.getAttribute("href") === "#") {
+          logoClone.setAttribute("href", "/");
+        }
 
         header.append(leftGroup, logoClone, rightGroup);
         nav.appendChild(header);
@@ -225,6 +237,7 @@ function setupDesktopHeaderHover() {
       const header = nav.querySelector(".static-desktop-header");
       const logo = nav.querySelector(".static-desktop-logo");
       if (!header || !logo) return;
+      if (header.dataset.staticDesktopBound === "true") return;
 
       let closeTimer = null;
 
@@ -253,7 +266,45 @@ function setupDesktopHeaderHover() {
       nav.addEventListener("mouseenter", () => setOpenState(true));
       nav.addEventListener("mouseleave", scheduleClose);
       nav.addEventListener("focusout", scheduleClose);
+      header.dataset.staticDesktopBound = "true";
     });
+}
+
+let desktopHeaderRefreshScheduled = false;
+let desktopHeaderObserverStarted = false;
+
+function scheduleDesktopHeaderRefresh() {
+  if (desktopHeaderRefreshScheduled) return;
+  desktopHeaderRefreshScheduled = true;
+
+  requestAnimationFrame(() => {
+    desktopHeaderRefreshScheduled = false;
+    setupDesktopHeaderHover();
+  });
+}
+
+function maintainDesktopHeaderEnhancement() {
+  if (desktopHeaderObserverStarted) return;
+  desktopHeaderObserverStarted = true;
+
+  scheduleDesktopHeaderRefresh();
+  window.addEventListener("load", scheduleDesktopHeaderRefresh);
+  window.setTimeout(scheduleDesktopHeaderRefresh, 300);
+  window.setTimeout(scheduleDesktopHeaderRefresh, 1200);
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === "childList" && (mutation.addedNodes.length || mutation.removedNodes.length)) {
+        scheduleDesktopHeaderRefresh();
+        break;
+      }
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 }
 
 function simplifyForms() {
@@ -594,6 +645,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLogoMarquees();
   setupStaticMenu();
   setupDesktopHeaderHover();
+  maintainDesktopHeaderEnhancement();
   setupTestimonialCarousel();
   setupCaseStudyCarousel();
   setupFaqAccordion();
