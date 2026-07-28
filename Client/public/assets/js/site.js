@@ -492,27 +492,55 @@ function setupHeroTitleTypewriter(title) {
   overlay.className = "static-hero-title-overlay";
   overlay.setAttribute("aria-hidden", "true");
 
+  let charIndex = 0;
   const lines = sourceLines.map((lineNode) => {
     const line = document.createElement("span");
     line.className = "static-hero-title-overlay-line";
     overlay.appendChild(line);
+
+    const text = lineNode.textContent || "";
+    const fragment = document.createDocumentFragment();
+
+    Array.from(text).forEach((character) => {
+      if (character === " ") {
+        const space = document.createElement("span");
+        space.className = "static-hero-title-overlay-space";
+        space.innerHTML = "&nbsp;";
+        fragment.appendChild(space);
+        return;
+      }
+
+      const letter = document.createElement("span");
+      letter.className = "static-hero-title-overlay-char";
+      letter.style.setProperty("--hero-char-index", String(charIndex));
+      letter.textContent = character;
+      fragment.appendChild(letter);
+      charIndex += 1;
+    });
+
+    line.replaceChildren(fragment);
+
     return {
       element: line,
-      text: lineNode.textContent || "",
+      letters: Array.from(line.querySelectorAll(".static-hero-title-overlay-char")),
     };
   });
 
   title.dataset.typewriterActive = "true";
   title.appendChild(overlay);
 
-  const totalCharacters = lines.reduce((sum, line) => sum + line.text.length, 0);
+  const totalCharacters = lines.reduce((sum, line) => sum + line.letters.length, 0);
 
   const renderCount = (visibleCount) => {
     let remaining = visibleCount;
-    lines.forEach(({ element, text }) => {
-      const count = Math.max(0, Math.min(remaining, text.length));
-      element.textContent = text.slice(0, count);
-      remaining -= text.length;
+    lines.forEach(({ letters }) => {
+      letters.forEach((letter) => {
+        if (!(letter instanceof HTMLElement)) return;
+        letter.style.animationPlayState = remaining > 0 ? "running" : "paused";
+        if (remaining > 0) {
+          remaining -= 1;
+        }
+      });
     });
   };
 

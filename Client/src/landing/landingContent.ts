@@ -115,21 +115,21 @@ export const chipCloudTags = [
 export const howItWorksSteps = [
   {
     step: '01',
-    title: 'Create compliant contracts in minutes',
-    copy: 'Generate contractor agreements with the right terms, payment structure, and signature flow without waiting on legal ops.',
-    details: ['Fixed, milestone & hourly', 'DocuSign built in', 'IP + NDA clauses'],
+    title: 'Bring talent into one hiring flow',
+    copy: 'Start with a marketplace shortlist or invite your own contractor, then capture the role, budget, and scope in one structured workflow.',
+    details: ['Marketplace or direct invite', 'Role, budget & timeline', 'Centralized hiring intake'],
   },
   {
     step: '02',
-    title: 'Verify identity and collect documents',
-    copy: 'Guide contractors through KYC, tax forms, and onboarding tasks from a single workflow your team can track live.',
-    details: ['24hr KYC average', 'W-9 / W-8BEN support', 'Encrypted document storage'],
+    title: 'Contract, verify, and onboard compliantly',
+    copy: 'Generate the agreement, collect e-signatures, and guide the contractor through KYC and tax documentation without chasing files across email.',
+    details: ['DocuSign e-signature', '24hr KYC average', 'W-9 / W-8BEN support'],
   },
   {
     step: '03',
-    title: 'Approve invoices and trigger payouts',
-    copy: 'Review contractor invoices, resolve questions, and release Wise payments in local currency without spreadsheet chaos.',
-    details: ['170+ countries', '1-2 business day payouts', 'Instant status visibility'],
+    title: 'Approve invoices and pay with confidence',
+    copy: 'Track submitted invoices, approve payments, and keep full visibility on payout status, contracts, and documents from one dashboard.',
+    details: ['Wise payouts in 170+ countries', '1-2 business day delivery', 'Live status tracking'],
   },
 ] as const;
 

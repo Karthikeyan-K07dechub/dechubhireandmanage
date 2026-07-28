@@ -9,6 +9,7 @@ import MarketplaceProjectConsultationPage from './pages/MarketplaceProjectConsul
 import MarketplacePaymentPage from './pages/MarketplacePaymentPage';
 import MarketplaceTalentRequestsPage from './pages/MarketplaceTalentRequestsPage';
 import NotificationPage from './pages/NotificationPage';
+import LandingPage from './pages/LandingPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
 import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
 import AdminLoginPage from './pages/Admin/AdminLoginPage';
@@ -31,6 +32,8 @@ import {
 
 type AppPage =
   | 'landing'
+  | 'landing-react'
+  | 'landing-react-new'
   | 'landing-about'
   | 'landing-blog'
   | 'landing-blog-post'
@@ -92,6 +95,14 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
 
   if (/^\/blog\/[^/]+$/.test(normalizedPath)) {
     return { page: 'landing-blog-post', mode: 'login' };
+  }
+
+  if (normalizedPath === '/landing-react') {
+    return { page: 'landing-react', mode: 'login' };
+  }
+
+  if (normalizedPath === '/landing-react-new') {
+    return { page: 'landing-react-new', mode: 'login' };
   }
 
   if (normalizedPath === '/about') {
@@ -433,6 +444,12 @@ export default function App() {
       case 'landing':
         targetPath = '/';
         break;
+      case 'landing-react':
+        targetPath = '/landing-react';
+        break;
+      case 'landing-react-new':
+        targetPath = '/landing-react-new';
+        break;
       case 'landing-about':
         targetPath = '/about';
         break;
@@ -680,6 +697,27 @@ export default function App() {
 
   if (page === 'landing') {
     return <ExportedStaticPage sourcePath="/landing-export/index.txt" />;
+  }
+
+  if (page === 'landing-react') {
+    return <ExportedStaticPage sourcePath="/landing-export/index.txt" />;
+  }
+
+  if (page === 'landing-react-new') {
+    return (
+      <LandingPage
+        onLogin={() => {
+          setCompanyDestination('marketplace');
+          setPage('company-dashboard-auth');
+        }}
+        onGetStarted={() => setPage('role-select')}
+        onMarketplace={() => setPage('marketplace')}
+        onMarketplaceSearch={(query) => {
+          setMarketplaceQuery(query);
+          setPage('marketplace');
+        }}
+      />
+    );
   }
 
   if (page === 'landing-about') {

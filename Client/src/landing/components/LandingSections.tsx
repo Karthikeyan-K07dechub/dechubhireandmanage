@@ -88,8 +88,8 @@ export function HowItWorksSection({ id, items }: HowItWorksSectionProps) {
         <SectionHeading
           centered
           eyebrow="How it works"
-          title="A clean workflow for cross-border contractor operations"
-          copy="Everything from invites to invoices runs through one reliable, highly visible operating system."
+          title="From hiring request to payout, Dechub keeps every step connected"
+          copy="Instead of juggling sourcing, contracts, verification, invoices, and payments across separate tools, your team runs the full contractor workflow in one place."
         />
 
         <div className="landing-how-grid">

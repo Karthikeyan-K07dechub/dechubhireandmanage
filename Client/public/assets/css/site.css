@@ -298,6 +298,11 @@ body[data-menu-open="true"] {
   margin: 0 auto;
 }
 
+section[data-framer-name="Hero"] [style*="width:1px"],
+section[data-framer-name="Hero"] [style*="width: 1px"] {
+  display: none !important;
+}
+
 .static-hero-copy {
   display: flex;
   flex-direction: column;
@@ -330,7 +335,7 @@ body[data-menu-open="true"] {
 }
 
 .static-hero-title[data-typewriter-active="true"] > span {
-  opacity: 0.16;
+  opacity: 0.2;
 }
 
 .static-hero-title-overlay {
@@ -349,6 +354,38 @@ body[data-menu-open="true"] {
   -webkit-text-fill-color: transparent;
   color: transparent;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.06);
+}
+
+.static-hero-title-overlay-char,
+.static-hero-title-overlay-space {
+  display: inline-block;
+}
+
+.static-hero-title-overlay-char {
+  opacity: 0;
+  transform: translateY(26px);
+  animation: staticHeroOverlayRise 7.4s infinite both;
+  animation-delay: calc(var(--hero-char-index, 0) * 0.06s);
+  will-change: opacity, transform;
+}
+
+@keyframes staticHeroOverlayRise {
+  0%,
+  8% {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+
+  14%,
+  78% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 .static-hero-title em {

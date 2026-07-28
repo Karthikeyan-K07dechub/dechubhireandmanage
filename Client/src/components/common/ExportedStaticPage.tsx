@@ -16,6 +16,22 @@ interface AttributeSnapshot {
   attributes: Array<{ name: string; value: string }>;
 }
 
+interface ScriptTemplateSnapshot {
+  attributes: Array<{ name: string; value: string }>;
+  textContent: string;
+}
+
+interface CachedStaticPage {
+  title: string;
+  htmlSnapshot: AttributeSnapshot;
+  bodySnapshot: AttributeSnapshot;
+  markup: string;
+  headNodeMarkup: string[];
+  scriptTemplates: ScriptTemplateSnapshot[];
+}
+
+const staticPageCache = new Map<string, Promise<CachedStaticPage>>();
+
 function normalizeStandaloneRoute(pathname: string) {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
 
@@ -122,6 +138,17 @@ function recreateScript(source: HTMLScriptElement) {
   return script;
 }
 
+function recreateScriptFromSnapshot(snapshot: ScriptTemplateSnapshot) {
+  const script = document.createElement('script');
+
+  snapshot.attributes.forEach(({ name, value }) => {
+    script.setAttribute(name, value);
+  });
+
+  script.textContent = snapshot.textContent;
+  return script;
+}
+
 function waitForScriptLoad(script: HTMLScriptElement) {
   if (!script.src || script.type === 'module') {
     return Promise.resolve();
@@ -148,8 +175,8 @@ function renderCustomHomepageHero(root: ParentNode) {
   contentHost.innerHTML = `
     <div class="static-hero-copy">
       <h1 class="static-hero-title">
-        <span>Hire, Pay &amp; <em>Manage</em></span>
-        <span>Global Contractors <em>without the chaos</em></span>
+        <span>Hire, Pay &amp; Manage</span>
+        <span>Global Contractors without the chaos</span>
       </h1>
       <p class="static-hero-description">
         Dechub is the all-in-one platform to onboard US contractors, generate contracts, collect e-signatures, and process payments via Wise - all from one dashboard.
@@ -241,14 +268,68 @@ function restoreAttributes(element: HTMLElement, snapshot: AttributeSnapshot) {
   }
 }
 
-function applyAttributes(target: HTMLElement, source: HTMLElement) {
-  Array.from(target.attributes).forEach(({ name }) => {
-    target.removeAttribute(name);
-  });
+function createScriptTemplateSnapshot(source: HTMLScriptElement): ScriptTemplateSnapshot {
+  return {
+    attributes: Array.from(source.attributes).map(({ name, value }) => ({ name, value })),
+    textContent: source.textContent ?? '',
+  };
+}
 
-  Array.from(source.attributes).forEach(({ name, value }) => {
-    target.setAttribute(name, value);
-  });
+async function loadStaticPageDefinition(sourcePath: string): Promise<CachedStaticPage> {
+  const cached = staticPageCache.get(sourcePath);
+  if (cached) {
+    return cached;
+  }
+
+  const pending = (async (): Promise<CachedStaticPage> => {
+    const response = await fetch(sourcePath, {
+      cache: 'force-cache',
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to load static page: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const sanitizedHtml =
+      sourcePath === '/landing-export/index.txt'
+        ? html.replace(
+            'We are Notch we saves team over 10 million hours every years',
+            'Get a resource in 20 minutes with 10 days free trial',
+          )
+        : html;
+    const parsed = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
+    normalizeStaticDocument(parsed);
+
+    if (sourcePath === '/landing-export/index.txt') {
+      renderCustomHomepageHero(parsed);
+      renderCustomIntroCopy(parsed);
+    }
+
+    const scriptTemplates = Array.from(parsed.querySelectorAll('script')).map(createScriptTemplateSnapshot);
+    parsed.querySelectorAll('script').forEach((script) => script.remove());
+
+    const headNodeMarkup = Array.from(
+      parsed.head.querySelectorAll<HTMLElement>('style, link, meta[name^="twitter:"], meta[property^="og:"]'),
+    ).map((node) => node.outerHTML);
+
+    return {
+      title: parsed.title,
+      htmlSnapshot: captureAttributes(parsed.documentElement),
+      bodySnapshot: captureAttributes(parsed.body),
+      markup: parsed.body.innerHTML,
+      headNodeMarkup,
+      scriptTemplates,
+    };
+  })();
+
+  staticPageCache.set(sourcePath, pending);
+
+  try {
+    return await pending;
+  } catch (error) {
+    staticPageCache.delete(sourcePath);
+    throw error;
+  }
 }
 
 export default function ExportedStaticPage({ sourcePath }: ExportedStaticPageProps) {
@@ -275,44 +356,39 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
     mountNodeRef.current = mountNode;
 
     const loadPage = async () => {
-      const response = await fetch(sourcePath, { signal: controller.signal });
-      if (!response.ok) {
-        throw new Error(`Failed to load static page: ${response.status}`);
+      const cachedPage = await loadStaticPageDefinition(sourcePath);
+      if (controller.signal.aborted) {
+        return;
       }
 
-      const html = await response.text();
-      const sanitizedHtml =
-        sourcePath === '/landing-export/index.txt'
-          ? html.replace(
-              'We are Notch we saves team over 10 million hours every years',
-              'Get a resource in 20 minutes with 10 days free trial',
-            )
-          : html;
-      const parsed = new DOMParser().parseFromString(sanitizedHtml, 'text/html');
-      normalizeStaticDocument(parsed);
-      if (sourcePath === '/landing-export/index.txt') {
-        renderCustomHomepageHero(parsed);
-        renderCustomIntroCopy(parsed);
-      }
-      applyAttributes(document.documentElement, parsed.documentElement);
-      applyAttributes(document.body, parsed.body);
+      restoreAttributes(document.documentElement, cachedPage.htmlSnapshot);
+      restoreAttributes(document.body, cachedPage.bodySnapshot);
       if (shouldApplyLightTheme) {
         document.body.classList.add(STANDALONE_LIGHT_THEME_CLASS);
       }
 
-      document.title = parsed.title || previousTitle;
+      document.title = cachedPage.title || previousTitle;
 
-      scriptTemplatesRef.current = Array.from(parsed.querySelectorAll('script'));
-      parsed.querySelectorAll('script').forEach((script) => script.remove());
+      scriptTemplatesRef.current = cachedPage.scriptTemplates.map(recreateScriptFromSnapshot);
 
-      parsed.head.querySelectorAll<HTMLElement>('style, link, meta[name^="twitter:"], meta[property^="og:"]').forEach((node) => {
-        const clone = node.cloneNode(true) as HTMLElement;
+      cachedPage.headNodeMarkup.forEach((nodeMarkup) => {
+        const template = document.createElement('template');
+        template.innerHTML = nodeMarkup;
+        const clone = template.content.firstElementChild;
+        if (!(clone instanceof HTMLElement)) {
+          return;
+        }
+
         clone.setAttribute('data-exported-static-head', sourcePath);
         document.head.appendChild(clone);
         appendedHeadNodes.push(clone);
       });
 
-      if (shouldInjectStandaloneEnhancer && !parsed.head.querySelector('link[href="/assets/css/site.css"]')) {
+      const hasEnhancerStylesheet = cachedPage.headNodeMarkup.some((nodeMarkup) =>
+        nodeMarkup.includes('href="/assets/css/site.css"'),
+      );
+
+      if (shouldInjectStandaloneEnhancer && !hasEnhancerStylesheet) {
         const enhancerStylesheet = document.createElement('link');
         enhancerStylesheet.rel = 'stylesheet';
         enhancerStylesheet.href = '/assets/css/site.css';
@@ -329,7 +405,7 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
         appendedHeadNodes.push(themeStyle);
       }
 
-      setMarkup(parsed.body.innerHTML);
+      setMarkup(cachedPage.markup);
     };
 
     loadPage().catch(() => {
