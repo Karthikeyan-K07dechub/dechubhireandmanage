@@ -1,0 +1,186 @@
+import { useEffect, useRef } from 'react';
+import '../landing_deel/landing.css';
+import '../landing_deel/overrides.css';
+import Header from '../landing_deel/components/Header.jsx';
+import Section01 from '../landing_deel/components/Section01.jsx';
+import Section02 from '../landing_deel/components/Section02.jsx';
+import Section03 from '../landing_deel/components/Section03.jsx';
+import Section04 from '../landing_deel/components/Section04.jsx';
+import Section05 from '../landing_deel/components/Section05.jsx';
+import Section06 from '../landing_deel/components/Section06.jsx';
+import Section07 from '../landing_deel/components/Section07.jsx';
+import Section08 from '../landing_deel/components/Section08.jsx';
+import Footer from '../landing_deel/components/Footer.jsx';
+
+interface LandingPageDeelProps {
+  onLogin: () => void;
+  onGetStarted: () => void;
+  onMarketplace: () => void;
+  onMarketplaceSearch: (query: string) => void;
+}
+
+const BOOK_DEMO_LABELS = new Set(['book a demo', 'get started', 'start free']);
+
+function normalizeLabel(value: string | null | undefined): string {
+  return (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+export default function LandingPageDeel({
+  onLogin,
+  onGetStarted,
+  onMarketplace,
+}: LandingPageDeelProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    document.title = 'Deel | Global Payroll, Compliance, HR Solutions | HRIS';
+  }, []);
+
+  useEffect(() => {
+    const appRoot = document.getElementById('root');
+    document.body.classList.add('deel-clone-body');
+    appRoot?.classList.add('deel-clone-app-root');
+
+    return () => {
+      document.body.classList.remove('deel-clone-body');
+      appRoot?.classList.remove('deel-clone-app-root');
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+
+    if (!root) {
+      return;
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const actionElement = target?.closest('a, button') as HTMLAnchorElement | HTMLButtonElement | null;
+
+      if (!actionElement || !root.contains(actionElement)) {
+        return;
+      }
+
+      const label = normalizeLabel(actionElement.textContent);
+      const anchor = actionElement.tagName === 'A' ? (actionElement as HTMLAnchorElement) : null;
+      const href = anchor?.getAttribute('href') ?? '';
+
+      if (actionElement.id === 'navbar-logo-link' || href === '/') {
+        event.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      if (label === 'log in' || href.includes('login')) {
+        event.preventDefault();
+        onLogin();
+        return;
+      }
+
+      if (BOOK_DEMO_LABELS.has(label) || href.includes('book-a-demo')) {
+        event.preventDefault();
+        onGetStarted();
+        return;
+      }
+
+      if (label === 'pricing') {
+        event.preventDefault();
+        document.getElementById('deel-proof')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (label === 'solutions' || href.startsWith('/solutions/')) {
+        event.preventDefault();
+        document.getElementById('deel-solutions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (label === 'use cases' || href.startsWith('/use-cases/')) {
+        event.preventDefault();
+        document.getElementById('deel-speed')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (label === 'who we serve') {
+        event.preventDefault();
+        document.getElementById('deel-testimonials')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (label === 'resources' || href.startsWith('/blog/') || href.startsWith('/help-center/')) {
+        event.preventDefault();
+        document.getElementById('deel-footer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (href === '#') {
+        event.preventDefault();
+        onMarketplace();
+        return;
+      }
+
+      if (href.startsWith('/')) {
+        event.preventDefault();
+      }
+    };
+
+    root.addEventListener('click', handleClick);
+    return () => root.removeEventListener('click', handleClick);
+  }, [onGetStarted, onLogin, onMarketplace]);
+
+  return (
+    <div ref={rootRef} className="deel-clone-root">
+      <Header />
+      <main className="m-0 p-0">
+        <div className="relative">
+          <div data-ab-page="true" className="bg-surface-secondary flex flex-col items-center">
+            <div className="deel-clone-band deel-clone-band--hero">
+              <Section01 />
+            </div>
+            <div id="deel-proof" className="deel-clone-band deel-clone-band--proof">
+              <div className="deel-clone-shell">
+                <Section02 />
+              </div>
+            </div>
+            <div id="deel-solutions" className="deel-clone-band deel-clone-band--solutions">
+              <div className="deel-clone-shell">
+                <Section03 />
+              </div>
+            </div>
+            <div id="deel-speed" className="deel-clone-band deel-clone-band--speed">
+              <div className="deel-clone-shell">
+                <Section04 />
+              </div>
+            </div>
+            <div className="deel-clone-band deel-clone-band--workforce">
+              <div className="deel-clone-shell">
+                <Section05 />
+              </div>
+            </div>
+            <div id="deel-testimonials" className="deel-clone-band deel-clone-band--testimonials">
+              <div className="deel-clone-shell">
+                <Section06 />
+              </div>
+            </div>
+            <div className="deel-clone-band deel-clone-band--metrics">
+              <div className="deel-clone-shell">
+                <Section07 />
+              </div>
+            </div>
+            <div className="deel-clone-band deel-clone-band--reviews">
+              <div className="deel-clone-shell">
+                <Section08 />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <div id="deel-footer" className="deel-clone-band deel-clone-band--footer">
+        <div className="deel-clone-shell">
+          <Footer />
+        </div>
+      </div>
+    </div>
+  );
+}

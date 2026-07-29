@@ -1,0 +1,151 @@
+.deel-clone-body {
+  background: #fff;
+}
+
+.deel-clone-app-root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.deel-clone-root {
+  --deel-clone-shell-max: 1704px;
+  --deel-clone-gutter: clamp(16px, 1.75vw, 28px);
+  overflow-x: hidden;
+  width: 100%;
+  background: #fff;
+}
+
+.deel-clone-root [data-ab-page="true"] {
+  background: #fff !important;
+}
+
+@keyframes deel-logo-scroll-reverse {
+  0% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.deel-clone-root .deel-clone-shell {
+  width: min(100%, calc(var(--deel-clone-shell-max) + (var(--deel-clone-gutter) * 2)));
+  margin-inline: auto;
+}
+
+.deel-clone-root .deel-clone-band {
+  width: 100%;
+  padding-inline: var(--deel-clone-gutter);
+  box-sizing: border-box;
+}
+
+.deel-clone-root .deel-clone-band > * {
+  width: 100%;
+}
+
+.deel-clone-root .deel-clone-band--proof,
+.deel-clone-root .deel-clone-band--solutions,
+.deel-clone-root .deel-clone-band--speed,
+.deel-clone-root .deel-clone-band--workforce,
+.deel-clone-root .deel-clone-band--testimonials,
+.deel-clone-root .deel-clone-band--metrics,
+.deel-clone-root .deel-clone-band--reviews,
+.deel-clone-root .deel-clone-band--footer {
+  padding-inline: 0;
+}
+
+.deel-clone-root .deel-clone-band--reviews,
+.deel-clone-root .deel-clone-band--reviews .deel-clone-shell {
+  background: #1b1b1b;
+}
+
+.deel-clone-root .deel-clone-band--hero {
+  padding-top: 14px;
+}
+
+.deel-clone-root .deel-clone-band--proof {
+  margin-top: 4%;
+  margin-bottom: 4%;
+}
+
+.deel-clone-root .deel-clone-band--hero section {
+  padding: 0;
+}
+
+.deel-clone-root .deel-clone-band--hero section > div {
+  max-width: 1704px;
+  margin-inline: auto;
+}
+
+.deel-clone-root .deel-clone-band--hero section > div > div:first-child {
+  padding-left: clamp(24px, 2vw, 40px);
+}
+
+.deel-clone-root .deel-clone-band--hero section > div > div:last-child {
+  overflow: hidden;
+}
+
+.deel-clone-root .deel-clone-band--hero section > div > div:last-child img {
+  display: block;
+}
+
+.deel-clone-root .deel-clone-band--proof .logo-stripe-standard-wrapper,
+.deel-clone-root .deel-clone-band--solutions section,
+.deel-clone-root .deel-clone-band--speed section,
+.deel-clone-root .deel-clone-band--workforce section,
+.deel-clone-root .deel-clone-band--testimonials .video-carousel,
+.deel-clone-root .deel-clone-band--metrics section,
+.deel-clone-root .deel-clone-band--reviews > div,
+.deel-clone-root .deel-clone-band--footer footer {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.deel-clone-root .deel-clone-band--proof .logo-stripe-standard-wrapper {
+  padding-left: clamp(20px, 2vw, 36px);
+  padding-right: clamp(20px, 2vw, 36px);
+}
+
+.deel-clone-root .deel-clone-band--solutions > section,
+.deel-clone-root .deel-clone-band--speed > section,
+.deel-clone-root .deel-clone-band--workforce > section {
+  padding-left: clamp(20px, 2vw, 36px);
+  padding-right: clamp(20px, 2vw, 36px);
+}
+
+.deel-clone-root .deel-clone-band--testimonials .video-carousel {
+  padding-left: clamp(20px, 2vw, 36px);
+  padding-right: clamp(20px, 2vw, 36px);
+}
+
+.deel-clone-root .deel-clone-band--metrics > section,
+.deel-clone-root .deel-clone-band--reviews > div {
+  padding-left: clamp(20px, 2vw, 36px);
+  padding-right: clamp(20px, 2vw, 36px);
+}
+
+.deel-clone-root .deel-clone-band--footer > footer {
+  padding-left: clamp(20px, 2vw, 36px);
+  padding-right: clamp(20px, 2vw, 36px);
+}
+
+.deel-clone-root .deel-clone-band--speed .max-w-\[1312px\],
+.deel-clone-root .deel-clone-band--workforce .max-w-\[1312px\],
+.deel-clone-root .deel-clone-band--testimonials .max-w-container {
+  margin-inline: auto;
+}
+
+.deel-clone-root .deel-clone-band--metrics .MuiBox-root.mui-57ckbi,
+.deel-clone-root .deel-clone-band--reviews .MuiBox-root.mui-1em5jyh {
+  max-width: 1312px;
+  margin-inline: auto;
+}
+
+@media (max-width: 1049px) {
+  .deel-clone-root .deel-clone-band--hero section > div > div:first-child {
+    padding-left: 0;
+  }
+}

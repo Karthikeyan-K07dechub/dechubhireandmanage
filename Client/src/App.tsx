@@ -9,7 +9,7 @@ import MarketplaceProjectConsultationPage from './pages/MarketplaceProjectConsul
 import MarketplacePaymentPage from './pages/MarketplacePaymentPage';
 import MarketplaceTalentRequestsPage from './pages/MarketplaceTalentRequestsPage';
 import NotificationPage from './pages/NotificationPage';
-import LandingPage from './pages/LandingPage';
+import LandingPage from './pages/LandingPageDeel';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
 import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
 import AdminLoginPage from './pages/Admin/AdminLoginPage';
@@ -17,7 +17,6 @@ import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
 import FreelancerSignupPage from './pages/FreelancerSignupPage';
 import FreelancerSignupSuccessPage from './pages/FreelancerSignupSuccessPage';
-import ExportedStaticPage from './components/common/ExportedStaticPage';
 import StandaloneDocumentPage from './components/common/StandaloneDocumentPage';
 import { tokenStore, adminTokenStore } from './api/client';
 import { handleGoogleCallback } from './api/auth.api';
@@ -695,15 +694,7 @@ export default function App() {
     }
   };
 
-  if (page === 'landing') {
-    return <ExportedStaticPage sourcePath="/landing-export/index.txt" />;
-  }
-
-  if (page === 'landing-react') {
-    return <ExportedStaticPage sourcePath="/landing-export/index.txt" />;
-  }
-
-  if (page === 'landing-react-new') {
+  if (page === 'landing' || page === 'landing-react' || page === 'landing-react-new') {
     return (
       <LandingPage
         onLogin={() => {
