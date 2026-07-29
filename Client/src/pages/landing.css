@@ -2855,6 +2855,7 @@ ul.live-dashboard-track > li::before {
 
 .landing-how-card-v2 {
   min-width: 0;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .landing-how-card-v2__step {
@@ -2862,6 +2863,7 @@ ul.live-dashboard-track > li::before {
   color: #000000;
   font-size: 15px;
   font-weight: 500;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), color 0.28s ease;
 }
 
 .landing-how-card-v2__frame {
@@ -2870,6 +2872,9 @@ ul.live-dashboard-track > li::before {
   background: linear-gradient(180deg, #f8f9fb 0%, #f6f7f9 100%);
   padding: 18px 18px 22px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .landing-how-card-v2__panel {
@@ -2878,6 +2883,10 @@ ul.live-dashboard-track > li::before {
   border: 1px solid rgba(125, 132, 148, 0.72);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(245, 246, 249, 0.92));
   padding: 16px 16px 14px;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease,
+    box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .landing-how-card-v2__panel h3 {
@@ -2962,6 +2971,7 @@ ul.live-dashboard-track > li::before {
   line-height: 1.1;
   letter-spacing: -0.04em;
   font-weight: 700;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .landing-how-card-v2__copy p {
@@ -2970,6 +2980,45 @@ ul.live-dashboard-track > li::before {
   font-size: clamp(16px, 1.6vw, 19px);
   line-height: 1.35;
   letter-spacing: -0.03em;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-how-card-v2:hover {
+  transform: translateY(-4px);
+}
+
+.landing-how-card-v2:hover .landing-how-card-v2__step {
+  transform: translateY(-1px);
+  color: #17233a;
+}
+
+.landing-how-card-v2:hover .landing-how-card-v2__frame {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 20px 40px rgba(34, 42, 60, 0.08);
+}
+
+.landing-how-card-v2:hover .landing-how-card-v2__panel {
+  transform: scale(1.01);
+  border-color: rgba(98, 115, 150, 0.52);
+  box-shadow: 0 14px 26px rgba(39, 47, 64, 0.06);
+}
+
+.landing-how-card-v2:hover .landing-how-card-v2__copy h3,
+.landing-how-card-v2:hover .landing-how-card-v2__copy p {
+  transform: translateY(-1px);
+}
+
+@media (hover: none) {
+  .landing-how-card-v2,
+  .landing-how-card-v2__step,
+  .landing-how-card-v2__frame,
+  .landing-how-card-v2__panel,
+  .landing-how-card-v2__copy h3,
+  .landing-how-card-v2__copy p {
+    transition: none;
+  }
 }
 
 .landing-how-card-v2__mini-tabs {
@@ -3124,6 +3173,26 @@ ul.live-dashboard-track > li::before {
 }
 
 .landing-solution-card {
+  position: relative;
+  perspective: 1400px;
+  border-radius: 22px;
+}
+
+.landing-solution-card__flip {
+  position: relative;
+  min-height: 100%;
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-solution-card.is-flipped .landing-solution-card__flip {
+  transform: rotateY(180deg);
+}
+
+.landing-solution-card__face {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
   border-radius: 22px;
   background: linear-gradient(180deg, #f5f7fb 0%, #f1f4f8 100%);
   padding: 10%;
@@ -3131,6 +3200,30 @@ ul.live-dashboard-track > li::before {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
+}
+
+.landing-solution-card__face--back {
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  transform: rotateY(180deg);
+}
+
+.landing-solution-card__back-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.landing-solution-card__face--back h3 {
+  margin: 0;
+  max-width: 12ch;
+  color: #172135;
+  font-size: clamp(22px, 2vw, 28px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  font-weight: 700;
 }
 
 .landing-solution-card--top {
@@ -4071,18 +4164,18 @@ ul.live-dashboard-track > li::before {
 
 .landing-testimonial-v2__meta strong {
   display: block;
-  color: #131b31;
   font-size: 18px;
   line-height: 1.05;
   font-weight: 500;
+  color:white;
 }
 
 .landing-testimonial-v2__meta span {
   display: block;
   margin-top: 2px;
-  color: #1f2940;
   font-size: 14px;
   line-height: 1.15;
+  color:white;
 }
 
 .landing-testimonial-v2__stars {
@@ -4100,7 +4193,7 @@ ul.live-dashboard-track > li::before {
   bottom: 14px;
   z-index: 1;
   margin: 0;
-  color: #111a2f;
+  color:white;
   font-size: clamp(18px, 1.65vw, 20px);
   line-height: 1.12;
   letter-spacing: -0.04em;
@@ -4193,17 +4286,17 @@ ul.live-dashboard-track > li::before {
 }
 
 .landing-pricing-v3__plan-badge.is-blue::before {
-  content: '?';
+  content: '$';
   color: #3969e7;
 }
 
 .landing-pricing-v3__plan-badge.is-green::before {
-  content: '?';
+  content: '+';
   color: #149a2f;
 }
 
 .landing-pricing-v3__plan-badge.is-gold::before {
-  content: '?';
+  content: '✓';
   color: #f59d0a;
 }
 
@@ -4435,12 +4528,17 @@ ul.live-dashboard-track > li::before {
 }
 
 .landing-coverage-v1__card {
+  --coverage-shift: 0px;
+  --coverage-opacity: 1;
   min-height: 520px;
   padding: 8%;
   border-radius: 22px;
   border: 1px solid rgba(229, 233, 239, 0.96);
   background: linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%);
   box-shadow: 0 10px 24px rgba(25, 35, 53, 0.04);
+  transform: translate3d(var(--coverage-shift), 0, 0);
+  opacity: var(--coverage-opacity);
+  will-change: transform, opacity;
 }
 
 .landing-coverage-v1__card-top {
@@ -4762,7 +4860,6 @@ ul.live-dashboard-track > li::before {
 }
 
 .landing-footer-v1 {
-  background: #1a2233;
   padding: 18px 24px 32px;
 }
 
@@ -4775,9 +4872,8 @@ ul.live-dashboard-track > li::before {
   min-height: 404px;
   padding: 28px 40px 20px;
   border-radius: 22px;
-  border: 1px solid rgba(211, 217, 227, 0.7);
   background: #ffffff;
-  box-shadow: 0 20px 46px rgba(18, 26, 47, 0.1);
+  box-shadow: 0px 0px 50px black;
 }
 
 .landing-footer-v1__brandrow {

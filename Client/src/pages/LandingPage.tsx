@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import logoImage from './assets/logo.png';
 import './landing.css';
 
@@ -179,6 +179,8 @@ const FAQ_ITEMS = [
   },
 ] as const;
 
+const SOLUTION_CARD_COUNT = 6;
+
 export default function LandingPage({
   onLogin,
   onGetStarted,
@@ -189,6 +191,14 @@ export default function LandingPage({
   const [activeCaseStudy, setActiveCaseStudy] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
+  const [activeSolutionCard, setActiveSolutionCard] = useState<number | null>(null);
+  const [activeSolutionFace, setActiveSolutionFace] = useState<'front' | 'back'>('back');
+  const [solutionPointer, setSolutionPointer] = useState(0);
+  const [isSolutionHovered, setIsSolutionHovered] = useState(false);
+  const [isSolutionsInView, setIsSolutionsInView] = useState(false);
+  const solutionsSectionRef = useRef<HTMLDivElement | null>(null);
+  const coverageSectionRef = useRef<HTMLElement | null>(null);
+  const [coverageScrollProgress, setCoverageScrollProgress] = useState(0);
 
   const submitMarketplaceSearch = useMemo(
     () => () => onMarketplaceSearch(searchQuery.trim()),
@@ -251,6 +261,130 @@ export default function LandingPage({
       observer.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    const section = solutionsSectionRef.current;
+
+    if (!section) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsSolutionsInView(entry.isIntersecting);
+      },
+      {
+        threshold: 0.3,
+      },
+    );
+
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isSolutionHovered) {
+      setActiveSolutionCard(null);
+      setActiveSolutionFace('front');
+      return;
+    }
+
+    if (!isSolutionsInView) {
+      setActiveSolutionCard(null);
+      setActiveSolutionFace('back');
+      return;
+    }
+
+    let timeoutId: number | undefined;
+
+    if (activeSolutionCard === null) {
+      timeoutId = window.setTimeout(() => {
+        setActiveSolutionCard(solutionPointer);
+        setActiveSolutionFace('front');
+      }, 260);
+    } else if (activeSolutionFace === 'front') {
+      timeoutId = window.setTimeout(() => {
+        setActiveSolutionFace('back');
+      }, 1800);
+    } else {
+      timeoutId = window.setTimeout(() => {
+        setActiveSolutionCard(null);
+        setSolutionPointer((current) => (current + 1) % SOLUTION_CARD_COUNT);
+      }, 620);
+    }
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeSolutionCard, activeSolutionFace, isSolutionHovered, isSolutionsInView, solutionPointer]);
+
+  useEffect(() => {
+    const section = coverageSectionRef.current;
+
+    if (!section) {
+      return;
+    }
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCoverageScrollProgress(1);
+      return;
+    }
+
+    let frameId = 0;
+
+    const updateCoverageProgress = () => {
+      const rect = section.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+      const totalTravel = viewportHeight + rect.height * 0.45;
+      const rawProgress = (viewportHeight - rect.top) / totalTravel;
+      const nextProgress = Math.max(0, Math.min(1, rawProgress));
+      setCoverageScrollProgress((current) =>
+        Math.abs(current - nextProgress) < 0.001 ? current : nextProgress,
+      );
+      frameId = 0;
+    };
+
+    const requestCoverageProgressUpdate = () => {
+      if (frameId !== 0) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(updateCoverageProgress);
+    };
+
+    requestCoverageProgressUpdate();
+
+    window.addEventListener('scroll', requestCoverageProgressUpdate, { passive: true });
+    window.addEventListener('resize', requestCoverageProgressUpdate);
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      window.removeEventListener('scroll', requestCoverageProgressUpdate);
+      window.removeEventListener('resize', requestCoverageProgressUpdate);
+    };
+  }, []);
+
+  const getSolutionCardClassName = (baseClassName: string, cardIndex: number) => {
+    const isFrontVisible =
+      isSolutionHovered || (activeSolutionCard === cardIndex && activeSolutionFace === 'front');
+    return `${baseClassName}${isFrontVisible ? '' : ' is-flipped'}`;
+  };
+
+  const getCoverageCardStyle = (direction: 'left' | 'right') => {
+    const travel = window.innerWidth <= 768 ? 28 : 72;
+    const offset = (1 - coverageScrollProgress) * travel;
+
+    return {
+      '--coverage-shift': `${direction === 'left' ? -offset : offset}px`,
+      '--coverage-opacity': 0.42 + coverageScrollProgress * 0.58,
+    } as React.CSSProperties;
+  };
 
   const renderAnimatedHeroLine = (line: string, lineIndex: number) => {
     let letterIndex = 0;
@@ -580,7 +714,7 @@ export default function LandingPage({
       </section>
 
       <section className="landing-solutions-section" aria-labelledby="landing-solutions-title">
-        <div className="landing-solutions-section__shell landing-reveal">
+        <div ref={solutionsSectionRef} className="landing-solutions-section__shell landing-reveal">
           <div className="landing-solutions-section__intro">
             <span className="landing-solutions-section__eyebrow">Our solutions</span>
             <h2 id="landing-solutions-title" className="landing-solutions-section__title">
@@ -591,46 +725,64 @@ export default function LandingPage({
           </div>
 
           <div className="landing-solutions-grid">
-            <article className="landing-solution-card landing-solution-card--top landing-solution-card--workflow">
-              <div className="landing-solution-card__copy">
-                <h3>Contractor Onboarding.</h3>
-                <p>
-                  Collect worker details, role scope, budget, and start timelines in one structured intake flow.
-                </p>
-              </div>
-              <div className="landing-solution-card__visual landing-solution-card__visual--workflow">
-                <div className="landing-solution-workflow">
-                  <div className="landing-solution-workflow__item is-complete">
-                    <span className="landing-solution-workflow__icon">ID</span>
-                    <div>
-                      <strong>Collect contractor details</strong>
-                      <small>Name, role, country, and documents</small>
-                    </div>
-                    <em />
+            <article
+              className={getSolutionCardClassName('landing-solution-card landing-solution-card--top landing-solution-card--workflow', 0)}
+              onMouseEnter={() => setIsSolutionHovered(true)}
+              onMouseLeave={() => setIsSolutionHovered(false)}
+            >
+              <div className="landing-solution-card__flip">
+                <div className="landing-solution-card__face landing-solution-card__face--front">
+                  <div className="landing-solution-card__copy">
+                    <h3>Contractor Onboarding.</h3>
+                    <p>
+                      Collect worker details, role scope, budget, and start timelines in one structured intake flow.
+                    </p>
                   </div>
-                  <div className="landing-solution-workflow__dots" />
-                  <div className="landing-solution-workflow__item is-pending">
-                    <span className="landing-solution-workflow__icon">KYB</span>
-                    <div>
-                      <strong>Review compliance inputs</strong>
-                      <small>Scope, pricing, and legal details</small>
+                  <div className="landing-solution-card__visual landing-solution-card__visual--workflow">
+                    <div className="landing-solution-workflow">
+                      <div className="landing-solution-workflow__item is-complete">
+                        <span className="landing-solution-workflow__icon">ID</span>
+                        <div>
+                          <strong>Collect contractor details</strong>
+                          <small>Name, role, country, and documents</small>
+                        </div>
+                        <em />
+                      </div>
+                      <div className="landing-solution-workflow__dots" />
+                      <div className="landing-solution-workflow__item is-pending">
+                        <span className="landing-solution-workflow__icon">KYB</span>
+                        <div>
+                          <strong>Review compliance inputs</strong>
+                          <small>Scope, pricing, and legal details</small>
+                        </div>
+                        <em />
+                      </div>
+                      <div className="landing-solution-workflow__dots" />
+                      <div className="landing-solution-workflow__item is-alert">
+                        <span className="landing-solution-workflow__icon">$</span>
+                        <div>
+                          <strong>Approve payout setup</strong>
+                          <small>Currency, cadence, and Wise method</small>
+                        </div>
+                        <em />
+                      </div>
                     </div>
-                    <em />
                   </div>
-                  <div className="landing-solution-workflow__dots" />
-                  <div className="landing-solution-workflow__item is-alert">
-                    <span className="landing-solution-workflow__icon">$</span>
-                    <div>
-                      <strong>Approve payout setup</strong>
-                      <small>Currency, cadence, and Wise method</small>
-                    </div>
-                    <em />
-                  </div>
+                </div>
+                <div className="landing-solution-card__face landing-solution-card__face--back">
+                  <img className="landing-solution-card__back-logo" src={logoImage} alt="" aria-hidden="true" />
+                  <h3>Contractor Onboarding.</h3>
                 </div>
               </div>
             </article>
 
-            <article className="landing-solution-card landing-solution-card--top landing-solution-card--voice">
+            <article
+              className={getSolutionCardClassName('landing-solution-card landing-solution-card--top landing-solution-card--voice', 1)}
+              onMouseEnter={() => setIsSolutionHovered(true)}
+              onMouseLeave={() => setIsSolutionHovered(false)}
+            >
+              <div className="landing-solution-card__flip">
+                <div className="landing-solution-card__face landing-solution-card__face--front">
               <div className="landing-solution-card__visual landing-solution-card__visual--voice">
                 <div className="landing-solution-call">
                   <div className="landing-solution-call__wave" />
@@ -644,9 +796,21 @@ export default function LandingPage({
                   Keep contractor onboarding moving with reminders for signatures, approvals, and missing details.
                 </p>
               </div>
+                </div>
+                <div className="landing-solution-card__face landing-solution-card__face--back">
+                  <img className="landing-solution-card__back-logo" src={logoImage} alt="" aria-hidden="true" />
+                  <h3>Follow-up Automation.</h3>
+                </div>
+              </div>
             </article>
 
-            <article className="landing-solution-card landing-solution-card--top landing-solution-card--analytics">
+            <article
+              className={getSolutionCardClassName('landing-solution-card landing-solution-card--top landing-solution-card--analytics', 2)}
+              onMouseEnter={() => setIsSolutionHovered(true)}
+              onMouseLeave={() => setIsSolutionHovered(false)}
+            >
+              <div className="landing-solution-card__flip">
+                <div className="landing-solution-card__face landing-solution-card__face--front">
               <div className="landing-solution-card__visual landing-solution-card__visual--analytics">
                 <div className="landing-solution-analytics">
                   <div className="landing-solution-analytics__metrics">
@@ -678,9 +842,21 @@ export default function LandingPage({
                   Track contract value, payout status, and onboarding progress through one clean operations view.
                 </p>
               </div>
+                </div>
+                <div className="landing-solution-card__face landing-solution-card__face--back">
+                  <img className="landing-solution-card__back-logo" src={logoImage} alt="" aria-hidden="true" />
+                  <h3>Hiring Analytics.</h3>
+                </div>
+              </div>
             </article>
 
-            <article className="landing-solution-card landing-solution-card--bottom landing-solution-card--agents">
+            <article
+              className={getSolutionCardClassName('landing-solution-card landing-solution-card--bottom landing-solution-card--agents', 3)}
+              onMouseEnter={() => setIsSolutionHovered(true)}
+              onMouseLeave={() => setIsSolutionHovered(false)}
+            >
+              <div className="landing-solution-card__flip">
+                <div className="landing-solution-card__face landing-solution-card__face--front">
               <div className="landing-solution-card__visual landing-solution-card__visual--agents">
                 <div className="landing-solution-people">
                   <div className="landing-solution-people__row">
@@ -715,9 +891,21 @@ export default function LandingPage({
                   Share the role once and get shortlisted contractor profiles aligned to skills, budget, and timeline.
                 </p>
               </div>
+                </div>
+                <div className="landing-solution-card__face landing-solution-card__face--back">
+                  <img className="landing-solution-card__back-logo" src={logoImage} alt="" aria-hidden="true" />
+                  <h3>Curated Talent Matching.</h3>
+                </div>
+              </div>
             </article>
 
-            <article className="landing-solution-card landing-solution-card--bottom landing-solution-card--suite">
+            <article
+              className={getSolutionCardClassName('landing-solution-card landing-solution-card--bottom landing-solution-card--suite', 4)}
+              onMouseEnter={() => setIsSolutionHovered(true)}
+              onMouseLeave={() => setIsSolutionHovered(false)}
+            >
+              <div className="landing-solution-card__flip">
+                <div className="landing-solution-card__face landing-solution-card__face--front">
               <div className="landing-solution-card__copy">
                 <h3>Operations Workspace.</h3>
                 <p>
@@ -741,9 +929,21 @@ export default function LandingPage({
                   </div>
                 </div>
               </div>
+                </div>
+                <div className="landing-solution-card__face landing-solution-card__face--back">
+                  <img className="landing-solution-card__back-logo" src={logoImage} alt="" aria-hidden="true" />
+                  <h3>Operations Workspace.</h3>
+                </div>
+              </div>
             </article>
 
-            <article className="landing-solution-card landing-solution-card--bottom landing-solution-card--portal">
+            <article
+              className={getSolutionCardClassName('landing-solution-card landing-solution-card--bottom landing-solution-card--portal', 5)}
+              onMouseEnter={() => setIsSolutionHovered(true)}
+              onMouseLeave={() => setIsSolutionHovered(false)}
+            >
+              <div className="landing-solution-card__flip">
+                <div className="landing-solution-card__face landing-solution-card__face--front">
               <div className="landing-solution-card__visual landing-solution-card__visual--portal">
                 <div className="landing-solution-portal">
                   <div className="landing-solution-portal__chip">Worker portal</div>
@@ -756,6 +956,12 @@ export default function LandingPage({
                 <p>
                   Let contractors review requests, upload documents, and complete onboarding steps without back-and-forth.
                 </p>
+              </div>
+                </div>
+                <div className="landing-solution-card__face landing-solution-card__face--back">
+                  <img className="landing-solution-card__back-logo" src={logoImage} alt="" aria-hidden="true" />
+                  <h3>Worker Self-Serve Portal.</h3>
+                </div>
               </div>
             </article>
           </div>
@@ -1044,7 +1250,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      <section className="landing-coverage-v1" aria-labelledby="landing-coverage-v1-title">
+      <section ref={coverageSectionRef} className="landing-coverage-v1" aria-labelledby="landing-coverage-v1-title">
         <div className="landing-coverage-v1__shell landing-reveal">
           <div className="landing-coverage-v1__intro">
             <span className="landing-coverage-v1__eyebrow">Coverage</span>
@@ -1069,8 +1275,10 @@ export default function LandingPage({
             {COVERAGE_TRACKS.map((item) => (
               <article
                 key={item.code}
-                className="landing-coverage-v1__card landing-reveal"
-                style={{ transitionDelay: item.code === 'US' ? '50ms' : '130ms' }}
+                className={`landing-coverage-v1__card landing-coverage-v1__card--${item.code === 'US' ? 'left' : 'right'}`}
+                style={{
+                  ...getCoverageCardStyle(item.code === 'US' ? 'left' : 'right'),
+                }}
               >
                 <div className="landing-coverage-v1__card-top">
                   <span className="landing-coverage-v1__code">{item.code}</span>
@@ -1126,7 +1334,7 @@ export default function LandingPage({
                     type="button"
                     className="landing-faq-v1__trigger"
                     aria-expanded={isOpen}
-                    onClick={() => setOpenFaqIndex((current) => (current === index ? -1 : index))}
+                    onClick={() => setOpenFaqIndex(index)}
                   >
                     <span>{item.question}</span>
                     <span className="landing-faq-v1__icon" aria-hidden="true">
