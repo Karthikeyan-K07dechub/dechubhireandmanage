@@ -31,6 +31,70 @@
   }
 }
 
+@keyframes deel-paper-rocket-flight {
+  0% {
+    offset-distance: 0%;
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.72);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.92;
+  }
+
+  34% {
+    transform: translate(-50%, -50%) rotate(24deg) scale(0.86);
+  }
+
+  62% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.95);
+    opacity: 0.96;
+  }
+
+  92% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 0.96;
+  }
+
+  100% {
+    offset-distance: 100%;
+    transform: translate(-50%, -50%) rotate(0deg) scale(1.02);
+    opacity: 0;
+  }
+}
+
+@keyframes deel-paper-rocket-trail {
+  0% {
+    offset-distance: 0%;
+    transform: translate(-50%, -50%) rotate(-16deg) scaleX(0.2);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.24;
+  }
+
+  36% {
+    transform: translate(-50%, -50%) rotate(-5deg) scaleX(0.68);
+  }
+
+  64% {
+    transform: translate(-50%, -50%) rotate(7deg) scaleX(0.9);
+    opacity: 0.22;
+  }
+
+  90% {
+    transform: translate(-50%, -50%) rotate(15deg) scaleX(1);
+    opacity: 0.16;
+  }
+
+  100% {
+    offset-distance: 100%;
+    transform: translate(-50%, -50%) rotate(20deg) scaleX(0.4);
+    opacity: 0;
+  }
+}
+
 .deel-clone-root .deel-clone-shell {
   width: min(100%, calc(var(--deel-clone-shell-max) + (var(--deel-clone-gutter) * 2)));
   margin-inline: auto;
@@ -64,11 +128,6 @@
 
 .deel-clone-root .deel-clone-band--hero {
   padding-top: 14px;
-}
-
-.deel-clone-root .deel-clone-band--proof {
-  margin-top: 4%;
-  margin-bottom: 4%;
 }
 
 .deel-clone-root .deel-logo-strip {
@@ -152,6 +211,147 @@
   filter: grayscale(1);
 }
 
+.deel-clone-root .deel-promo-stat {
+  width: 100%;
+  padding: 8px 16px ;
+  background: #fff;
+}
+
+.deel-clone-root .deel-promo-stat__inner {
+  position: relative;
+  display: flex;
+  min-height: 280px;
+  max-width: 1704px;
+  margin-inline: auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-top: 2%;
+}
+
+.deel-clone-root .deel-promo-stat__canvas {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -53%);
+  font-family: var(--font-bagoss-condensed);
+  font-size: clamp(172px, 31vw, 380px);
+  font-weight: 500;
+  line-height: 0.84;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+/* .deel-promo-stat__canvas {
+  font-size: clamp(5rem, 10vw, 8rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+
+  background: linear-gradient(
+    180deg,
+    #3c3c3c 0%,
+    #757575 18%,
+    #e9e8eb 42%,
+    #bebdbd 72%,
+    #0d0d0d 100%
+  );
+
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+} */
+
+.deel-promo-stat__canvas {
+  font-size: clamp(5rem, 10vw, 8rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+
+  background: linear-gradient(
+    180deg,
+    #8a8a8a 0%,
+    #a0a0a0 25%,
+    hsl(0, 0%, 78%) 50%,
+    #e5e5e5 80%,
+    #ffffff 100%
+  );
+
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  /* Reflection */
+  -webkit-box-reflect: below -8px
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,.18) 0%,
+      rgba(255,255,255,.08) 20%,
+      rgba(255,255,255,0) 70%
+    );
+  /* -webkit-text-stroke: 1px #ffffff; */
+
+}
+
+.deel-clone-root .deel-promo-stat__headline {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: rgb(69, 69, 69);
+  text-align: center;
+  font-family: var(--font-bagoss-condensed);
+  font-size: clamp(42px, 5vw, 65px);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+  /* -webkit-text-stroke: 2px #000000; */
+}
+
+/* .deel-clone-root .deel-promo-stat__headline span {
+  color: #852fd5;
+  font-family:fantasy;
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+} */
+
+.deel-clone-root .deel-promo-stat__headline span {
+  display: inline-block;
+  position: relative;
+  color: rgb(43, 43, 43);
+  font-family: fantasy;
+  background: linear-gradient(
+    120deg,
+    rgb(43, 43, 43) 0%,
+    rgb(43, 43, 43) 40%,
+    #ffffff 50%,
+    rgb(43, 43, 43) 60%,
+    rgb(43, 43, 43) 100%
+  );
+  background-size: 250% 100%;
+  background-position: -200% 0;
+ -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shineSweep 4s linear infinite;
+}
+
+@keyframes shineSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .deel-clone-root .deel-clone-band--hero section {
   padding: 0;
 }
@@ -205,6 +405,48 @@
     radial-gradient(circle at 15% 18%, rgba(169, 141, 246, 0.18), transparent 28%),
     radial-gradient(circle at 18% 80%, rgba(169, 141, 246, 0.12), transparent 26%);
   pointer-events: none;
+}
+
+.deel-clone-root .deel-hero__rocket-layer {
+  display: none;
+  position: absolute;
+  inset: 0;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.deel-clone-root .deel-hero__rocket {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(38px, 4vw, 56px);
+  height: auto;
+  opacity: 0;
+  filter: drop-shadow(0 8px 18px rgba(255, 182, 118, 0.24));
+  transform-origin: center center;
+  offset-path: path("M -30 44 C 150 -8, 340 430, 620 388 C 790 360, 900 205, 1020 290 C 1155 386, 1295 130, 1468 6");
+  offset-rotate: 0deg;
+  animation: deel-paper-rocket-flight 5.4s cubic-bezier(0.22, 1, 0.36, 1) 0.55s 1 both;
+}
+
+.deel-clone-root .deel-hero__rocket-trail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(54px, 6vw, 82px);
+  height: 6px;
+  border-radius: 999px;
+  opacity: 0;
+  background: linear-gradient(90deg, rgba(255, 219, 177, 0), rgba(255, 219, 177, 0.22) 30%, rgba(255, 184, 126, 0.42) 100%);
+  filter: blur(4px);
+  transform-origin: left center;
+  offset-path: path("M -46 48 C 136 -4, 326 434, 604 392 C 772 364, 882 211, 1002 296 C 1138 392, 1278 136, 1450 12");
+  offset-rotate: 0deg;
+  animation: deel-paper-rocket-trail 5.4s cubic-bezier(0.22, 1, 0.36, 1) 0.55s 1 both;
 }
 
 .deel-clone-root .deel-hero__inner {
@@ -446,7 +688,7 @@
 
 @media (min-width: 768px) {
   .deel-clone-root .deel-logo-strip {
-    padding: 64px 32px 104px;
+    padding: 64px 32px 30px;
   }
 
   .deel-clone-root .deel-logo-strip__eyebrow {
@@ -463,6 +705,14 @@
 
   .deel-clone-root .deel-logo-strip__logo {
     height: 42px;
+  }
+
+  .deel-clone-root .deel-promo-stat {
+    padding: 0 24px ;
+  }
+
+  .deel-clone-root .deel-promo-stat__inner {
+    min-height: 340px;
   }
 
   .deel-clone-root .deel-hero {
@@ -526,9 +776,18 @@
   .deel-clone-root .deel-hero__bg {
     object-position: 73% center;
   }
+
 }
 
 @media (min-width: 1280px) {
+  .deel-clone-root .deel-promo-stat {
+    /* padding-bottom: 104px; */
+  }
+
+  .deel-clone-root .deel-promo-stat__inner {
+    min-height: 380px;
+  }
+
   .deel-clone-root .deel-hero {
     padding: 48px 6% 36px;
   }
@@ -539,6 +798,24 @@
 }
 
 @media (max-width: 640px) {
+  .deel-clone-root .deel-promo-stat {
+    padding: 0 12px 56px;
+  }
+
+  .deel-clone-root .deel-promo-stat__inner {
+    min-height: 188px;
+  }
+
+  .deel-clone-root .deel-promo-stat__canvas {
+    transform: translate(-50%, -55%);
+    font-size: clamp(126px, 40vw, 210px);
+  }
+
+  .deel-clone-root .deel-promo-stat__headline {
+    font-size: clamp(28px, 8.2vw, 42px);
+    line-height: 0.98;
+  }
+
   .deel-clone-root .deel-hero__overlay {
     /* background: */
       /* linear-gradient(180deg, rgba(18, 8, 39, 0.78) 0%, rgba(18, 8, 39, 0.5) 18%, rgba(31, 12, 68, 0.76) 42%, rgba(31, 12, 68, 0.92) 100%), */
@@ -547,5 +824,21 @@
 
   .deel-clone-root .deel-hero__bg {
     object-position: 68% center;
+  }
+
+  .deel-clone-root .deel-hero__rocket {
+    offset-path: path("M -18 34 C 74 0, 154 220, 270 208 C 354 194, 406 118, 474 156 C 548 196, 616 74, 708 14");
+  }
+
+  .deel-clone-root .deel-hero__rocket-trail {
+    offset-path: path("M -30 38 C 62 4, 142 224, 258 212 C 342 198, 394 124, 462 162 C 536 202, 602 80, 694 20");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deel-clone-root .deel-hero__rocket,
+  .deel-clone-root .deel-hero__rocket-trail {
+    animation: none;
+    opacity: 0;
   }
 }

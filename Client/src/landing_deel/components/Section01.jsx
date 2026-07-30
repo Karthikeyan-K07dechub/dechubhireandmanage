@@ -1,5 +1,6 @@
 import React from "react";
 import heroBackground from "../../pages/assets/hero-image.png";
+import paperRocket from "../../pages/assets/paper-rocket.png";
 
 const PRIMARY_ACTIONS = [
   "Hire anywhere",
@@ -40,6 +41,14 @@ function Section01() {
           />
           <div className="deel-hero__overlay" />
           <div className="deel-hero__glow" />
+          <div className="deel-hero__rocket-layer" aria-hidden="true">
+            <div className="deel-hero__rocket-trail" />
+            <img
+              src={paperRocket}
+              alt=""
+              className="deel-hero__rocket"
+            />
+          </div>
 
           <div className="deel-hero__inner">
             <div className="deel-hero__content">

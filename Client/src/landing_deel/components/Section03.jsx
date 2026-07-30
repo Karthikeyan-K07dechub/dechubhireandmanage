@@ -3,46 +3,46 @@ import { useEffect, useState } from "react";
 
 const cards = [
   {
-    title: "Deel Payroll",
+    title: "Dechub-Bridge Payroll",
     description: "Local and global payroll, your way.",
     href: "/solutions/payroll/",
     image: "/deel-assets/images/website-media.deel.com/Go_live_quickly_with_US_payroll_cba17cce08-235ee26e.webp",
     alt: "Go live quickly with US payroll",
   },
   {
-    title: "Deel HR",
+    title: "Dechub-Bridge HR",
     description: "One HR system for every worker.",
     href: "/solutions/hr/",
     image: "/deel-assets/images/website-media.deel.com/HR_9158c8c5a0-514f2ca4.webp",
-    alt: "Deel HR",
+    alt: "Dechub-Bridge HR",
   },
   {
-    title: "Deel IT",
+    title: "Dechub-Bridge IT",
     description: "Devices and support, anywhere.",
     href: "/solutions/it/",
     image: "/deel-assets/images/website-media.deel.com/Screenshot_2026_07_07_at_10_38_29_a_m_0091974c43-d0d00c13.png",
-    alt: "Deel IT",
+    alt: "Dechub-Bridge IT",
   },
   {
-    title: "Deel Benefits",
+    title: "Dechub-Bridge Benefits",
     description: "Easily set up plans, handle enrollment, sync deductions, and more.",
     href: "/solutions/benefits/",
     image: "/deel-assets/images/website-media.deel.com/Benefits_5f8ee9bbeb-e54fb98b.webp",
-    alt: "Deel Benefits",
+    alt: "Dechub-Bridge Benefits",
   },
   {
-    title: "Deel Hire",
+    title: "Dechub-Bridge Hire",
     description: "Hire anywhere in days, fully compliant.",
     href: "/solutions/hire/",
     image: "/deel-assets/images/website-media.deel.com/1_66074e871e-8a936a5d.webp",
-    alt: "Deel Hire",
+    alt: "Dechub-Bridge Hire",
   },
   {
-    title: "Deel Mobility",
+    title: "Dechub-Bridge Mobility",
     description: "Visas handled in-house, end to end.",
     href: "/solutions/mobility/",
     image: "/deel-assets/images/website-media.deel.com/Mobility_0d0fdddfac-ccc45f15.webp",
-    alt: "Deel Mobility",
+    alt: "Dechub-Bridge Mobility",
   },
 ];
 
@@ -99,7 +99,7 @@ function Section03() {
               margin: "0 0 12px",
             }}
           >
-            WHAT DEEL DOES
+            WHAT DECHUB-BRIDGE DOES
           </p>
           <h2
             className="heading-h2 text-wrap"

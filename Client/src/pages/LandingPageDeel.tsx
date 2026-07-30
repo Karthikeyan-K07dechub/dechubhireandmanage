@@ -4,6 +4,7 @@ import '../landing_deel/overrides.css';
 import Header from '../landing_deel/components/Header.jsx';
 import Section01 from '../landing_deel/components/Section01.jsx';
 import Section02 from '../landing_deel/components/Section02.jsx';
+import Section02Promo from '../landing_deel/components/Section02Promo.jsx';
 import Section03 from '../landing_deel/components/Section03.jsx';
 import Section04 from '../landing_deel/components/Section04.jsx';
 import Section05 from '../landing_deel/components/Section05.jsx';
@@ -141,6 +142,7 @@ export default function LandingPageDeel({
             <div id="deel-proof" className="deel-clone-band deel-clone-band--proof">
               <div className="deel-clone-shell">
                 <Section02 />
+                <Section02Promo />
               </div>
             </div>
             <div id="deel-solutions" className="deel-clone-band deel-clone-band--solutions">

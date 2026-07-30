@@ -3,7 +3,7 @@ import React, { useState } from "react";
 const workflows = [
   {
     key: "payroll",
-    label: "Deel Payroll",
+    label: "Dechub-Bridge Payroll",
     icon: "/deel-assets/images/website-media.deel.com/payroll_92b9e25547-ef97117a.svg",
     accent: "#d8ebff",
     iconAccent: "#b1d8fc",
@@ -15,7 +15,7 @@ const workflows = [
   },
   {
     key: "hr",
-    label: "Deel HR",
+    label: "Dechub-Bridge HR",
     icon: "/deel-assets/images/website-media.deel.com/hr_2bd9cffda1-6a630146.svg",
     accent: "#fef0d8",
     iconAccent: "#f1e8e1",
@@ -27,7 +27,7 @@ const workflows = [
   },
   {
     key: "it",
-    label: "Deel IT",
+    label: "Dechub-Bridge IT",
     icon: "/deel-assets/images/website-media.deel.com/it_a20117c5c8-51bb4f3d.svg",
     accent: "#f6f0fe",
     iconAccent: "#eadcff",
@@ -39,7 +39,7 @@ const workflows = [
   },
   {
     key: "hire",
-    label: "Deel Hire",
+    label: "Dechub-Bridge Hire",
     icon: "/deel-assets/images/website-media.deel.com/hire_705b89bb9c-54a21706.svg",
     accent: "#e6f7e0",
     iconAccent: "#c2eeb5",
@@ -85,7 +85,7 @@ function Section04() {
             className="text-tertiary overline-large-medium !text-secondary uppercase"
             style={{ margin: "0 0 12px" }}
           >
-            Deel Speed
+            Dechub-Bridge Speed
           </p>
           <h2 className="heading-h2 !text-primary" style={{ margin: "0 0 20px" }}>
             Accomplish more in less time
