@@ -21,6 +21,12 @@
   background: #fff !important;
 }
 
+.deel-clone-root #navbar-logo-link img {
+  width: 122px;
+  height: auto;
+  max-width: 122px !important;
+}
+
 @keyframes deel-logo-scroll-reverse {
   0% {
     transform: translateX(-50%);
@@ -127,7 +133,7 @@
 }
 
 .deel-clone-root .deel-clone-band--hero {
-  padding-top: 14px;
+  /* padding-top: 14px; */
 }
 
 .deel-clone-root .deel-logo-strip {

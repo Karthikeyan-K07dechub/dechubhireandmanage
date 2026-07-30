@@ -125,8 +125,8 @@ function Header() {
                 className="mui-ducv57"
                 style={{ color: "transparent", maxWidth: "78px" }}
                 sizes="100vw"
-                srcSet="/deel-assets/images/website-media.deel.com/logo_revamp_164ddaed0c-07943198.svg 640w"
-                src="/deel-assets/images/website-media.deel.com/logo_revamp_164ddaed0c-07943198.svg"
+                srcSet="/deel-assets/images/website-media.deel.com/logo.png 640w"
+                src="/deel-assets/images/website-media.deel.com/logo.png"
               />
             </div>
           </a>

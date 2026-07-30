@@ -3,45 +3,45 @@ import { useEffect, useState } from "react";
 
 const cards = [
   {
-    title: "Dechub-Bridge Payroll",
-    description: "Local and global payroll, your way.",
+    title: "Dechub-Bridge Match",
+    description: "AI skill matching for business-ready talent.",
     href: "/solutions/payroll/",
     image: "/deel-assets/images/website-media.deel.com/Go_live_quickly_with_US_payroll_cba17cce08-235ee26e.webp",
     alt: "Go live quickly with US payroll",
   },
   {
-    title: "Dechub-Bridge HR",
-    description: "One HR system for every worker.",
+    title: "Dechub-Bridge Deploy",
+    description: "Pre-vetted talent delivered in 60 minutes.",
     href: "/solutions/hr/",
     image: "/deel-assets/images/website-media.deel.com/HR_9158c8c5a0-514f2ca4.webp",
     alt: "Dechub-Bridge HR",
   },
   {
-    title: "Dechub-Bridge IT",
-    description: "Devices and support, anywhere.",
+    title: "Dechub-Bridge Teams",
+    description: "Hire one expert or launch a full delivery team.",
     href: "/solutions/it/",
-    image: "/deel-assets/images/website-media.deel.com/Screenshot_2026_07_07_at_10_38_29_a_m_0091974c43-d0d00c13.png",
+    image: "/deel-assets/images/website-media.deel.com/dechub-bridge-team.png",
     alt: "Dechub-Bridge IT",
   },
   {
-    title: "Dechub-Bridge Benefits",
-    description: "Easily set up plans, handle enrollment, sync deductions, and more.",
+    title: "Dechub-Bridge Ops",
+    description: "Payroll, compliance, and workforce operations in one place.",
     href: "/solutions/benefits/",
-    image: "/deel-assets/images/website-media.deel.com/Benefits_5f8ee9bbeb-e54fb98b.webp",
+    image: "/deel-assets/images/website-media.deel.com/benefits.png",
     alt: "Dechub-Bridge Benefits",
   },
   {
-    title: "Dechub-Bridge Hire",
-    description: "Hire anywhere in days, fully compliant.",
+    title: "Enterprise Scale",
+    description: "Built for fast-moving teams and growing businesses.",
     href: "/solutions/hire/",
-    image: "/deel-assets/images/website-media.deel.com/1_66074e871e-8a936a5d.webp",
+    image: "/deel-assets/images/website-media.deel.com/enterprise-scale.png",
     alt: "Dechub-Bridge Hire",
   },
   {
-    title: "Dechub-Bridge Mobility",
-    description: "Visas handled in-house, end to end.",
+    title: "Project Success",
+    description: "Bridge stays involved beyond the hire.",
     href: "/solutions/mobility/",
-    image: "/deel-assets/images/website-media.deel.com/Mobility_0d0fdddfac-ccc45f15.webp",
+    image: "/deel-assets/images/website-media.deel.com/project-success.png",
     alt: "Dechub-Bridge Mobility",
   },
 ];
@@ -107,7 +107,7 @@ function Section03() {
               margin: "0 0 20px",
             }}
           >
-            The global people platform
+            Deploy talent faster, smarter, and with confidence
           </h2>
         </div>
 
