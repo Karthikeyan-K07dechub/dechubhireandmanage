@@ -25,16 +25,19 @@ const logoRows = [
   ],
 ];
 
-function LogoMarquee({ logos, duration, reverse = false }) {
+function LogoMarquee({ logos, variant = "primary", reverse = false }) {
   const marqueeLogos = [...logos, ...logos];
 
   return (
-    <div className="w-full overflow-hidden">
+    <div className="deel-logo-strip__viewport">
       <div
-        className="flex w-max items-center gap-x-[34px] md:gap-x-[64px]"
-        style={{
-          animation: `${reverse ? "deel-logo-scroll-reverse" : "logo-scroll"} ${duration}s linear infinite`,
-        }}
+        className={[
+          "deel-logo-strip__track",
+          variant === "secondary" ? "deel-logo-strip__track--secondary" : "",
+          reverse ? "deel-logo-strip__track--reverse" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
         {marqueeLogos.map((src, index) => (
           <img
@@ -42,7 +45,7 @@ function LogoMarquee({ logos, duration, reverse = false }) {
             src={src}
             alt=""
             loading="lazy"
-            className="h-[26px] w-auto shrink-0 object-contain opacity-55 grayscale md:h-[42px]"
+            className="deel-logo-strip__logo"
           />
         ))}
       </div>
@@ -52,18 +55,15 @@ function LogoMarquee({ logos, duration, reverse = false }) {
 
 function Section02() {
   return (
-    <section className="logo-stripe-standard-wrapper w-full bg-surface-white px-4 pt-[42px] pb-[78px] md:px-8 md:pt-[64px] md:pb-[104px]">
-      <div className="mx-auto flex max-w-[1704px] flex-col items-center">
-        <p
-          className="m-0 text-center font-inter text-[14px] font-semibold uppercase tracking-[0.08em] text-[#5f6470] md:text-[17px]"
-          style={{ marginBottom: "40px" }}
-        >
+    <section className="logo-stripe-standard-wrapper deel-logo-strip">
+      <div className="deel-logo-strip__inner">
+        <p className="deel-logo-strip__eyebrow">
           Trusted by 40,000+ companies from startups to enterprise
         </p>
 
-        <div className="flex w-full flex-col gap-[28px] md:gap-[36px]">
-          <LogoMarquee logos={logoRows[0]} duration={34} />
-          <LogoMarquee logos={logoRows[1]} duration={38} reverse />
+        <div className="deel-logo-strip__rows">
+          <LogoMarquee logos={logoRows[0]} variant="primary" />
+          <LogoMarquee logos={logoRows[1]} variant="secondary" reverse />
         </div>
       </div>
     </section>
