@@ -737,7 +737,8 @@ export default function App() {
       <RoleSelectionPage
         onBack={() => setPage('landing')}
         onCompany={() => {
-          setPage('company-choice');
+          setCompanyDestination('dashboard');
+          setPage('company-dashboard-auth');
         }}
         onFreelancer={() => {
           setPage('freelancer-login');

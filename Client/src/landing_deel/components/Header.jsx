@@ -72,18 +72,23 @@ function CloseIcon() {
 
 function Header() {
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [closingDropdown, setClosingDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRef = useRef(null);
+  const closeDropdownTimeoutRef = useRef(null);
+  const isDesktopViewport = () => window.innerWidth >= 1200;
 
   useEffect(() => {
     const handlePointerDown = (event) => {
       if (!navRef.current?.contains(event.target)) {
+        setClosingDropdown(null);
         setActiveDropdown(null);
       }
     };
 
     const handleEscape = (event) => {
       if (event.key === "Escape") {
+        setClosingDropdown(null);
         setActiveDropdown(null);
         setMobileMenuOpen(false);
       }
@@ -100,13 +105,72 @@ function Header() {
 
   useEffect(() => {
     if (mobileMenuOpen) {
+      setClosingDropdown(null);
       setActiveDropdown(null);
     }
   }, [mobileMenuOpen]);
 
-  const toggleDropdown = (label) => {
+  useEffect(() => {
+    return () => {
+      if (closeDropdownTimeoutRef.current) {
+        window.clearTimeout(closeDropdownTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const toggleDropdown = (event, label) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (closeDropdownTimeoutRef.current) {
+      window.clearTimeout(closeDropdownTimeoutRef.current);
+      closeDropdownTimeoutRef.current = null;
+    }
+    setClosingDropdown(null);
     setMobileMenuOpen(false);
     setActiveDropdown((current) => (current === label ? null : label));
+  };
+
+  const blockDropdownNavigation = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const openDropdownOnHover = (label) => {
+    if (!isDesktopViewport()) {
+      return;
+    }
+
+    if (closeDropdownTimeoutRef.current) {
+      window.clearTimeout(closeDropdownTimeoutRef.current);
+      closeDropdownTimeoutRef.current = null;
+    }
+
+    setClosingDropdown(null);
+    setMobileMenuOpen(false);
+    setActiveDropdown(label);
+  };
+
+  const closeDropdownOnHoverLeave = () => {
+    if (!isDesktopViewport()) {
+      return;
+    }
+
+    if (closeDropdownTimeoutRef.current) {
+      window.clearTimeout(closeDropdownTimeoutRef.current);
+    }
+
+    const dropdownToClose = activeDropdown;
+
+    if (!dropdownToClose) {
+      return;
+    }
+
+    setClosingDropdown(dropdownToClose);
+    setActiveDropdown(null);
+    closeDropdownTimeoutRef.current = window.setTimeout(() => {
+      setClosingDropdown(null);
+      closeDropdownTimeoutRef.current = null;
+    }, 320);
   };
 
   return (
@@ -136,36 +200,62 @@ function Header() {
           <div className="MuiBox-root mui-f5u9bk">
             {Object.entries(navGroups).map(([label, items]) => {
               const open = activeDropdown === label;
+              const closing = closingDropdown === label;
+              const showDropdown = open || closing;
               return (
-                <div className="MuiBox-root mui-1d9b0hw" key={label}>
+                <div
+                  className="MuiBox-root mui-1d9b0hw"
+                  key={label}
+                  onMouseEnter={() => openDropdownOnHover(label)}
+                  onMouseLeave={closeDropdownOnHoverLeave}
+                >
                   <button
                     type="button"
                     className="mui-1fo3fxi"
                     aria-expanded={open}
-                    onClick={() => toggleDropdown(label)}
+                    aria-haspopup="menu"
+                    onMouseDown={blockDropdownNavigation}
+                    onPointerDown={blockDropdownNavigation}
+                    onTouchStart={blockDropdownNavigation}
+                    onClick={(event) => toggleDropdown(event, label)}
                   >
                     {label}
                     <div className="cta-icon mui-1e5u1e9">
                       <ChevronDownIcon open={open} />
                     </div>
                   </button>
-                  {open ? (
+                  {showDropdown ? (
                     <div
-                      className="animation-fade-in"
+                      className={open ? "animation-fade-in" : undefined}
                       style={{
                         position: "absolute",
-                        top: "calc(100% + 12px)",
+                        top: "100%",
                         left: 0,
                         minWidth: "240px",
-                        backgroundColor: "#fff",
-                        border: "1px solid rgba(27, 27, 27, 0.12)",
-                        borderRadius: "16px",
-                        boxShadow: "0 24px 60px rgba(0, 0, 0, 0.08)",
-                        padding: "16px",
+                        paddingTop: "8px",
                         zIndex: 700,
+                        opacity: open ? 1 : 0,
+                        transform: open ? "translateY(0) scale(1)" : "translateY(12px) scale(0.985)",
+                        transformOrigin: "top left",
+                        filter: open ? "blur(0px)" : "blur(1px)",
+                        willChange: "opacity, transform, filter",
+                        pointerEvents: open ? "auto" : "none",
+                        transition:
+                          "opacity 0.26s cubic-bezier(0.22, 1, 0.36, 1), transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), filter 0.22s ease-out",
                       }}
                     >
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                          backgroundColor: "#fff",
+                          border: "1px solid rgba(27, 27, 27, 0.12)",
+                          borderRadius: "16px",
+                          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.08)",
+                          padding: "16px",
+                        }}
+                      >
                         {items.map((item) => (
                           <a
                             key={item.href}
@@ -193,47 +283,16 @@ function Header() {
                 Pricing
               </a>
             </div>
+            <div className="MuiBox-root mui-1d9b0hw">
+              <a href="/marketplace" className="mui-1moi9ht">
+                Marketplace
+              </a>
+            </div>
           </div>
 
           <div className="items-center gap-2 flex justify-end">
-            <div className="hidden lg:block">
-              <div className="relative">
-                <button
-                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-transparent transition-all duration-200 border-0 hover:bg-orange-50/80"
-                  aria-label="Select language"
-                  aria-expanded="false"
-                  type="button"
-                >
-                  <div className="relative w-[17px] h-[17px]">
-                    <img
-                      alt="blackGlobe-icon"
-                      loading="lazy"
-                      width="17"
-                      height="17"
-                      decoding="async"
-                      style={{ color: "transparent" }}
-                      sizes="17px"
-                      src="/deel-assets/images/website-media.deel.com/black-globe.abc6410e-17a0a320.svg"
-                    />
-                    <img
-                      alt="United States"
-                      loading="lazy"
-                      width="12.5"
-                      height="12.5"
-                      decoding="async"
-                      className="border border-white rounded-full absolute -top-1 -left-1"
-                      style={{ color: "transparent" }}
-                      sizes="12.5px"
-                      src="/deel-assets/images/website-media.deel.com/United States.613f8f62.svg"
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-primary">EN</span>
-                </button>
-              </div>
-            </div>
-
             <div className="MuiBox-root mui-fy11xf">
-              <a href="#" title="Log in" target="_self" aria-label="app.deel.com login" className="mui-15k05j0">
+              <a href="/get-started" title="Log in" target="_self" aria-label="Log in" className="mui-15k05j0">
                 <button type="button" className="hidden-phone mui-ti8o1k">
                   Log in
                 </button>
@@ -288,4 +347,3 @@ function Header() {
 }
 
 export default Header;
-

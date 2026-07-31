@@ -36,6 +36,7 @@ const cards = [
     href: "/solutions/hire/",
     image: "/deel-assets/images/website-media.deel.com/enterprise-scale.png",
     alt: "Dechub-Bridge Hire",
+    compactSpacing: true,
   },
   {
     title: "Project Success",
@@ -149,7 +150,7 @@ function Section03() {
               <p
                 className="text-tertiary paragraph-xxlarge"
                 style={{
-                  margin: "0 0 24px",
+                  margin: card.compactSpacing ? "0" : "0 0 24px",
                 }}
               >
                 {card.description}
@@ -161,7 +162,7 @@ function Section03() {
                   alignItems: "center",
                   justifyContent: "center",
                   marginTop: "auto",
-                  paddingTop: "16px",
+                  paddingTop: card.compactSpacing ? "0" : "16px",
                 }}
               >
                 <div

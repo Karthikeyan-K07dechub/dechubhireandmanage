@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import LandingTalentRequestModal from '../components/common/LandingTalentRequestModal';
 import '../landing_deel/landing.css';
 import '../landing_deel/overrides.css';
 import Header from '../landing_deel/components/Header.jsx';
@@ -20,7 +21,8 @@ interface LandingPageDeelProps {
   onMarketplaceSearch: (query: string) => void;
 }
 
-const BOOK_DEMO_LABELS = new Set(['book a demo', 'get started', 'start free']);
+const BOOK_DEMO_LABELS = new Set(['book a demo']);
+const GET_STARTED_LABELS = new Set(['get started', 'start free']);
 
 function normalizeLabel(value: string | null | undefined): string {
   return (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -32,6 +34,7 @@ export default function LandingPageDeel({
   onMarketplace,
 }: LandingPageDeelProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
 
   useEffect(() => {
     document.title = 'Deel | Global Payroll, Compliance, HR Solutions | HRIS';
@@ -55,21 +58,33 @@ export default function LandingPageDeel({
       return;
     }
 
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      const actionElement = target?.closest('a, button') as HTMLAnchorElement | HTMLButtonElement | null;
+      const handleClick = (event: MouseEvent) => {
+        const target = event.target as HTMLElement | null;
+        const anchorElement = target?.closest('a') as HTMLAnchorElement | null;
+        const buttonElement = target?.closest('button') as HTMLButtonElement | null;
+        const actionElement = (anchorElement ?? buttonElement) as HTMLAnchorElement | HTMLButtonElement | null;
 
-      if (!actionElement || !root.contains(actionElement)) {
-        return;
-      }
+        if (!actionElement || !root.contains(actionElement)) {
+          return;
+        }
 
-      const label = normalizeLabel(actionElement.textContent);
-      const anchor = actionElement.tagName === 'A' ? (actionElement as HTMLAnchorElement) : null;
+        if (actionElement.tagName === 'BUTTON' && actionElement.getAttribute('aria-haspopup') === 'menu') {
+          return;
+        }
+
+        const label = normalizeLabel(actionElement.textContent);
+      const anchor = anchorElement ?? (actionElement.tagName === 'A' ? (actionElement as HTMLAnchorElement) : null);
       const href = anchor?.getAttribute('href') ?? '';
 
       if (actionElement.id === 'navbar-logo-link' || href === '/') {
         event.preventDefault();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      if (href === '/get-started') {
+        event.preventDefault();
+        onGetStarted();
         return;
       }
 
@@ -80,6 +95,12 @@ export default function LandingPageDeel({
       }
 
       if (BOOK_DEMO_LABELS.has(label) || href.includes('book-a-demo')) {
+        event.preventDefault();
+        setIsTalentRequestModalOpen(true);
+        return;
+      }
+
+      if (GET_STARTED_LABELS.has(label)) {
         event.preventDefault();
         onGetStarted();
         return;
@@ -112,6 +133,12 @@ export default function LandingPageDeel({
       if (label === 'resources' || href.startsWith('/blog/') || href.startsWith('/help-center/')) {
         event.preventDefault();
         document.getElementById('deel-footer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (href === '/marketplace') {
+        event.preventDefault();
+        onMarketplace();
         return;
       }
 
@@ -183,6 +210,10 @@ export default function LandingPageDeel({
           <Footer />
         </div>
       </div>
+      <LandingTalentRequestModal
+        isOpen={isTalentRequestModalOpen}
+        onClose={() => setIsTalentRequestModalOpen(false)}
+      />
     </div>
   );
 }
