@@ -182,10 +182,15 @@ function Section04() {
 
           <div className="deel-speed-timeline deel-speed-timeline--mobile">
             {active.steps.map((step, index) => (
-              <div key={step.title} className="flex flex-row gap-4" style={{ marginBottom: index < active.steps.length - 1 ? "24px" : "0" }}>
-                <div className="flex flex-col items-center flex-shrink-0 pt-1">
-                  <div className="w-3 h-3 rounded-full bg-neutral-300" />
-                  {index < active.steps.length - 1 ? <div className="w-px flex-1 border-l-2 border-dashed border-neutral-300" /> : null}
+              <div
+                key={step.title}
+                className={`deel-speed-timeline__mobile-step${
+                  index < active.steps.length - 1 ? " deel-speed-timeline__mobile-step--spaced" : ""
+                }`}
+              >
+                <div className="deel-speed-timeline__mobile-rail">
+                  <div className="deel-speed-timeline__mobile-dot" />
+                  {index < active.steps.length - 1 ? <div className="deel-speed-timeline__mobile-line" /> : null}
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-col items-start text-left" style={{ marginBottom: "16px" }}>

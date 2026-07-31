@@ -633,9 +633,43 @@
   flex-direction: column;
 }
 
+.deel-clone-root .deel-speed-timeline__mobile-step {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.deel-clone-root .deel-speed-timeline__mobile-step--spaced {
+  padding-bottom: 24px;
+}
+
+.deel-clone-root .deel-speed-timeline__mobile-rail {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.deel-clone-root .deel-speed-timeline__mobile-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-neutral-300);
+}
+
+.deel-clone-root .deel-speed-timeline__mobile-line {
+  width: 1px;
+  flex: 1;
+  border-left: 2px dashed var(--color-neutral-300);
+  margin-bottom: -36px;
+}
+
 .deel-clone-root .deel-speed-timeline__line {
   position: absolute;
-  top: 6px;
+  margin: 0 auto;
+  width: 83%;
+  top: 5px;
   right: 0;
   left: 0;
   border-top: 2px dashed var(--color-neutral-300);
