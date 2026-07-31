@@ -37,42 +37,42 @@ function Footer() {
               <div className="MuiBox-root mui-1f1std7">
                 <a href="/solutions/payroll/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel Payroll
+                    Dechub-Bridge Payroll
                   </p>
                 </a>
                 <a href="/solutions/hr/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel HR
+                    Dechub-Bridge HR
                   </p>
                 </a>
                 <a href="/solutions/it/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel IT
+                    Dechub-Bridge IT
                   </p>
                 </a>
                 <a href="/solutions/benefits/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel Benefits
+                    Dechub-Bridge Benefits
                   </p>
                 </a>
                 <a href="/solutions/hire/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel Hire
+                    Dechub-Bridge Hire
                   </p>
                 </a>
                 <a href="/solutions/mobility/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel Mobility
+                    Dechub-Bridge Mobility
                   </p>
                 </a>
                 <a href="/solutions/embedded/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel Embedded
+                    Dechub-Bridge Embedded
                   </p>
                 </a>
                 <a href="/solutions/services/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel Services
+                    Dechub-Bridge Services
                   </p>
                 </a>
                 <a href="/solutions/" className="mui-8141xw">
@@ -86,7 +86,7 @@ function Footer() {
           <div className="MuiBox-root mui-m6lfuo">
             <div className="MuiBox-root mui-19ei76p">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-grid8g">
-                Deel Platform
+                Dechub-Bridge Platform
               </h3>
               <div className="MuiBox-root mui-13qr5ly">
                 <a href="/hr-platform/" className="mui-8141xw">
@@ -96,7 +96,7 @@ function Footer() {
                 </a>
                 <a href="/hr-platform/ai/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel AI
+                    Dechub-Bridge AI
                   </p>
                 </a>
                 <a href="/hr-platform/white-label/" className="mui-8141xw">
@@ -106,7 +106,7 @@ function Footer() {
                 </a>
                 <a href="/solutions/open-api/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel API
+                    Dechub-Bridge API
                   </p>
                 </a>
                 <a href="/integrations/" className="mui-8141xw">
@@ -136,7 +136,7 @@ function Footer() {
           <div className="MuiBox-root mui-m6lfuo">
             <div className="MuiBox-root mui-19ei76p">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-grid8g">
-                Why Deel?
+                Why Dechub-Bridge?
               </h3>
               <div className="MuiBox-root mui-13qr5ly">
                 <a href="/solutions/payroll-engine/" className="mui-8141xw">
@@ -151,7 +151,7 @@ function Footer() {
                 </a>
                 <a href="/deel-vs-competitors/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Compare Deel
+                    Compare Dechub-Bridge
                   </p>
                 </a>
                 <a href="/security/" className="mui-8141xw">
@@ -215,7 +215,7 @@ function Footer() {
                 </a>
                 <a href="/deel-impact/" className="mui-8141xw">
                   <p className="mui-1711c28">
-                    Deel Impact
+                    Dechub-Bridge Impact
                   </p>
                 </a>
                 <a href="/job-description-templates/" className="mui-8141xw">
@@ -295,7 +295,7 @@ function Footer() {
           <div className="MuiBox-root mui-n90dtd">
             <a href="/" className="mui-xeu4w0">
               <div className="MuiBox-root mui-1xksqvf">
-                <img alt="Deel Logo White" loading="lazy" width="78" height="28" decoding="async" className="mui-ducv57" style={{ color: "transparent", maxWidth: "78px" }} sizes="100vw" srcSet="/deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 640w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 640w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 750w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 768w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 828w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 1024w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 1080w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 1200w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 1280w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 1920w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 1920w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 2048w, /deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg 3840w" src="/deel-assets/images/website-media.deel.com/logo_revamp_white_3237bd2303-7268fb25.svg" />
+                <img alt="Dechub-Bridge Logo" loading="lazy" width="122" height="42" decoding="async" className="mui-ducv57 deel-footer-logo" sizes="100vw" srcSet="/deel-assets/images/website-media.deel.com/logo.png 640w" src="/deel-assets/images/website-media.deel.com/logo.png" />
               </div>
             </a>
             <div className="MuiBox-root mui-wsfch7">
@@ -378,4 +378,3 @@ function Footer() {
 }
 
 export default Footer;
-

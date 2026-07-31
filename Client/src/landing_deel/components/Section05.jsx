@@ -2,22 +2,22 @@ import React, { useState } from "react";
 
 const cards = [
   {
-    title: "150+ currencies supported,",
-    description: "including crypto, for centralized compliant payroll.",
+    title: "Talent deployment : ",
+    description: "Move from approved shortlist to active delivery without delays.",
     href: "/use-cases/run-global-payroll/",
     cta: "Learn more",
     image: "/deel-assets/images/website-media.deel.com/150currencysupport_8c1cb419a0-1e399de9.webp",
   },
   {
-    title: "Actionable AI",
-    description: "for approving hiring, payroll, IT flows on Deel. More scaling, not headcount.",
+    title: "Workforce operations : ",
+    description: "Handle onboarding, coordination, and support from one system.",
     href: "/hr-platform/ai/",
     cta: "Learn more",
     image: "/deel-assets/images/website-media.deel.com/actionable_ai_2x_d651c6da17-98e9cbe6.webp",
   },
   {
-    title: "2,000+ local experts",
-    description: "combined with in-house compliance logic and real-time AI.",
+    title: "Payroll and compliance : ",
+    description: "Keep global talent operations structured and business-ready.",
     href: "#",
     cta: "Book a demo",
     image: "/deel-assets/images/website-media.deel.com/200localexpert_2x_7e32045951-9cec7ef9.webp",
@@ -73,7 +73,7 @@ function Section05() {
         <div className="mx-auto flex w-full max-w-[1312px] flex-col gap-lg tablet:gap-[60px]">
           <div className="flex flex-col gap-xxxs tablet:gap-sm">
             <h2 className="text-balance m-0 heading-h2 text-content-on-dark-primary!">
-              One modern experience for today's workforce
+              Everything your team needs after the match
             </h2>
           </div>
 
@@ -197,9 +197,9 @@ function Section05() {
             >
               <div className="text-[18px]! [&_p]:m-0! text-content-on-dark-accessory! [&_strong]:text-surface-white! MuiBox-root mui-5a971u">
                 <p>
-                  <strong>Built on in-house infrastructure,</strong> with single payroll engines,
-                  <br />
-                  owned entities, and more.
+                  <strong>One connected workforce layer,</strong> Bridge combines matching, validation, deployment, and
+                  {/* <br /> */}
+                  workforce operations in one experience.
                 </p>
               </div>
               <div className="!-ml-xxxs sm-old:!-ml-xxs">

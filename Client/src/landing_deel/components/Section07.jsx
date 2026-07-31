@@ -1,10 +1,10 @@
 import React from "react";
 
 const metrics = [
-  { value: "150+", label: "countries" },
-  { value: "+40,000", label: "customers" },
-  { value: "$20B+", label: "compliantly processed global payroll" },
-  { value: "90+", label: "NPS for enterprise customers" },
+  { value: "60 Minutes", label: "average deployment goal" },
+  { value: "AI + Human", label: "matching and validation model" },
+  { value: "One Platform", label: "talent, operations, and delivery" },
+  { value: "End-to-End", label: "from requirement to project success" },
 ];
 
 function Section07() {
@@ -13,7 +13,7 @@ function Section07() {
       <div className="MuiBox-root mui-57ckbi">
         <div className="MuiBox-root mui-1lwwami">
           <h3 className="MuiTypography-root MuiTypography-h3 mui-1t1gvrv">
-            Deel makes growing remote and international teams effortless
+            Dechub-Bridge makes growing remote and international teams effortless
           </h3>
         </div>
         <div className="key-fig-container MuiBox-root mui-ze9kid">

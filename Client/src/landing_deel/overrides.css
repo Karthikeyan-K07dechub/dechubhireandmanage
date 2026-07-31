@@ -27,6 +27,12 @@
   max-width: 122px !important;
 }
 
+.deel-clone-root .deel-footer-logo {
+  width: 122px;
+  height: auto;
+  max-width: 122px !important;
+}
+
 @keyframes deel-logo-scroll-reverse {
   0% {
     transform: translateX(-50%);
