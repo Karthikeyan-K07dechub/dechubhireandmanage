@@ -58,7 +58,7 @@ function Section01() {
 
               <div className="deel-hero__panel">
                 <p className="deel-hero__prompt">
-                  What would you like to do with Dechub Bridge ?
+                  What would you like to do with Dechub Bridge?
                 </p>
 
                 <div

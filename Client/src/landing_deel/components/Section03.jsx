@@ -74,7 +74,7 @@ function Section03() {
     <section
       className="w-full bg-white"
       style={{
-        paddingTop: "64px",
+        paddingTop: "0px",
         paddingBottom: "64px",
         paddingLeft: "24px",
         paddingRight: "24px",
