@@ -620,6 +620,27 @@
   gap: 4px;
 }
 
+.deel-clone-root .deel-speed-timeline {
+  position: relative;
+}
+
+.deel-clone-root .deel-speed-timeline--desktop {
+  display: none;
+}
+
+.deel-clone-root .deel-speed-timeline--mobile {
+  display: flex;
+  flex-direction: column;
+}
+
+.deel-clone-root .deel-speed-timeline__line {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  left: 0;
+  border-top: 2px dashed var(--color-neutral-300);
+}
+
 .deel-clone-root .deel-hero__review-copy {
   display: flex;
   align-items: center;
@@ -731,6 +752,15 @@
 
   .deel-clone-root .deel-hero__title {
     font-size: 50px;
+  }
+
+  .deel-clone-root .deel-speed-timeline--desktop {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .deel-clone-root .deel-speed-timeline--mobile {
+    display: none;
   }
 }
 

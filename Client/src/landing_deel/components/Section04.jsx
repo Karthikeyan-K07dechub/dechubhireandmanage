@@ -150,8 +150,8 @@ function Section04() {
         </div>
 
         <div style={{ marginBottom: "24px" }}>
-          <div className="hidden tablet:flex tablet:justify-between relative">
-            <div className="absolute left-0 right-0 top-[6px] border-t-2 border-dashed border-neutral-300" />
+          <div className="deel-speed-timeline deel-speed-timeline--desktop">
+            <div className="deel-speed-timeline__line" />
             {active.steps.map((step, index) => (
               <div key={step.title} className={`flex ${index === 1 ? "justify-center" : index === 2 ? "justify-end" : "justify-start"}`}>
                 <div className="flex flex-col items-center">
@@ -180,7 +180,7 @@ function Section04() {
             ))}
           </div>
 
-          <div className="tablet:hidden flex flex-col">
+          <div className="deel-speed-timeline deel-speed-timeline--mobile">
             {active.steps.map((step, index) => (
               <div key={step.title} className="flex flex-row gap-4" style={{ marginBottom: index < active.steps.length - 1 ? "24px" : "0" }}>
                 <div className="flex flex-col items-center flex-shrink-0 pt-1">
