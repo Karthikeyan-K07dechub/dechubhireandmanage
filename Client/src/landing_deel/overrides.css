@@ -729,6 +729,372 @@
   padding-right: clamp(20px, 2vw, 36px);
 }
 
+.deel-clone-root .deel-nav-dropdown-shell {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: -84px;
+  z-index: 700;
+  transform-origin: top left;
+  will-change: opacity, transform, filter;
+  transition:
+    opacity 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.22s ease-out;
+}
+
+.deel-clone-root .deel-solutions-menu {
+  width: min(1116px, calc(100vw - 36px));
+  overflow: hidden;
+  border: 1px solid rgba(27, 27, 27, 0.14);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 28px 70px rgba(17, 17, 17, 0.12);
+}
+
+.deel-clone-root .deel-solutions-menu__main {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 376px);
+}
+
+.deel-clone-root .deel-solutions-menu__left {
+  padding: 32px 36px 32px;
+}
+
+.deel-clone-root .deel-solutions-menu__section {
+  border-bottom: 1px solid rgba(27, 27, 27, 0.14);
+  padding-bottom: 28px;
+}
+
+.deel-clone-root .deel-solutions-menu__section--compact {
+  border-bottom: 0;
+  padding-bottom: 10px;
+}
+
+.deel-clone-root .deel-solutions-menu__eyebrow {
+  margin: 0 0 14px;
+  color: rgba(27, 27, 27, 0.72);
+  font-family: var(--font-inter);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.deel-clone-root .deel-solutions-menu__offer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 34px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(27, 27, 27, 0.14);
+}
+
+.deel-clone-root .deel-solutions-menu__text-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px 46px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(27, 27, 27, 0.14);
+}
+
+.deel-clone-root .deel-solutions-menu__text-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #1b1b1b;
+}
+
+.deel-clone-root .deel-solutions-menu__columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  padding: 32px 36px 28px;
+}
+
+.deel-clone-root .deel-solutions-menu--columns .deel-solutions-menu__columns {
+  gap: 28px;
+}
+
+.deel-clone-root .deel-solutions-menu--columns .deel-solutions-menu__column-links {
+  gap: 22px;
+  padding-top: 14px;
+}
+
+.deel-clone-root .deel-solutions-menu__column {
+  min-width: 0;
+}
+
+.deel-clone-root .deel-solutions-menu__column-links {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(27, 27, 27, 0.14);
+}
+
+.deel-clone-root .deel-solutions-menu__title--inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deel-clone-root .deel-solutions-menu__badge {
+  display: inline-flex;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #ffcf25;
+  color: #1b1b1b;
+  font-family: var(--font-inter);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.deel-clone-root .deel-solutions-menu__offer-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-height: 48px;
+  color: #1b1b1b;
+}
+
+.deel-clone-root .deel-solutions-menu__icon-box {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f4edff;
+  color: #1b1b1b;
+}
+
+.deel-clone-root .deel-solutions-menu__icon-box svg {
+  width: 20px;
+  height: 20px;
+}
+
+.deel-clone-root .deel-solutions-menu__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.deel-clone-root .deel-solutions-menu__title,
+.deel-clone-root .deel-solutions-menu__utility-title {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #1b1b1b;
+}
+
+.deel-clone-root .deel-solutions-menu__text,
+.deel-clone-root .deel-solutions-menu__utility-text {
+  font-family: var(--font-inter);
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(27, 27, 27, 0.78);
+}
+
+.deel-clone-root .deel-solutions-menu__utility-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  padding-top: 28px;
+}
+
+.deel-clone-root .deel-solutions-menu__utility-card {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #faf7f2;
+}
+
+.deel-clone-root .deel-solutions-menu__utility-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.deel-clone-root .deel-solutions-menu__utility-title {
+  font-size: 15px;
+}
+
+.deel-clone-root .deel-solutions-menu__utility-text {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.deel-clone-root .deel-solutions-menu__utility-image {
+  width: 108px;
+  max-width: 42%;
+  height: 34px;
+  object-fit: contain;
+  object-position: right center;
+}
+
+.deel-clone-root .deel-solutions-menu__promo {
+  position: relative;
+  display: block;
+  min-height: 100%;
+  overflow: hidden;
+  background: #1b1b1b;
+}
+
+.deel-clone-root .deel-solutions-menu__promo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.deel-clone-root .deel-solutions-menu__promo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.06) 8%, rgba(18, 18, 18, 0.82) 100%);
+}
+
+.deel-clone-root .deel-solutions-menu__promo-copy {
+  position: absolute;
+  right: 32px;
+  bottom: 32px;
+  left: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #fff;
+}
+
+.deel-clone-root .deel-solutions-menu__promo-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-inter);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.deel-clone-root .deel-solutions-menu__promo-title svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.deel-clone-root .deel-solutions-menu__promo-text {
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.deel-clone-root .deel-solutions-menu--compact .deel-solutions-menu__promo-copy {
+  right: 28px;
+  bottom: 34px;
+  left: 28px;
+}
+
+.deel-clone-root .deel-solutions-menu--compact .deel-solutions-menu__left {
+  padding: 32px 36px 28px;
+}
+
+.deel-clone-root .deel-solutions-menu--compact .deel-solutions-menu__eyebrow {
+  margin-bottom: 14px;
+}
+
+.deel-clone-root .deel-solutions-menu__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 24px;
+  border-top: 1px solid rgba(27, 27, 27, 0.1);
+  background: #fff0d8;
+}
+
+.deel-clone-root .deel-solutions-menu__footer-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.deel-clone-root .deel-solutions-menu__footer-link {
+  padding: 0 16px;
+  border-right: 1px solid rgba(27, 27, 27, 0.16);
+  color: #1b1b1b;
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.deel-clone-root .deel-solutions-menu__footer-link:first-child {
+  padding-left: 0;
+}
+
+.deel-clone-root .deel-solutions-menu__footer-link:last-child {
+  border-right: 0;
+}
+
+.deel-clone-root .deel-solutions-menu__close {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #1b1b1b;
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.deel-clone-root .deel-solutions-menu__close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.deel-clone-root .deel-simple-menu {
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid rgba(27, 27, 27, 0.12);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.08);
+}
+
+.deel-clone-root .deel-simple-menu__link {
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #1b1b1b;
+  font-family: var(--font-inter);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.deel-clone-root .deel-simple-menu__link:hover,
+.deel-clone-root .deel-solutions-menu__offer-link:hover,
+.deel-clone-root .deel-solutions-menu__text-link:hover,
+.deel-clone-root .deel-solutions-menu__utility-card:hover,
+.deel-clone-root .deel-solutions-menu__footer-link:hover {
+  opacity: 0.84;
+}
+
 .deel-clone-root .deel-clone-band--speed .max-w-\[1312px\],
 .deel-clone-root .deel-clone-band--workforce .max-w-\[1312px\],
 .deel-clone-root .deel-clone-band--testimonials .max-w-container {
