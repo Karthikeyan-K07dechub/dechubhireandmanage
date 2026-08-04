@@ -126,9 +126,28 @@ export default function LandingPageDeel({
         return;
       }
 
-      if (href === '/solutions/payroll/' || href === '/solutions/payroll') {
+      if (
+        href === '/solutions/payroll/'
+        || href === '/solutions/payroll'
+        || href === '/solutions/payroll/eor/'
+        || href === '/solutions/payroll/eor'
+        || href === '/solutions/it/'
+        || href === '/solutions/it'
+        || href === '/solutions/benefits/'
+        || href === '/solutions/benefits'
+        || href === '/solutions/hire/'
+        || href === '/solutions/hire'
+        || href === '/solutions/hr/'
+        || href === '/solutions/hr'
+        || href === '/solutions/mobility/'
+        || href === '/solutions/mobility'
+        || href === '/solutions/services/'
+        || href === '/solutions/services'
+        || href === '/solutions/embedded/'
+        || href === '/solutions/embedded'
+      ) {
         event.preventDefault();
-        navigateToInternalPath('/solutions/payroll');
+        navigateToInternalPath(href);
         return;
       }
 

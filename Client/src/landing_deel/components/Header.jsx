@@ -8,19 +8,19 @@ const megaMenus = {
       {
         label: "Deel Payroll",
         description: "Pay teams locally or globally",
-        href: "/solutions/payroll/",
+        href: "/solutions/payroll",
         icon: "payroll",
       },
       {
         label: "Deel HR",
         description: "Plan & manage teams",
-        href: "/solutions/hr/",
+        href: "/solutions/hr",
         icon: "hr",
       },
       {
         label: "Deel IT",
         description: "Manage devices and access",
-        href: "/solutions/it/",
+        href: "/solutions/it",
         icon: "it",
       },
       {
@@ -32,7 +32,7 @@ const megaMenus = {
       {
         label: "Deel Hire",
         description: "Hire anyone, anywhere",
-        href: "/solutions/hire/",
+        href: "/solutions/hire",
         icon: "hire",
       },
       {
@@ -44,7 +44,7 @@ const megaMenus = {
       {
         label: "Deel Embedded",
         description: "Embed Deel in your platform",
-        href: "/solutions/embedded/",
+        href: "/solutions/embedded",
         icon: "embedded",
       },
       {
@@ -58,7 +58,7 @@ const megaMenus = {
       {
         label: "Employer of Record",
         description: "Hire and pay teams globally",
-        href: "/employer-of-record/",
+        href: "/solutions/payroll/eor",
         image: "/deel-assets/images/website-media.deel.com/thumbnail_hire_anywhere_2x_ad65b05cb4-3c13cc96.webp",
       },
       {
@@ -83,7 +83,7 @@ const megaMenus = {
     promo: {
       label: "Deel Payroll Overview",
       description: "Keep all global work in sync",
-      href: "/solutions/payroll/",
+      href: "/solutions/payroll",
       image: "/deel-assets/images/website-media.deel.com/Solutions_Image_1fe3692ef5_348057f282-6f263ffa.webp",
     },
     footerLinks: [
@@ -100,7 +100,7 @@ const megaMenus = {
       {
         label: "Hire anywhere",
         description: "Hire globally, fast and compliant",
-        href: "/solutions/hire/",
+        href: "/solutions/hire",
       },
       {
         label: "Run payroll globally",
@@ -110,17 +110,17 @@ const megaMenus = {
       {
         label: "Run payroll locally",
         description: "Process self-serve local payroll",
-        href: "/solutions/payroll/",
+        href: "/solutions/payroll",
       },
       {
         label: "Manage a global team",
         description: "Centralize HR for global teams",
-        href: "/solutions/hr/",
+        href: "/solutions/hr",
       },
       {
         label: "Elevate team performance",
         description: "Run goals, reviews, and development",
-        href: "/solutions/hr/",
+        href: "/solutions/hr",
       },
       {
         label: "Manage benefits across borders",
@@ -130,12 +130,12 @@ const megaMenus = {
       {
         label: "Ship devices",
         description: "Equip global teams with devices",
-        href: "/solutions/it/",
+        href: "/solutions/it",
       },
       {
         label: "Run global IT operations",
         description: "Standardize IT ops worldwide",
-        href: "/solutions/it/",
+        href: "/solutions/it",
       },
       {
         label: "Set up & manage entity",
@@ -195,12 +195,12 @@ const megaMenus = {
           {
             label: "HR teams",
             description: "Onboard and manage global teams",
-            href: "/solutions/hr/",
+            href: "/solutions/hr",
           },
           {
             label: "Finance teams",
             description: "Cut costs on global payroll",
-            href: "/solutions/payroll/",
+            href: "/solutions/payroll",
           },
           {
             label: "Legal teams",
@@ -210,7 +210,7 @@ const megaMenus = {
           {
             label: "IT teams",
             description: "Manage devices and access",
-            href: "/solutions/it/",
+            href: "/solutions/it",
           },
           {
             label: "Founders",

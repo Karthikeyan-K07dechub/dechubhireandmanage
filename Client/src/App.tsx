@@ -12,6 +12,13 @@ import NotificationPage from './pages/NotificationPage';
 import LandingPage from './pages/LandingPageDeel';
 import DeelVsCompetitorsPage from './pages/DeelVsCompetitorsPage';
 import DeelItPage from './pages/DeelItPage';
+import DeelHirePage from './pages/DeelHirePage';
+import DeelHrPage from './pages/DeelHrPage';
+import DeelEmbeddedPage from './pages/DeelEmbeddedPage';
+import DeelBenefitsPage from './pages/DeelBenefitsPage';
+import DeelMobilityPage from './pages/DeelMobilityPage';
+import DeelServicesPage from './pages/DeelServicesPage';
+import DeelEorPage from './pages/DeelEorPage';
 import PayrollSolutionsPage from './pages/PayrollSolutionsPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
 import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
@@ -38,6 +45,13 @@ type AppPage =
   | 'landing-react-new'
   | 'dechub-bridge-vs-competitors'
   | 'deel-it'
+  | 'deel-hire'
+  | 'deel-hr'
+  | 'deel-embedded'
+  | 'deel-benefits'
+  | 'deel-mobility'
+  | 'deel-services'
+  | 'deel-eor'
   | 'payroll-solutions'
   | 'landing-about'
   | 'landing-blog'
@@ -116,6 +130,34 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
 
   if (normalizedPath === '/solutions/it') {
     return { page: 'deel-it', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/hire') {
+    return { page: 'deel-hire', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/hr') {
+    return { page: 'deel-hr', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/embedded') {
+    return { page: 'deel-embedded', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/benefits') {
+    return { page: 'deel-benefits', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/mobility') {
+    return { page: 'deel-mobility', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/services') {
+    return { page: 'deel-services', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/payroll/eor') {
+    return { page: 'deel-eor', mode: 'login' };
   }
 
   if (normalizedPath === '/solutions/payroll') {
@@ -477,6 +519,27 @@ export default function App() {
       case 'deel-it':
         targetPath = '/solutions/it';
         break;
+      case 'deel-hire':
+        targetPath = '/solutions/hire';
+        break;
+      case 'deel-hr':
+        targetPath = '/solutions/hr';
+        break;
+      case 'deel-embedded':
+        targetPath = '/solutions/embedded';
+        break;
+      case 'deel-benefits':
+        targetPath = '/solutions/benefits';
+        break;
+      case 'deel-mobility':
+        targetPath = '/solutions/mobility';
+        break;
+      case 'deel-services':
+        targetPath = '/solutions/services';
+        break;
+      case 'deel-eor':
+        targetPath = '/solutions/payroll/eor';
+        break;
       case 'payroll-solutions':
         targetPath = '/solutions/payroll';
         break;
@@ -752,6 +815,34 @@ export default function App() {
 
   if (page === 'deel-it') {
     return <DeelItPage />;
+  }
+
+  if (page === 'deel-hire') {
+    return <DeelHirePage />;
+  }
+
+  if (page === 'deel-hr') {
+    return <DeelHrPage />;
+  }
+
+  if (page === 'deel-embedded') {
+    return <DeelEmbeddedPage />;
+  }
+
+  if (page === 'deel-benefits') {
+    return <DeelBenefitsPage />;
+  }
+
+  if (page === 'deel-mobility') {
+    return <DeelMobilityPage />;
+  }
+
+  if (page === 'deel-services') {
+    return <DeelServicesPage />;
+  }
+
+  if (page === 'deel-eor') {
+    return <DeelEorPage />;
   }
 
   if (page === 'payroll-solutions') {
