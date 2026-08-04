@@ -28,6 +28,20 @@ function normalizeLabel(value: string | null | undefined): string {
   return (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+function navigateToInternalPath(href: string): void {
+  const nextUrl = new URL(href, window.location.origin);
+  const normalizedPath = nextUrl.pathname.replace(/\/+$/, '') || '/';
+  const target = `${normalizedPath}${nextUrl.search}${nextUrl.hash}`;
+  const current = `${window.location.pathname.replace(/\/+$/, '') || '/'}${window.location.search}${window.location.hash}`;
+
+  if (target !== current) {
+    window.history.pushState({}, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
 export default function LandingPageDeel({
   onLogin,
   onGetStarted,
@@ -112,6 +126,12 @@ export default function LandingPageDeel({
         return;
       }
 
+      if (href === '/solutions/payroll/' || href === '/solutions/payroll') {
+        event.preventDefault();
+        navigateToInternalPath('/solutions/payroll');
+        return;
+      }
+
       if (label === 'solutions' || href.startsWith('/solutions/')) {
         event.preventDefault();
         document.getElementById('deel-solutions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -142,6 +162,15 @@ export default function LandingPageDeel({
         return;
       }
 
+      if (
+        href === '/dechub-bridge-vs-competitors/'
+        || href === '/dechub-bridge-vs-competitors'
+      ) {
+        event.preventDefault();
+        navigateToInternalPath('/dechub-bridge-vs-competitors');
+        return;
+      }
+
       if (href === '#') {
         event.preventDefault();
         onMarketplace();
@@ -150,6 +179,7 @@ export default function LandingPageDeel({
 
       if (href.startsWith('/')) {
         event.preventDefault();
+        navigateToInternalPath(href);
       }
     };
 

@@ -149,7 +149,7 @@ function Footer() {
                     Customer stories
                   </p>
                 </a>
-                <a href="/deel-vs-competitors/" className="mui-8141xw">
+                <a href="/dechub-bridge-vs-competitors/" className="mui-8141xw">
                   <p className="mui-1711c28">
                     Compare Dechub-Bridge
                   </p>

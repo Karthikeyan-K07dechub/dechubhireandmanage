@@ -110,6 +110,11 @@ function rewriteInternalLinks(documentFragment: Document) {
       return;
     }
 
+    if (href === '/deel-vs-competitors/') {
+      node.setAttribute('href', '/deel-vs-competitors');
+      return;
+    }
+
     if (href === '/blog/') {
       node.setAttribute('href', '/blog');
       return;
@@ -125,9 +130,19 @@ function rewriteInternalLinks(documentFragment: Document) {
       return;
     }
 
+    if (href === '/legal/privacy-policy/' || href === '/legal/privacy-policy') {
+      node.setAttribute('href', '/legal-pages/privacy-policy');
+      return;
+    }
+
     const blogPostMatch = href.match(/^\/blog\/([^/]+)\/$/);
     if (blogPostMatch) {
       node.setAttribute('href', `/blog/${blogPostMatch[1]}`);
+      return;
+    }
+
+    if (/^\/[A-Za-z0-9-]+(?:\/[A-Za-z0-9-]+)*\/$/.test(href)) {
+      node.setAttribute('href', href.slice(0, -1));
     }
   });
 }

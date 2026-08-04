@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import './styles.css';
 import CompanyAuthPage from './pages/CompanyAuthPage';
 import CompanyChoicePage from './pages/CompanyChoicePage';
@@ -10,6 +10,9 @@ import MarketplacePaymentPage from './pages/MarketplacePaymentPage';
 import MarketplaceTalentRequestsPage from './pages/MarketplaceTalentRequestsPage';
 import NotificationPage from './pages/NotificationPage';
 import LandingPage from './pages/LandingPageDeel';
+import DeelVsCompetitorsPage from './pages/DeelVsCompetitorsPage';
+import DeelItPage from './pages/DeelItPage';
+import PayrollSolutionsPage from './pages/PayrollSolutionsPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
 import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
 import AdminLoginPage from './pages/Admin/AdminLoginPage';
@@ -33,6 +36,9 @@ type AppPage =
   | 'landing'
   | 'landing-react'
   | 'landing-react-new'
+  | 'dechub-bridge-vs-competitors'
+  | 'deel-it'
+  | 'payroll-solutions'
   | 'landing-about'
   | 'landing-blog'
   | 'landing-blog-post'
@@ -102,6 +108,18 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
 
   if (normalizedPath === '/landing-react-new') {
     return { page: 'landing-react-new', mode: 'login' };
+  }
+
+  if (normalizedPath === '/dechub-bridge-vs-competitors') {
+    return { page: 'dechub-bridge-vs-competitors', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/it') {
+    return { page: 'deel-it', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/payroll') {
+    return { page: 'payroll-solutions', mode: 'login' };
   }
 
   if (normalizedPath === '/about') {
@@ -343,6 +361,10 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [page]);
+
   useEffect(() => {
     if ((page === 'admin-talent-requests' || page === 'admin-talent-request-detail') && !adminTokenStore.getAccess()) {
       setPage('admin-login');
@@ -448,6 +470,15 @@ export default function App() {
         break;
       case 'landing-react-new':
         targetPath = '/landing-react-new';
+        break;
+      case 'dechub-bridge-vs-competitors':
+        targetPath = '/dechub-bridge-vs-competitors';
+        break;
+      case 'deel-it':
+        targetPath = '/solutions/it';
+        break;
+      case 'payroll-solutions':
+        targetPath = '/solutions/payroll';
         break;
       case 'landing-about':
         targetPath = '/about';
@@ -713,6 +744,18 @@ export default function App() {
 
   if (page === 'landing-about') {
     return <StandaloneDocumentPage sourcePath="/about/index.html" />;
+  }
+
+  if (page === 'dechub-bridge-vs-competitors') {
+    return <DeelVsCompetitorsPage />;
+  }
+
+  if (page === 'deel-it') {
+    return <DeelItPage />;
+  }
+
+  if (page === 'payroll-solutions') {
+    return <PayrollSolutionsPage />;
   }
 
   if (page === 'landing-blog') {

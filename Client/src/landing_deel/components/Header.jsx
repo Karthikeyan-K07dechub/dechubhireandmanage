@@ -88,7 +88,7 @@ const megaMenus = {
     },
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/deel-vs-competitors/" },
+      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
@@ -161,7 +161,7 @@ const megaMenus = {
     },
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/deel-vs-competitors/" },
+      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
@@ -249,7 +249,7 @@ const megaMenus = {
     ],
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/deel-vs-competitors/" },
+      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
@@ -275,7 +275,7 @@ const megaMenus = {
       {
         title: "THE DEEL ADVANTAGE",
         items: [
-          { label: "Compare Deel", href: "/deel-vs-competitors/" },
+          { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
           { label: "Unmatched security", href: "/security/" },
           { label: "Continuous Compliance", href: "/compliance/" },
           { label: "Customer stories", href: "/case-studies/" },
@@ -296,7 +296,7 @@ const megaMenus = {
     ],
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/deel-vs-competitors/" },
+      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
