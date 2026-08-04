@@ -64,7 +64,7 @@ const megaMenus = {
       {
         label: "Hire Contractors",
         description: "Simplify global contractor hiring",
-        href: "/contractors/",
+        href: "/solutions/payroll/contractors",
         image: "/deel-assets/images/website-media.deel.com/thumbnail_hire_ba47790a6a-fa900929.webp",
       },
       {
@@ -429,6 +429,20 @@ function MenuFeatureIcon({ kind }) {
   }
 }
 
+function navigateToInternalPath(href) {
+  const nextUrl = new URL(href, window.location.origin);
+  const normalizedPath = nextUrl.pathname.replace(/\/+$/, "") || "/";
+  const target = `${normalizedPath}${nextUrl.search}${nextUrl.hash}`;
+  const current = `${window.location.pathname.replace(/\/+$/, "") || "/"}${window.location.search}${window.location.hash}`;
+
+  if (target !== current) {
+    window.history.pushState({}, "", target);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
 function Header() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [closingDropdown, setClosingDropdown] = useState(null);
@@ -492,6 +506,19 @@ function Header() {
   const blockDropdownNavigation = (event) => {
     event.preventDefault();
     event.stopPropagation();
+  };
+
+  const handleInternalNavigation = (event, href) => {
+    if (!href || !href.startsWith("/")) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setClosingDropdown(null);
+    setActiveDropdown(null);
+    setMobileMenuOpen(false);
+    navigateToInternalPath(href);
   };
 
   const openDropdownOnHover = (label) => {
@@ -607,7 +634,7 @@ function Header() {
                                       key={item.href + item.label}
                                       href={item.href}
                                       className="deel-solutions-menu__text-link"
-                                      onClick={() => setActiveDropdown(null)}
+                                      onClick={(event) => handleInternalNavigation(event, item.href)}
                                     >
                                       <span className="deel-solutions-menu__title deel-solutions-menu__title--inline">
                                         {item.label}
@@ -632,7 +659,7 @@ function Header() {
                                   key={item.href}
                                   href={item.href}
                                   className="deel-solutions-menu__footer-link"
-                                  onClick={() => setActiveDropdown(null)}
+                                  onClick={(event) => handleInternalNavigation(event, item.href)}
                                 >
                                   {item.label}
                                 </a>
@@ -660,7 +687,7 @@ function Header() {
                                       key={item.href + item.label}
                                       href={item.href}
                                       className="deel-solutions-menu__text-link"
-                                      onClick={() => setActiveDropdown(null)}
+                                      onClick={(event) => handleInternalNavigation(event, item.href)}
                                     >
                                       <span className="deel-solutions-menu__title">{item.label}</span>
                                       <span className="deel-solutions-menu__text">{item.description}</span>
@@ -673,7 +700,7 @@ function Header() {
                             <a
                               href={menu.promo.href}
                               className="deel-solutions-menu__promo"
-                              onClick={() => setActiveDropdown(null)}
+                              onClick={(event) => handleInternalNavigation(event, menu.promo.href)}
                             >
                               <img
                                 src={menu.promo.image}
@@ -697,7 +724,7 @@ function Header() {
                                   key={item.href}
                                   href={item.href}
                                   className="deel-solutions-menu__footer-link"
-                                  onClick={() => setActiveDropdown(null)}
+                                  onClick={(event) => handleInternalNavigation(event, item.href)}
                                 >
                                   {item.label}
                                 </a>
@@ -725,7 +752,7 @@ function Header() {
                                       key={item.href}
                                       href={item.href}
                                       className="deel-solutions-menu__offer-link"
-                                      onClick={() => setActiveDropdown(null)}
+                                      onClick={(event) => handleInternalNavigation(event, item.href)}
                                     >
                                       <span className="deel-solutions-menu__icon-box" aria-hidden="true">
                                         <MenuFeatureIcon kind={item.icon} />
@@ -745,7 +772,7 @@ function Header() {
                                     key={item.href}
                                     href={item.href}
                                     className="deel-solutions-menu__utility-card"
-                                    onClick={() => setActiveDropdown(null)}
+                                    onClick={(event) => handleInternalNavigation(event, item.href)}
                                   >
                                     <span className="deel-solutions-menu__utility-copy">
                                       <span className="deel-solutions-menu__utility-title">{item.label}</span>
@@ -765,7 +792,7 @@ function Header() {
                             <a
                               href={menu.promo.href}
                               className="deel-solutions-menu__promo"
-                              onClick={() => setActiveDropdown(null)}
+                              onClick={(event) => handleInternalNavigation(event, menu.promo.href)}
                             >
                               <img
                                 src={menu.promo.image}
@@ -790,7 +817,7 @@ function Header() {
                                   key={item.href}
                                   href={item.href}
                                   className="deel-solutions-menu__footer-link"
-                                  onClick={() => setActiveDropdown(null)}
+                                  onClick={(event) => handleInternalNavigation(event, item.href)}
                                 >
                                   {item.label}
                                 </a>
@@ -813,7 +840,7 @@ function Header() {
                               key={item.href}
                               href={item.href}
                               className="deel-simple-menu__link"
-                              onClick={() => setActiveDropdown(null)}
+                              onClick={(event) => handleInternalNavigation(event, item.href)}
                             >
                               {item.label}
                             </a>
@@ -826,12 +853,12 @@ function Header() {
               );
             })}
             <div className="MuiBox-root mui-1d9b0hw">
-              <a href="/pricing/" className="mui-1moi9ht">
+              <a href="/pricing/" className="mui-1moi9ht" onClick={(event) => handleInternalNavigation(event, "/pricing/")}>
                 Pricing
               </a>
             </div>
             <div className="MuiBox-root mui-1d9b0hw">
-              <a href="/marketplace" className="mui-1moi9ht">
+              <a href="/marketplace" className="mui-1moi9ht" onClick={(event) => handleInternalNavigation(event, "/marketplace")}>
                 Marketplace
               </a>
             </div>
@@ -839,7 +866,7 @@ function Header() {
 
           <div className="items-center gap-2 flex justify-end">
             <div className="MuiBox-root mui-fy11xf">
-              <a href="/get-started" title="Log in" target="_self" aria-label="Log in" className="mui-15k05j0">
+              <a href="/company/login" title="Log in" target="_self" aria-label="Log in" className="mui-15k05j0">
                 <button type="button" className="hidden-phone mui-ti8o1k">
                   Log in
                 </button>
@@ -877,14 +904,19 @@ function Header() {
                     {(menu.featured
                       ? menu.offerItems ?? menu.columns?.flatMap((column) => column.items) ?? []
                       : menu.items).map((item) => (
-                      <a key={item.href} href={item.href} className="mui-15k05j0" onClick={() => setMobileMenuOpen(false)}>
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        className="mui-15k05j0"
+                        onClick={(event) => handleInternalNavigation(event, item.href)}
+                      >
                         {item.label}
                       </a>
                     ))}
                   </div>
                 </div>
               ))}
-              <a href="/pricing/" className="mui-15k05j0" onClick={() => setMobileMenuOpen(false)}>
+              <a href="/pricing/" className="mui-15k05j0" onClick={(event) => handleInternalNavigation(event, "/pricing/")}>
                 Pricing
               </a>
             </div>

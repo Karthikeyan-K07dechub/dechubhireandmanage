@@ -19,7 +19,10 @@ import DeelBenefitsPage from './pages/DeelBenefitsPage';
 import DeelMobilityPage from './pages/DeelMobilityPage';
 import DeelServicesPage from './pages/DeelServicesPage';
 import DeelEorPage from './pages/DeelEorPage';
+import DeelContractorsPage from './pages/DeelContractorsPage';
 import PayrollSolutionsPage from './pages/PayrollSolutionsPage';
+import DeelIntegrationsPage from './pages/DeelIntegrationsPage';
+import DeelOpenApiPage from './pages/DeelOpenApiPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
 import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
 import AdminLoginPage from './pages/Admin/AdminLoginPage';
@@ -52,7 +55,10 @@ type AppPage =
   | 'deel-mobility'
   | 'deel-services'
   | 'deel-eor'
+  | 'deel-contractors'
   | 'payroll-solutions'
+  | 'deel-integrations'
+  | 'deel-open-api'
   | 'landing-about'
   | 'landing-blog'
   | 'landing-blog-post'
@@ -160,8 +166,20 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
     return { page: 'deel-eor', mode: 'login' };
   }
 
+  if (normalizedPath === '/solutions/payroll/contractors') {
+    return { page: 'deel-contractors', mode: 'login' };
+  }
+
   if (normalizedPath === '/solutions/payroll') {
     return { page: 'payroll-solutions', mode: 'login' };
+  }
+
+  if (normalizedPath === '/integrations') {
+    return { page: 'deel-integrations', mode: 'login' };
+  }
+
+  if (normalizedPath === '/solutions/open-api') {
+    return { page: 'deel-open-api', mode: 'login' };
   }
 
   if (normalizedPath === '/about') {
@@ -540,8 +558,17 @@ export default function App() {
       case 'deel-eor':
         targetPath = '/solutions/payroll/eor';
         break;
+      case 'deel-contractors':
+        targetPath = '/solutions/payroll/contractors';
+        break;
       case 'payroll-solutions':
         targetPath = '/solutions/payroll';
+        break;
+      case 'deel-integrations':
+        targetPath = '/integrations';
+        break;
+      case 'deel-open-api':
+        targetPath = '/solutions/open-api';
         break;
       case 'landing-about':
         targetPath = '/about';
@@ -845,8 +872,20 @@ export default function App() {
     return <DeelEorPage />;
   }
 
+  if (page === 'deel-contractors') {
+    return <DeelContractorsPage />;
+  }
+
   if (page === 'payroll-solutions') {
     return <PayrollSolutionsPage />;
+  }
+
+  if (page === 'deel-integrations') {
+    return <DeelIntegrationsPage />;
+  }
+
+  if (page === 'deel-open-api') {
+    return <DeelOpenApiPage />;
   }
 
   if (page === 'landing-blog') {

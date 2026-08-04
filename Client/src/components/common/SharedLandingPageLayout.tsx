@@ -7,6 +7,20 @@ import Footer from '../../landing_deel/components/Footer.jsx';
 
 const BOOK_DEMO_LABELS = new Set(['book a demo']);
 const GET_STARTED_LABELS = new Set(['get started', 'start free']);
+const INTERNAL_SOLUTION_PATHS = new Set([
+  '/solutions/payroll',
+  '/solutions/payroll/eor',
+  '/solutions/payroll/contractors',
+  '/solutions/it',
+  '/solutions/benefits',
+  '/solutions/hire',
+  '/solutions/hr',
+  '/solutions/mobility',
+  '/solutions/services',
+  '/solutions/embedded',
+  '/solutions/open-api',
+  '/integrations',
+]);
 
 function normalizeLabel(value: string | null | undefined): string {
   return (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -52,6 +66,10 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
     }
 
     const handleClick = (event: MouseEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+
       const target = event.target as HTMLElement | null;
       const anchorElement = target?.closest('a') as HTMLAnchorElement | null;
       const buttonElement = target?.closest('button') as HTMLButtonElement | null;
@@ -68,6 +86,7 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
       const label = normalizeLabel(actionElement.textContent);
       const anchor = anchorElement ?? (actionElement.tagName === 'A' ? (actionElement as HTMLAnchorElement) : null);
       const href = anchor?.getAttribute('href')?.trim() ?? '';
+      const normalizedHref = href ? (new URL(href, window.location.origin).pathname.replace(/\/+$/, '') || '/') : '';
 
       if (BOOK_DEMO_LABELS.has(label) || href.includes('book-a-demo')) {
         event.preventDefault();
@@ -78,6 +97,12 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
       if (GET_STARTED_LABELS.has(label) || href === '/get-started') {
         event.preventDefault();
         navigateToInternalPath('/get-started');
+        return;
+      }
+
+      if (INTERNAL_SOLUTION_PATHS.has(normalizedHref)) {
+        event.preventDefault();
+        navigateToInternalPath(normalizedHref);
         return;
       }
 
