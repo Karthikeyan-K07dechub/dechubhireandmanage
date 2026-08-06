@@ -5,7 +5,7 @@ import '../../landing_deel/overrides.css';
 import Header from '../../landing_deel/components/Header.jsx';
 import Footer from '../../landing_deel/components/Footer.jsx';
 
-const BOOK_DEMO_LABELS = new Set(['book a demo']);
+const BOOK_DEMO_LABELS = new Set(['book a demo', 'get started with deel']);
 const GET_STARTED_LABELS = new Set(['get started', 'start free']);
 const INTERNAL_SOLUTION_PATHS = new Set([
   '/solutions/payroll',
@@ -88,7 +88,12 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
       const href = anchor?.getAttribute('href')?.trim() ?? '';
       const normalizedHref = href ? (new URL(href, window.location.origin).pathname.replace(/\/+$/, '') || '/') : '';
 
-      if (BOOK_DEMO_LABELS.has(label) || href.includes('book-a-demo')) {
+      const isDemoTrigger =
+        actionElement.getAttribute('data-demo-trigger') === 'true' ||
+        BOOK_DEMO_LABELS.has(label) ||
+        href.includes('book-a-demo');
+
+      if (isDemoTrigger) {
         event.preventDefault();
         setIsTalentRequestModalOpen(true);
         return;

@@ -303,18 +303,173 @@ export default function DeelVsCompetitorsPage() {
       }
     });
 
+    const speedSectionHeading = Array.from(root.querySelectorAll<HTMLElement>('h2')).find((heading) =>
+      heading.textContent?.replace(/\s+/g, ' ').trim().includes('Faster, moreflexible payroll'),
+    );
+    const speedSectionImage = speedSectionHeading
+      ?.closest('.mui-mpqocb')
+      ?.querySelector<HTMLImageElement>('img');
+    const speedSectionCallToAction = speedSectionHeading
+      ?.closest('.mui-mpqocb')
+      ?.querySelector<HTMLButtonElement>('button');
+
+    if (speedSectionImage) {
+      speedSectionImage.src = '/dechub-bridge-vs-competitors/dechub-bridge-payroll-cutoff.png';
+      speedSectionImage.srcset =
+        '/dechub-bridge-vs-competitors/dechub-bridge-payroll-cutoff.png 640w';
+      speedSectionImage.alt = 'Dechub Bridge talent deployment speed comparison';
+    }
+
+    if (speedSectionCallToAction) {
+      speedSectionCallToAction.textContent = 'Speak to sales';
+      speedSectionCallToAction.setAttribute('data-demo-trigger', 'true');
+    }
+
+    const bridgeWordmarkSrc = '/deel-assets/images/website-media.deel.com/logo.png';
+    const deelWordmarkMatchers = [
+      '/deel-vs-competitors/assets/svg/Wordmark_1c63e597c1-6a57a6f843.svg',
+      '/solutions/payroll/assets/svg/Wordmark_1c63e597c1-6a57a6f843.svg',
+      '/solutions/benefits/assets/svg/Wordmark_1c63e597c1-6a57a6f843.svg',
+      '/solutions/services/assets/svg/Wordmark_1c63e597c1-6a57a6f843.svg',
+      '/solutions/hr/assets/svg/Wordmark_1c63e597c1-6a57a6f843.svg',
+      '/solutions/embedded/assets/svg/Wordmark_1c63e597c1-6a57a6f843.svg',
+    ];
+
+    const swapDeelWordmarkImage = (logoImage: HTMLImageElement) => {
+      const src = logoImage.getAttribute('src') ?? '';
+      if (!deelWordmarkMatchers.some((matcher) => src.includes(matcher))) {
+        return;
+      }
+
+      logoImage.src = bridgeWordmarkSrc;
+      logoImage.srcset = `${bridgeWordmarkSrc} 640w`;
+      logoImage.alt = 'Bridge logo';
+      logoImage.style.maxWidth = '190px';
+      logoImage.style.width = '190px';
+      logoImage.style.height = '66px';
+      logoImage.style.objectFit = 'contain';
+    };
+
+    const renderBridgeHeaderLogo = (cell: HTMLTableCellElement) => {
+      const currentImage = cell.querySelector<HTMLImageElement>('img[data-bridge-wordmark="true"]');
+      if (currentImage) {
+        currentImage.removeAttribute('width');
+        currentImage.removeAttribute('height');
+        currentImage.style.setProperty('width', '70%', 'important');
+        currentImage.style.setProperty('max-width', '70%', 'important');
+        currentImage.style.setProperty('height', '66px', 'important');
+        return;
+      }
+
+      cell.replaceChildren();
+
+      const bridgeLogo = document.createElement('img');
+      bridgeLogo.src = bridgeWordmarkSrc;
+      bridgeLogo.srcset = `${bridgeWordmarkSrc} 640w`;
+      bridgeLogo.alt = 'Bridge logo';
+      bridgeLogo.dataset.bridgeWordmark = 'true';
+      bridgeLogo.removeAttribute('width');
+      bridgeLogo.removeAttribute('height');
+      bridgeLogo.style.setProperty('max-width', '70%', 'important');
+      bridgeLogo.style.setProperty('width', '70%', 'important');
+      bridgeLogo.style.setProperty('height', '66px', 'important');
+      bridgeLogo.style.objectFit = 'contain';
+      bridgeLogo.style.display = 'block';
+      bridgeLogo.style.margin = '0 auto';
+      cell.style.minWidth = '220px';
+      cell.style.paddingTop = '28px';
+      cell.style.paddingBottom = '28px';
+
+      cell.appendChild(bridgeLogo);
+    };
+
+    root.querySelectorAll<HTMLElement>('.mui-1yg18mo').forEach((logoWrap) => {
+      const logoImage = logoWrap.querySelector<HTMLImageElement>('img');
+      if (!logoImage) {
+        return;
+      }
+
+      swapDeelWordmarkImage(logoImage);
+    });
+
+    const ownedEntitiesHeading = Array.from(root.querySelectorAll<HTMLElement>('h2')).find((heading) =>
+      heading.textContent
+        ?.replace(/\s+/g, ' ')
+        .trim()
+        .includes('Benefits of using our owned entities vs. aggregator in-country partners'),
+    );
+
+    const ownedEntitiesSection = ownedEntitiesHeading?.closest('.mui-mpqocb');
+    const ownedEntitiesBridgeHeaderCell = ownedEntitiesSection?.querySelector<HTMLTableCellElement>(
+      'table thead th:nth-child(2)',
+    );
+
+    ownedEntitiesSection?.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+      swapDeelWordmarkImage(image);
+    });
+
+    ownedEntitiesSection?.querySelectorAll<HTMLElement>('p, th, td, div, span').forEach((node) => {
+      if (node.textContent?.replace(/\s+/g, ' ').trim() === 'deel.') {
+        node.textContent = 'Bridge';
+      }
+    });
+
+    if (ownedEntitiesBridgeHeaderCell) {
+      renderBridgeHeaderLogo(ownedEntitiesBridgeHeaderCell);
+    }
+
+    const ownedEntitiesBridgeHeaderImage = ownedEntitiesSection?.querySelector<HTMLImageElement>(
+      'table thead th:nth-child(2) img',
+    );
+    const ownedEntitiesCallToAction = ownedEntitiesSection?.querySelector<HTMLButtonElement>(
+      'table tbody tr:last-child td:nth-child(2) button',
+    );
+
+    if (ownedEntitiesBridgeHeaderImage) {
+      ownedEntitiesBridgeHeaderImage.removeAttribute('width');
+      ownedEntitiesBridgeHeaderImage.removeAttribute('height');
+      ownedEntitiesBridgeHeaderImage.style.setProperty('width', '70%', 'important');
+      ownedEntitiesBridgeHeaderImage.style.setProperty('max-width', '70%', 'important');
+      ownedEntitiesBridgeHeaderImage.style.setProperty('height', '66px', 'important');
+    }
+
+    if (ownedEntitiesCallToAction) {
+      ownedEntitiesCallToAction.setAttribute('data-demo-trigger', 'true');
+    }
+
+    root.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+      swapDeelWordmarkImage(image);
+    });
+
+    root.querySelectorAll<HTMLElement>('p, th, td, div, span').forEach((node) => {
+      if (node.closest('header, nav')) {
+        return;
+      }
+
+      if (node.textContent?.replace(/\s+/g, ' ').trim() === 'deel.') {
+        node.textContent = 'Bridge';
+      }
+    });
+
     const embeddedG2Widget = root.querySelector<HTMLIFrameElement>('#g2-crowd-widget-default');
-    const g2WidgetContainer = embeddedG2Widget?.parentElement;
+    const g2MomentumSection = embeddedG2Widget?.closest<HTMLElement>('.mui-mpqocb');
+    const g2WidgetPanel = embeddedG2Widget?.closest<HTMLElement>('.mui-5mw997');
     const g2WidgetCallToAction = embeddedG2Widget
       ?.closest('.mui-mpqocb')
       ?.querySelector<HTMLAnchorElement>('a[href="#"]');
+    const g2Disclaimer = Array.from(root.querySelectorAll<HTMLElement>('p')).find((node) =>
+      node.textContent
+        ?.replace(/\s+/g, ' ')
+        .trim()
+        .includes('The data coming from G2 was collected as of April 2025'),
+    );
 
-    if (embeddedG2Widget) {
+    if (g2MomentumSection) {
+      g2MomentumSection.remove();
+    } else if (g2WidgetPanel) {
+      g2WidgetPanel.remove();
+    } else if (embeddedG2Widget) {
       embeddedG2Widget.remove();
-    }
-
-    if (g2WidgetContainer && !g2WidgetContainer.textContent?.trim()) {
-      g2WidgetContainer.remove();
     }
 
     if (g2WidgetCallToAction) {
@@ -322,6 +477,177 @@ export default function DeelVsCompetitorsPage() {
       g2WidgetCallToAction.setAttribute('role', 'button');
       g2WidgetCallToAction.setAttribute('aria-disabled', 'true');
       g2WidgetCallToAction.style.pointerEvents = 'none';
+    }
+
+    g2Disclaimer?.remove();
+
+    root.querySelector<HTMLElement>('.mui-127lg40')?.remove();
+
+    const supportFiguresSection = Array.from(
+      root.querySelectorAll<HTMLElement>('.key-figures-wrapper .mui-15w27yj'),
+    ).find((section) =>
+      section.textContent
+        ?.replace(/\s+/g, ' ')
+        .trim()
+        .includes('Elevating customer support to new heights'),
+    );
+
+    if (supportFiguresSection) {
+      const leftContentWrap = supportFiguresSection.querySelector<HTMLElement>('.mui-w3juvo');
+      const rightStatsWrap = supportFiguresSection.querySelector<HTMLElement>('.mui-18v995w');
+      const heading = supportFiguresSection.querySelector<HTMLElement>('.mui-w3juvo .mui-6cjdbr');
+      const paragraph = supportFiguresSection.querySelector<HTMLElement>('.mui-w3juvo .mui-4qpmvq');
+      const statCards = supportFiguresSection.querySelectorAll<HTMLElement>('.mui-18v995w .mui-1v2rawv');
+      const supportStats = [
+        {
+          title: 'Faster hiring cycles',
+          description: 'through AI-assisted matching and coordinated delivery support',
+        },
+        {
+          title: 'Pre-vetted talent',
+          description:
+            'across engineering, AI, product, design, marketing, operations, and support',
+        },
+        {
+          title: 'End-to-end coordination',
+          description: 'from talent discovery to onboarding and ongoing execution',
+        },
+        {
+          title: 'Scalable delivery',
+          description: 'for individual roles, flexible teams, and business-critical projects',
+        },
+      ];
+
+      if (heading) {
+        heading.textContent = 'Elevating workforce delivery with smarter support';
+      }
+
+      if (paragraph) {
+        paragraph.textContent =
+          'Dechub Bridge combines technology, talent operations, and hands-on support to help businesses move faster with less friction. From sourcing and coordination to execution and scale, our platform is designed to keep teams supported, workflows efficient, and outcomes consistently high.';
+      }
+
+      statCards.forEach((card, index) => {
+        const stat = supportStats[index];
+        if (!stat) {
+          return;
+        }
+
+        const title = card.querySelector<HTMLElement>('.mui-1g5bblc .mui-1f0g2vh');
+        const description = card.querySelector<HTMLElement>('.mui-n08czm');
+
+        if (title) {
+          title.textContent = stat.title;
+        }
+
+        if (description) {
+          description.textContent = stat.description;
+        }
+      });
+
+      const alignSupportContent = () => {
+        if (!leftContentWrap || !rightStatsWrap) {
+          return;
+        }
+
+        leftContentWrap.style.marginTop = '0';
+        leftContentWrap.style.marginBottom = '0';
+        leftContentWrap.style.transform = '';
+
+        const leftHeight = leftContentWrap.offsetHeight;
+        const rightHeight = rightStatsWrap.offsetHeight;
+
+        if (!leftHeight || !rightHeight || rightHeight <= leftHeight) {
+          return;
+        }
+
+        const offset = Math.max((rightHeight - leftHeight) / 2, 0);
+        leftContentWrap.style.marginTop = `${offset}px`;
+        leftContentWrap.style.marginBottom = `${offset}px`;
+      };
+
+      alignSupportContent();
+      window.requestAnimationFrame(alignSupportContent);
+      window.setTimeout(alignSupportContent, 120);
+    }
+
+    const finalMetricsSection =
+      Array.from(root.querySelectorAll<HTMLElement>('.key-figures-wrapper .mui-57ckbi')).at(-1) ??
+      null;
+
+      if (finalMetricsSection) {
+        const metricCards = finalMetricsSection.querySelectorAll<HTMLElement>('.mui-179v373');
+      const metricsGrid = finalMetricsSection.querySelector<HTMLElement>('.mui-ze9kid');
+        const ctaWrap = finalMetricsSection.querySelector<HTMLElement>('.mui-74zl7b');
+        const ctaButton = finalMetricsSection.querySelector<HTMLButtonElement>('.mui-74zl7b button');
+      const metrics = [
+        {
+          value: '150+',
+          label: 'pre-vetted skill areas',
+        },
+        {
+          value: '+40,000',
+          label: 'curated talent profiles and candidate signals',
+        },
+        {
+          value: 'AI-powered',
+          label: 'matching, screening, and workflow support',
+        },
+        {
+          value: 'End-to-end',
+          label: 'hiring, coordination, and delivery support',
+        },
+      ];
+
+      metricCards.forEach((card, index) => {
+        const metric = metrics[index];
+        if (!metric) {
+          return;
+        }
+
+        const value = card.querySelector<HTMLElement>('.key-fig-title');
+        const label = card.querySelector<HTMLElement>('.key-fig-subtitle');
+
+        if (value) {
+          value.textContent = metric.value;
+        }
+
+        if (label) {
+          label.textContent = metric.label;
+        }
+
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.alignItems = 'center';
+        card.style.justifyContent = 'flex-start';
+        card.style.textAlign = 'center';
+
+        if (value) {
+          value.style.textAlign = 'center';
+          value.style.width = '100%';
+        }
+
+        if (label) {
+          label.style.textAlign = 'center';
+          label.style.width = '100%';
+        }
+      });
+
+      if (metricsGrid) {
+        metricsGrid.style.alignItems = 'center';
+      }
+
+      if (ctaWrap) {
+        ctaWrap.style.display = 'flex';
+        ctaWrap.style.justifyContent = 'center';
+        ctaWrap.style.width = '100%';
+        ctaWrap.style.marginTop = '28px';
+      }
+
+      if (ctaButton) {
+        ctaButton.textContent = 'Book a demo';
+        ctaButton.setAttribute('data-demo-trigger', 'true');
+      }
     }
 
     const handleAnchorClick = (event: MouseEvent) => {
@@ -374,6 +700,16 @@ export default function DeelVsCompetitorsPage() {
 
     const cleanupExploreMoreSlider = wireSlider(root, 'nav-explore-more', 'explore-more');
     const cleanupTestimonialsSlider = wireSlider(root, 'nav-testimonials-slider-832', 'testimonials-slider-832');
+    const ownedEntitiesHeaderObserver =
+      ownedEntitiesBridgeHeaderCell &&
+      new MutationObserver(() => {
+        renderBridgeHeaderLogo(ownedEntitiesBridgeHeaderCell);
+      });
+
+    ownedEntitiesHeaderObserver?.observe(ownedEntitiesBridgeHeaderCell, {
+      childList: true,
+      subtree: true,
+    });
 
     root.addEventListener('click', handleAnchorClick);
 
@@ -381,6 +717,7 @@ export default function DeelVsCompetitorsPage() {
       root.removeEventListener('click', handleAnchorClick);
       cleanupExploreMoreSlider();
       cleanupTestimonialsSlider();
+      ownedEntitiesHeaderObserver?.disconnect();
     };
   }, []);
 
