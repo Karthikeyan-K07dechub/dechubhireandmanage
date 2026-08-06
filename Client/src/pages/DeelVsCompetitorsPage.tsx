@@ -571,16 +571,18 @@ export default function DeelVsCompetitorsPage() {
       window.setTimeout(alignSupportContent, 120);
     }
 
+    const finalMetricsSections = Array.from(
+      root.querySelectorAll<HTMLElement>('.key-figures-wrapper .mui-57ckbi'),
+    );
     const finalMetricsSection =
-      Array.from(root.querySelectorAll<HTMLElement>('.key-figures-wrapper .mui-57ckbi')).at(-1) ??
-      null;
+      finalMetricsSections.length > 0 ? finalMetricsSections[finalMetricsSections.length - 1] : null;
 
-      if (finalMetricsSection) {
-        const metricCards = finalMetricsSection.querySelectorAll<HTMLElement>('.mui-179v373');
+    if (finalMetricsSection) {
+      const metricCards = finalMetricsSection.querySelectorAll<HTMLElement>('.mui-179v373');
       const metricsGrid = finalMetricsSection.querySelector<HTMLElement>('.mui-ze9kid');
-        const ctaWrap = finalMetricsSection.querySelector<HTMLElement>('.mui-74zl7b');
-        const ctaButton = finalMetricsSection.querySelector<HTMLButtonElement>('.mui-74zl7b button');
-      const metrics = [
+      const ctaWrap = finalMetricsSection.querySelector<HTMLElement>('.mui-74zl7b');
+      const ctaButton = finalMetricsSection.querySelector<HTMLButtonElement>('.mui-74zl7b button');
+      const metrics: Array<{ value: string; label: string }> = [
         {
           value: '150+',
           label: 'pre-vetted skill areas',
@@ -599,7 +601,7 @@ export default function DeelVsCompetitorsPage() {
         },
       ];
 
-      metricCards.forEach((card, index) => {
+      metricCards.forEach((card: HTMLElement, index: number) => {
         const metric = metrics[index];
         if (!metric) {
           return;
@@ -706,10 +708,12 @@ export default function DeelVsCompetitorsPage() {
         renderBridgeHeaderLogo(ownedEntitiesBridgeHeaderCell);
       });
 
-    ownedEntitiesHeaderObserver?.observe(ownedEntitiesBridgeHeaderCell, {
-      childList: true,
-      subtree: true,
-    });
+    if (ownedEntitiesHeaderObserver && ownedEntitiesBridgeHeaderCell) {
+      ownedEntitiesHeaderObserver.observe(ownedEntitiesBridgeHeaderCell, {
+        childList: true,
+        subtree: true,
+      });
+    }
 
     root.addEventListener('click', handleAnchorClick);
 
