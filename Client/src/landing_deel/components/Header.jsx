@@ -6,50 +6,50 @@ const megaMenus = {
     offerTitle: "WHAT WE OFFER",
     offerItems: [
       {
-        label: "Deel Payroll",
-        description: "Pay teams locally or globally",
+        label: "Dechub-Bridge Payroll",
+        description: "Run payroll across the US and India",
         href: "/solutions/payroll",
         icon: "payroll",
       },
       {
-        label: "Deel HR",
+        label: "Dechub-Bridge HR",
         description: "Plan & manage teams",
         href: "/solutions/hr",
         icon: "hr",
       },
       {
-        label: "Deel IT",
+        label: "Dechub-Bridge IT",
         description: "Manage devices and access",
         href: "/solutions/it",
         icon: "it",
       },
       {
-        label: "Deel Benefits",
-        description: "Offer benefits worldwide",
+        label: "Dechub-Bridge Benefits",
+        description: "Manage benefits for US and India teams",
         href: "/solutions/benefits/",
         icon: "benefits",
       },
       {
-        label: "Deel Hire",
-        description: "Hire anyone, anywhere",
+        label: "Dechub-Bridge Hire",
+        description: "Hire for US and India teams",
         href: "/solutions/hire",
         icon: "hire",
       },
       {
-        label: "Deel Mobility",
-        description: "Manage visas & relocation",
+        label: "Dechub-Bridge Mobility",
+        description: "Support mobility for US and India hires",
         href: "/solutions/mobility/",
         icon: "mobility",
       },
       {
-        label: "Deel Embedded",
-        description: "Embed Deel in your platform",
+        label: "Dechub-Bridge Embedded",
+        description: "Embed Dechub-Bridge in your platform",
         href: "/solutions/embedded",
         icon: "embedded",
       },
       {
-        label: "Deel Services",
-        description: "Run global operations smoothly",
+        label: "Dechub-Bridge Services",
+        description: "Run payroll operations smoothly",
         href: "/solutions/services/",
         icon: "services",
       },
@@ -57,15 +57,15 @@ const megaMenus = {
     utilityItems: [
       {
         label: "Employer of Record",
-        description: "Hire and pay teams globally",
+        description: "Hire and pay teams in the US and India",
         href: "/solutions/payroll/eor",
-        image: "/deel-assets/images/website-media.deel.com/thumbnail_hire_anywhere_2x_ad65b05cb4-3c13cc96.webp",
+        image: "/deel-assets/images/website-media.deel.com/thumbnail_Go_live_quickly_with_US_payroll_cba17cce08-8676d1fd.webp",
       },
       {
         label: "Hire Contractors",
-        description: "Simplify global contractor hiring",
+        description: "Simplify contractor hiring for US and India",
         href: "/solutions/payroll/contractors",
-        image: "/deel-assets/images/website-media.deel.com/thumbnail_hire_ba47790a6a-fa900929.webp",
+        image: "/deel-assets/images/website-media.deel.com/small_hire_ba47790a6a-71856dce.webp",
       },
       {
         label: "Integrations",
@@ -74,21 +74,21 @@ const megaMenus = {
         image: "/deel-assets/images/website-media.deel.com/thumbnail_itfeaturecard04_2x_d622ebb2e6-91516668.webp",
       },
       {
-        label: "Deel API",
+        label: "Dechub-Bridge API",
         description: "APIs that fuel custom workflows",
         href: "/solutions/open-api/",
         image: "/deel-assets/images/website-media.deel.com/nav_row_visual_api_v2_c863a509fa-40178800.webp",
       },
     ],
     promo: {
-      label: "Deel Payroll Overview",
-      description: "Keep all global work in sync",
+      label: "Dechub-Bridge Payroll Overview",
+      description: "Keep US and India payroll in sync",
       href: "/solutions/payroll",
       image: "/deel-assets/images/website-media.deel.com/Solutions_Image_1fe3692ef5_348057f282-6f263ffa.webp",
     },
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
+      { label: "Compare Dechub-Bridge", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
@@ -96,15 +96,16 @@ const megaMenus = {
     featured: true,
     offerTitle: "HOW WE HELP",
     compact: true,
+    disableOfferLinks: true,
     offerItems: [
       {
         label: "Hire anywhere",
-        description: "Hire globally, fast and compliant",
+        description: "Hire across the US and India with confidence",
         href: "/solutions/hire",
       },
       {
-        label: "Run payroll globally",
-        description: "Pay global teams from one platform",
+        label: "Run US and India payroll",
+        description: "Pay US and India teams from one platform",
         href: "/use-cases/run-global-payroll/",
       },
       {
@@ -113,8 +114,8 @@ const megaMenus = {
         href: "/solutions/payroll",
       },
       {
-        label: "Manage a global team",
-        description: "Centralize HR for global teams",
+        label: "Manage a US and India team",
+        description: "Centralize HR for US and India teams",
         href: "/solutions/hr",
       },
       {
@@ -123,18 +124,18 @@ const megaMenus = {
         href: "/solutions/hr",
       },
       {
-        label: "Manage benefits across borders",
-        description: "Offer compliant benefits worldwide",
+        label: "Manage benefits across US and India",
+        description: "Offer compliant benefits for US and India teams",
         href: "/solutions/benefits/",
       },
       {
         label: "Ship devices",
-        description: "Equip global teams with devices",
+        description: "Equip US and India teams with devices",
         href: "/solutions/it",
       },
       {
-        label: "Run global IT operations",
-        description: "Standardize IT ops worldwide",
+        label: "Run IT operations",
+        description: "Standardize IT ops for US and India teams",
         href: "/solutions/it",
       },
       {
@@ -149,7 +150,7 @@ const megaMenus = {
       },
       {
         label: "Relocate talent",
-        description: "Move employees anywhere, compliantly",
+        description: "Support compliant talent mobility for key teams",
         href: "/solutions/mobility/",
       },
     ],
@@ -161,13 +162,14 @@ const megaMenus = {
     },
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
+      { label: "Compare Dechub-Bridge", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
   "Who we serve": {
     featured: true,
     compact: "columns",
+    disableColumnLinks: true,
     columns: [
       {
         title: "BY BUSINESS SIZE",
@@ -179,7 +181,7 @@ const megaMenus = {
           },
           {
             label: "Mid-Market",
-            description: "One global workforce platform",
+            description: "One connected workforce platform",
             href: "/mid-market/",
           },
           {
@@ -194,17 +196,17 @@ const megaMenus = {
         items: [
           {
             label: "HR teams",
-            description: "Onboard and manage global teams",
+            description: "Onboard and manage US and India teams",
             href: "/solutions/hr",
           },
           {
             label: "Finance teams",
-            description: "Cut costs on global payroll",
+            description: "Cut costs on US and India payroll",
             href: "/solutions/payroll",
           },
           {
             label: "Legal teams",
-            description: "Stay compliant across countries",
+            description: "Stay compliant across key payroll workflows",
             href: "/legal/",
           },
           {
@@ -230,7 +232,6 @@ const megaMenus = {
           { label: "Gaming", href: "/industry/gaming/" },
           { label: "IT", href: "/industry/it-services/" },
           { label: "Oil & Gas", href: "/industry/oil-and-gas/" },
-          { label: "All industries", href: "/industry/", badge: "11" },
         ],
       },
       {
@@ -249,7 +250,7 @@ const megaMenus = {
     ],
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
+      { label: "Compare Dechub-Bridge", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
@@ -261,21 +262,22 @@ const megaMenus = {
         title: "LEARN & CONNECT",
         items: [
           { label: "Blog", href: "/blog/" },
-          { label: "Deel Resource Hub", href: "/resource-hub/" },
+          { label: "Dechub-Bridge Resource Hub", href: "/resource-hub/" },
           { label: "Events and webinars", href: "/events/" },
-          { label: "Global hiring guides", href: "/hiring/" },
+          { label: "US and India hiring guides", href: "/hiring/" },
           { label: "Help center", href: "/help-center/" },
           { label: "Partner program", href: "/partner/" },
           { label: "Careers", href: "/careers/", badge: "200+" },
-          { label: "Deel Works", href: "/deel-works/" },
-          { label: "Deel Academy", href: "/academy/" },
+          { label: "Dechub-Bridge Works", href: "/deel-works/" },
+          { label: "Dechub-Bridge Academy", href: "/academy/" },
           { label: "Press", href: "/press/" },
         ],
       },
       {
-        title: "THE DEEL ADVANTAGE",
+        title: "THE DECHUB-BRIDGE ADVANTAGE",
+        disableLinks: true,
         items: [
-          { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
+          { label: "Compare Dechub-Bridge", href: "/dechub-bridge-vs-competitors/" },
           { label: "Unmatched security", href: "/security/" },
           { label: "Continuous Compliance", href: "/compliance/" },
           { label: "Customer stories", href: "/case-studies/" },
@@ -284,19 +286,19 @@ const megaMenus = {
       },
       {
         title: "TOOLS",
+        disableLinks: true,
         items: [
           { label: "Job description templates", href: "/job-description-templates/" },
-          { label: "Global Hiring Toolkit", href: "/global-hiring-toolkit/" },
-          { label: "Global work glossary", href: "/glossary/" },
+          { label: "Hiring Toolkit", href: "/global-hiring-toolkit/" },
+          { label: "Work glossary", href: "/glossary/" },
           { label: "Misclassification Quiz", href: "/misclassification-quiz/" },
-          { label: "Global Employment Comparison", href: "/global-employment-comparison/" },
-          { label: "All tools", href: "/tools/", badge: "11" },
+          { label: "Employment Comparison", href: "/global-employment-comparison/" },
         ],
       },
     ],
     footerLinks: [
       { label: "Book a demo", href: "/book-a-demo/" },
-      { label: "Compare Deel", href: "/dechub-bridge-vs-competitors/" },
+      { label: "Compare Dechub-Bridge", href: "/dechub-bridge-vs-competitors/" },
       { label: "Help center", href: "/help-center/" },
     ],
   },
@@ -427,6 +429,10 @@ function MenuFeatureIcon({ kind }) {
     default:
       return null;
   }
+}
+
+function shouldRenderPromo(menu) {
+  return menu?.promo?.label !== "Customer Stories";
 }
 
 function navigateToInternalPath(href) {
@@ -630,22 +636,39 @@ function Header() {
                                 <p className="deel-solutions-menu__eyebrow">{column.title}</p>
                                 <div className="deel-solutions-menu__column-links">
                                   {column.items.map((item) => (
-                                    <a
-                                      key={item.href + item.label}
-                                      href={item.href}
-                                      className="deel-solutions-menu__text-link"
-                                      onClick={(event) => handleInternalNavigation(event, item.href)}
-                                    >
-                                      <span className="deel-solutions-menu__title deel-solutions-menu__title--inline">
-                                        {item.label}
-                                        {item.badge ? (
-                                          <span className="deel-solutions-menu__badge">{item.badge}</span>
+                                    column.disableLinks ? (
+                                      <div
+                                        key={item.href + item.label}
+                                        className="deel-solutions-menu__text-link deel-solutions-menu__text-link--static"
+                                      >
+                                        <span className="deel-solutions-menu__title deel-solutions-menu__title--inline">
+                                          {item.label}
+                                          {item.badge ? (
+                                            <span className="deel-solutions-menu__badge">{item.badge}</span>
+                                          ) : null}
+                                        </span>
+                                        {item.description ? (
+                                          <span className="deel-solutions-menu__text">{item.description}</span>
                                         ) : null}
-                                      </span>
-                                      {item.description ? (
-                                        <span className="deel-solutions-menu__text">{item.description}</span>
-                                      ) : null}
-                                    </a>
+                                      </div>
+                                    ) : (
+                                      <a
+                                        key={item.href + item.label}
+                                        href={item.href}
+                                        className="deel-solutions-menu__text-link"
+                                        onClick={(event) => handleInternalNavigation(event, item.href)}
+                                      >
+                                        <span className="deel-solutions-menu__title deel-solutions-menu__title--inline">
+                                          {item.label}
+                                          {item.badge ? (
+                                            <span className="deel-solutions-menu__badge">{item.badge}</span>
+                                          ) : null}
+                                        </span>
+                                        {item.description ? (
+                                          <span className="deel-solutions-menu__text">{item.description}</span>
+                                        ) : null}
+                                      </a>
+                                    )
                                   ))}
                                 </div>
                               </div>
@@ -676,45 +699,57 @@ function Header() {
                           </div>
                         </div>
                       ) : menu.featured && menu.compact ? (
-                        <div className="deel-solutions-menu deel-solutions-menu--compact">
+                        <div className={`deel-solutions-menu deel-solutions-menu--compact ${shouldRenderPromo(menu) ? "" : "deel-solutions-menu--no-promo"}`}>
                           <div className="deel-solutions-menu__main">
                             <div className="deel-solutions-menu__left">
                               <div className="deel-solutions-menu__section deel-solutions-menu__section--compact">
                                 <p className="deel-solutions-menu__eyebrow">{menu.offerTitle}</p>
                                 <div className="deel-solutions-menu__text-grid">
                                   {menu.offerItems.map((item) => (
-                                    <a
-                                      key={item.href + item.label}
-                                      href={item.href}
-                                      className="deel-solutions-menu__text-link"
-                                      onClick={(event) => handleInternalNavigation(event, item.href)}
-                                    >
-                                      <span className="deel-solutions-menu__title">{item.label}</span>
-                                      <span className="deel-solutions-menu__text">{item.description}</span>
-                                    </a>
+                                    menu.disableOfferLinks ? (
+                                      <div
+                                        key={item.href + item.label}
+                                        className="deel-solutions-menu__text-link deel-solutions-menu__text-link--static"
+                                      >
+                                        <span className="deel-solutions-menu__title">{item.label}</span>
+                                        <span className="deel-solutions-menu__text">{item.description}</span>
+                                      </div>
+                                    ) : (
+                                      <a
+                                        key={item.href + item.label}
+                                        href={item.href}
+                                        className="deel-solutions-menu__text-link"
+                                        onClick={(event) => handleInternalNavigation(event, item.href)}
+                                      >
+                                        <span className="deel-solutions-menu__title">{item.label}</span>
+                                        <span className="deel-solutions-menu__text">{item.description}</span>
+                                      </a>
+                                    )
                                   ))}
                                 </div>
                               </div>
                             </div>
 
-                            <a
-                              href={menu.promo.href}
-                              className="deel-solutions-menu__promo"
-                              onClick={(event) => handleInternalNavigation(event, menu.promo.href)}
-                            >
-                              <img
-                                src={menu.promo.image}
-                                alt={menu.promo.label}
-                                className="deel-solutions-menu__promo-image"
-                                loading="lazy"
-                              />
-                              <span className="deel-solutions-menu__promo-overlay" />
-                              <span className="deel-solutions-menu__promo-copy">
-                                <span className="deel-solutions-menu__promo-title">
-                                  {menu.promo.label} <ArrowForwardIcon />
+                            {shouldRenderPromo(menu) ? (
+                              <a
+                                href={menu.promo.href}
+                                className="deel-solutions-menu__promo"
+                                onClick={(event) => handleInternalNavigation(event, menu.promo.href)}
+                              >
+                                <img
+                                  src={menu.promo.image}
+                                  alt={menu.promo.label}
+                                  className="deel-solutions-menu__promo-image"
+                                  loading="lazy"
+                                />
+                                <span className="deel-solutions-menu__promo-overlay" />
+                                <span className="deel-solutions-menu__promo-copy">
+                                  <span className="deel-solutions-menu__promo-title">
+                                    {menu.promo.label} <ArrowForwardIcon />
+                                  </span>
                                 </span>
-                              </span>
-                            </a>
+                              </a>
+                            ) : null}
                           </div>
 
                           <div className="deel-solutions-menu__footer">
@@ -741,7 +776,7 @@ function Header() {
                           </div>
                         </div>
                       ) : menu.featured ? (
-                        <div className="deel-solutions-menu">
+                        <div className={`deel-solutions-menu ${shouldRenderPromo(menu) ? "" : "deel-solutions-menu--no-promo"}`}>
                           <div className="deel-solutions-menu__main">
                             <div className="deel-solutions-menu__left">
                               <div className="deel-solutions-menu__section">
@@ -789,25 +824,27 @@ function Header() {
                               </div>
                             </div>
 
-                            <a
-                              href={menu.promo.href}
-                              className="deel-solutions-menu__promo"
-                              onClick={(event) => handleInternalNavigation(event, menu.promo.href)}
-                            >
-                              <img
-                                src={menu.promo.image}
-                                alt={menu.promo.label}
-                                className="deel-solutions-menu__promo-image"
-                                loading="lazy"
-                              />
-                              <span className="deel-solutions-menu__promo-overlay" />
-                              <span className="deel-solutions-menu__promo-copy">
-                                <span className="deel-solutions-menu__promo-title">
-                                  {menu.promo.label} <ArrowForwardIcon />
+                            {shouldRenderPromo(menu) ? (
+                              <a
+                                href={menu.promo.href}
+                                className="deel-solutions-menu__promo"
+                                onClick={(event) => handleInternalNavigation(event, menu.promo.href)}
+                              >
+                                <img
+                                  src={menu.promo.image}
+                                  alt={menu.promo.label}
+                                  className="deel-solutions-menu__promo-image"
+                                  loading="lazy"
+                                />
+                                <span className="deel-solutions-menu__promo-overlay" />
+                                <span className="deel-solutions-menu__promo-copy">
+                                  <span className="deel-solutions-menu__promo-title">
+                                    {menu.promo.label} <ArrowForwardIcon />
+                                  </span>
+                                  <span className="deel-solutions-menu__promo-text">{menu.promo.description}</span>
                                 </span>
-                                <span className="deel-solutions-menu__promo-text">{menu.promo.description}</span>
-                              </span>
-                            </a>
+                              </a>
+                            ) : null}
                           </div>
 
                           <div className="deel-solutions-menu__footer">

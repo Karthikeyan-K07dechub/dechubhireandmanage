@@ -4,15 +4,15 @@ const cards = [
   {
     title: "Talent deployment : ",
     description: "Move from approved shortlist to active delivery without delays.",
-    href: "/use-cases/run-global-payroll/",
-    cta: "Learn more",
-    image: "/deel-assets/images/website-media.deel.com/150currencysupport_8c1cb419a0-1e399de9.webp",
+    href: "#",
+    cta: "Book a demo",
+    image: "/dechub-assets/landing-images/landing_currency.png",
   },
   {
     title: "Workforce operations : ",
     description: "Handle onboarding, coordination, and support from one system.",
-    href: "/hr-platform/ai/",
-    cta: "Learn more",
+    href: "#",
+    cta: "Book a demo",
     image: "/deel-assets/images/website-media.deel.com/actionable_ai_2x_d651c6da17-98e9cbe6.webp",
   },
   {
@@ -97,7 +97,12 @@ function Section05() {
                     </p>
                   </div>
                   <div className="mt-xxs !-ml-xxxs">
-                    <a href={card.href} target="_self" className="mui-15k05j0">
+                    <a
+                      href={card.href}
+                      target="_self"
+                      className="mui-15k05j0"
+                      data-demo-trigger={card.cta === "Book a demo" ? "true" : undefined}
+                    >
                       <span type="button" className="mui-m6qohc">
                         {card.cta}
                         <div className="cta-icon mui-1e5u1e9">
@@ -153,7 +158,12 @@ function Section05() {
                       {open ? (
                         <div className="pb-sm">
                           <div className="mt-0 tablet:mt-xxs !-ml-quark sm-old:!-ml-nano">
-                            <a href={card.href} target="_self" className="mui-15k05j0">
+                            <a
+                              href={card.href}
+                              target="_self"
+                              className="mui-15k05j0"
+                              data-demo-trigger={card.cta === "Book a demo" ? "true" : undefined}
+                            >
                               <button type="button" className="mui-y9wt1e">
                                 {card.cta}
                                 <div className="cta-icon mui-1e5u1e9">
@@ -203,9 +213,15 @@ function Section05() {
                 </p>
               </div>
               <div className="!-ml-xxxs sm-old:!-ml-xxs">
-                <a href="/solutions/payroll-engine/" target="_self" aria-label="solutions payroll-engine" className="mui-15k05j0">
+                <a
+                  href="#"
+                  target="_self"
+                  aria-label="solutions payroll-engine"
+                  className="mui-15k05j0"
+                  data-demo-trigger="true"
+                >
                   <span type="button" className="mui-y9wt1e" aria-label="solutions payroll-engine">
-                    Learn more
+                    Book a demo
                     <div className="cta-icon mui-1e5u1e9">
                       <ArrowForwardIcon />
                     </div>
@@ -225,7 +241,7 @@ function Section05() {
                   className="mui-16kkgg"
                   style={{ color: "transparent" }}
                   sizes="(min-width: 656px) 656px, 100vw"
-                  src="/deel-assets/images/website-media.deel.com/build_on_in_house_infrastructure_a972d8fcdf-b192e539.webp"
+                  src="/dechub-assets/landing-images/landing-features.png"
                 />
               </div>
             </div>

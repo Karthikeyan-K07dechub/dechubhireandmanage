@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import heroBackground from "../../pages/assets/hero-image.png";
 import paperRocket from "../../pages/assets/paper-rocket.png";
 
@@ -13,14 +13,15 @@ const SECONDARY_ACTIONS = [
   "Ship\nequipment",
 ];
 
-function HeroOption({ label, ariaLabel }) {
+function HeroOption({ label, ariaLabel, checked, onToggle }) {
   return (
     <button
       type="button"
       role="checkbox"
-      aria-checked="false"
+      aria-checked={checked}
       aria-label={ariaLabel ?? label.replace("\n", " ")}
-      className="deel-hero__option"
+      className={`deel-hero__option${checked ? " deel-hero__option--selected" : ""}`}
+      onClick={onToggle}
     >
       <span aria-hidden="true" className="deel-hero__option-check" />
       <span className="deel-hero__option-label">{label}</span>
@@ -29,6 +30,16 @@ function HeroOption({ label, ariaLabel }) {
 }
 
 function Section01() {
+  const [selectedActions, setSelectedActions] = useState([]);
+
+  const toggleAction = (label) => {
+    setSelectedActions((currentSelections) =>
+      currentSelections.includes(label)
+        ? currentSelections.filter((selectedLabel) => selectedLabel !== label)
+        : [...currentSelections, label],
+    );
+  };
+
   return (
     <section className="deel-hero-section">
       <div className="deel-hero-shell">
@@ -68,13 +79,23 @@ function Section01() {
                 >
                   <div className="deel-hero__option-grid deel-hero__option-grid--primary">
                     {PRIMARY_ACTIONS.map((label) => (
-                      <HeroOption key={label} label={label} />
+                      <HeroOption
+                        key={label}
+                        label={label}
+                        checked={selectedActions.includes(label)}
+                        onToggle={() => toggleAction(label)}
+                      />
                     ))}
                   </div>
 
                   <div className="deel-hero__option-grid deel-hero__option-grid--secondary">
                     {SECONDARY_ACTIONS.map((label) => (
-                      <HeroOption key={label} label={label} />
+                      <HeroOption
+                        key={label}
+                        label={label}
+                        checked={selectedActions.includes(label)}
+                        onToggle={() => toggleAction(label)}
+                      />
                     ))}
                   </div>
                 </div>

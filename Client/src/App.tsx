@@ -21,6 +21,7 @@ import DeelServicesPage from './pages/DeelServicesPage';
 import DeelEorPage from './pages/DeelEorPage';
 import DeelContractorsPage from './pages/DeelContractorsPage';
 import PayrollSolutionsPage from './pages/PayrollSolutionsPage';
+import PricingPage from './pages/PricingPage';
 import DeelIntegrationsPage from './pages/DeelIntegrationsPage';
 import DeelOpenApiPage from './pages/DeelOpenApiPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
@@ -57,6 +58,7 @@ type AppPage =
   | 'deel-eor'
   | 'deel-contractors'
   | 'payroll-solutions'
+  | 'pricing'
   | 'deel-integrations'
   | 'deel-open-api'
   | 'landing-about'
@@ -172,6 +174,10 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
 
   if (normalizedPath === '/solutions/payroll') {
     return { page: 'payroll-solutions', mode: 'login' };
+  }
+
+  if (normalizedPath === '/pricing') {
+    return { page: 'pricing', mode: 'login' };
   }
 
   if (normalizedPath === '/integrations') {
@@ -564,6 +570,9 @@ export default function App() {
       case 'payroll-solutions':
         targetPath = '/solutions/payroll';
         break;
+      case 'pricing':
+        targetPath = '/pricing';
+        break;
       case 'deel-integrations':
         targetPath = '/integrations';
         break;
@@ -878,6 +887,10 @@ export default function App() {
 
   if (page === 'payroll-solutions') {
     return <PayrollSolutionsPage />;
+  }
+
+  if (page === 'pricing') {
+    return <PricingPage />;
   }
 
   if (page === 'deel-integrations') {

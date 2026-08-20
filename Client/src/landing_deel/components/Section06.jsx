@@ -108,7 +108,7 @@ function Section06() {
                 Our customer reviews
               </h2>
               <p className="m-0 text-tertiary paragraph-large max-w-[444px] text-content-secondary" style={{ marginBottom: "24px" }}>
-                Discover the insights from customers regarding their experiences with Deel.
+                Discover the insights from customers regarding their experiences with Dechub-Bridge.
               </p>
             </div>
           </div>
