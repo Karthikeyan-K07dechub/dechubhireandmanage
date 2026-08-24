@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 const megaMenus = {
   Solutions: {
     featured: true,
+    disableOfferLinks: true,
+    disableUtilityLinks: true,
     offerTitle: "WHAT WE OFFER",
     offerItems: [
       {
@@ -173,6 +175,7 @@ const megaMenus = {
     columns: [
       {
         title: "BY BUSINESS SIZE",
+        disableLinks: true,
         items: [
           {
             label: "Startups",
@@ -193,6 +196,7 @@ const megaMenus = {
       },
       {
         title: "BY TEAMS",
+        disableLinks: true,
         items: [
           {
             label: "HR teams",
@@ -223,6 +227,7 @@ const megaMenus = {
       },
       {
         title: "BY INDUSTRY",
+        disableLinks: true,
         items: [
           { label: "Crypto", href: "/industry/crypto/" },
           { label: "Fintech", href: "/industry/fintech/" },
@@ -236,6 +241,7 @@ const megaMenus = {
       },
       {
         title: "PARTNERS",
+        disableLinks: true,
         items: [
           { label: "Venture Capital", href: "/partner/venture-capital/" },
           { label: "Private Equity", href: "/partner/private-equity/" },
@@ -260,6 +266,7 @@ const megaMenus = {
     columns: [
       {
         title: "LEARN & CONNECT",
+        disableLinks: true,
         items: [
           { label: "Blog", href: "/blog/" },
           { label: "Dechub-Bridge Resource Hub", href: "/resource-hub/" },
@@ -682,6 +689,7 @@ function Header() {
                                   key={item.href}
                                   href={item.href}
                                   className="deel-solutions-menu__footer-link"
+                                  style={item.label === "Help center" ? { display: "none" } : undefined}
                                   onClick={(event) => handleInternalNavigation(event, item.href)}
                                 >
                                   {item.label}
@@ -759,6 +767,7 @@ function Header() {
                                   key={item.href}
                                   href={item.href}
                                   className="deel-solutions-menu__footer-link"
+                                  style={item.label === "Help center" ? { display: "none" } : undefined}
                                   onClick={(event) => handleInternalNavigation(event, item.href)}
                                 >
                                   {item.label}
@@ -783,43 +792,76 @@ function Header() {
                                 <p className="deel-solutions-menu__eyebrow">{menu.offerTitle}</p>
                                 <div className="deel-solutions-menu__offer-grid">
                                   {menu.offerItems.map((item) => (
-                                    <a
-                                      key={item.href}
-                                      href={item.href}
-                                      className="deel-solutions-menu__offer-link"
-                                      onClick={(event) => handleInternalNavigation(event, item.href)}
-                                    >
-                                      <span className="deel-solutions-menu__icon-box" aria-hidden="true">
-                                        <MenuFeatureIcon kind={item.icon} />
-                                      </span>
-                                      <span className="deel-solutions-menu__copy">
-                                        <span className="deel-solutions-menu__title">{item.label}</span>
-                                        <span className="deel-solutions-menu__text">{item.description}</span>
-                                      </span>
-                                    </a>
+                                    menu.disableOfferLinks ? (
+                                      <div
+                                        key={item.href}
+                                        className="deel-solutions-menu__offer-link deel-solutions-menu__offer-link--static"
+                                      >
+                                        <span className="deel-solutions-menu__icon-box" aria-hidden="true">
+                                          <MenuFeatureIcon kind={item.icon} />
+                                        </span>
+                                        <span className="deel-solutions-menu__copy">
+                                          <span className="deel-solutions-menu__title">{item.label}</span>
+                                          <span className="deel-solutions-menu__text">{item.description}</span>
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <a
+                                        key={item.href}
+                                        href={item.href}
+                                        className="deel-solutions-menu__offer-link"
+                                        onClick={(event) => handleInternalNavigation(event, item.href)}
+                                      >
+                                        <span className="deel-solutions-menu__icon-box" aria-hidden="true">
+                                          <MenuFeatureIcon kind={item.icon} />
+                                        </span>
+                                        <span className="deel-solutions-menu__copy">
+                                          <span className="deel-solutions-menu__title">{item.label}</span>
+                                          <span className="deel-solutions-menu__text">{item.description}</span>
+                                        </span>
+                                      </a>
+                                    )
                                   ))}
                                 </div>
                               </div>
 
                               <div className="deel-solutions-menu__utility-grid">
                                 {menu.utilityItems.map((item) => (
-                                  <a
-                                    key={item.href}
-                                    href={item.href}
-                                    className="deel-solutions-menu__utility-card"
-                                    onClick={(event) => handleInternalNavigation(event, item.href)}
-                                  >
-                                    <span className="deel-solutions-menu__utility-copy">
-                                      <span className="deel-solutions-menu__utility-title">{item.label}</span>
-                                      <span className="deel-solutions-menu__utility-text">{item.description}</span>
-                                    </span>
-                                    <img
-                                      src={item.image}
-                                      alt={item.label}
-                                      className="deel-solutions-menu__utility-image"
-                                      loading="lazy"
-                                    />
-                                  </a>
+                                  menu.disableUtilityLinks ? (
+                                    <div
+                                      key={item.href}
+                                      className="deel-solutions-menu__utility-card deel-solutions-menu__utility-card--static"
+                                    >
+                                      <span className="deel-solutions-menu__utility-copy">
+                                        <span className="deel-solutions-menu__utility-title">{item.label}</span>
+                                        <span className="deel-solutions-menu__utility-text">{item.description}</span>
+                                      </span>
+                                      <img
+                                        src={item.image}
+                                        alt={item.label}
+                                        className="deel-solutions-menu__utility-image"
+                                        loading="lazy"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <a
+                                      key={item.href}
+                                      href={item.href}
+                                      className="deel-solutions-menu__utility-card"
+                                      onClick={(event) => handleInternalNavigation(event, item.href)}
+                                    >
+                                      <span className="deel-solutions-menu__utility-copy">
+                                        <span className="deel-solutions-menu__utility-title">{item.label}</span>
+                                        <span className="deel-solutions-menu__utility-text">{item.description}</span>
+                                      </span>
+                                      <img
+                                        src={item.image}
+                                        alt={item.label}
+                                        className="deel-solutions-menu__utility-image"
+                                        loading="lazy"
+                                      />
+                                    </a>
+                                  )
                                 ))}
                               </div>
                             </div>
@@ -854,6 +896,7 @@ function Header() {
                                   key={item.href}
                                   href={item.href}
                                   className="deel-solutions-menu__footer-link"
+                                  style={item.label === "Help center" ? { display: "none" } : undefined}
                                   onClick={(event) => handleInternalNavigation(event, item.href)}
                                 >
                                   {item.label}
