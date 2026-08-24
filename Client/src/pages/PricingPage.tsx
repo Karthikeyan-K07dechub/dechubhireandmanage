@@ -1796,7 +1796,7 @@ function wirePricingPrimaryTabs(root: HTMLElement) {
   };
 }
 
-function wirePricingAccordion(root: HTMLElement) {
+function wirePricingAccordion() {
   return () => undefined;
 }
 
