@@ -2075,7 +2075,7 @@ export default function PricingPage() {
     };
 
     const cleanupPricingTabs = wirePricingPrimaryTabs(root);
-    const cleanupPricingAccordion = wirePricingAccordion(root);
+    const cleanupPricingAccordion = wirePricingAccordion();
     const cleanupPricingDemoButtons = wirePricingDemoButtons(root);
     wireTrustedCompaniesStrip(root);
     removeKeyFiguresBottomPadding(root);
