@@ -9,6 +9,7 @@ import { MarketplaceOrderDraft } from '../models/MarketplaceOrderDraft';
 import { TalentRequest } from '../models/TalentRequest';
 import { ok, created, Errors, AppError } from '../utils/response';
 import { logger } from '../utils/logger';
+import { sendTalentRequestAdminNotificationEmail } from '../utils/email';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 
@@ -28,6 +29,7 @@ const DEFAULT_MARKETPLACE_BIOS = new Set([
 ]);
 
 const DEFAULT_RESPONSE_TIME_HOURS = 2;
+const BOOK_A_DEMO_NOTIFICATION_TO = 'karthik@dechub.in';
 
 const DEFAULT_SERVICE_PACKAGES = [
   {
@@ -629,29 +631,82 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       }
     }
 
-    const request = await TalentRequest.create({
-      companyId,
-      workerId: null,
-      workerName: 'Open talent request',
-      workerRole: 'Best-fit marketplace candidate to be suggested',
-      workerProfileUrl: '',
-      companyName: data.companyName.trim(),
-      companyWebsite: data.companyWebsite.trim(),
+    const requestedServices = (data.requestedServices ?? []).map((service) => service.trim()).filter(Boolean);
+    const companyName = data.companyName.trim();
+    const companyWebsite = data.companyWebsite.trim();
+    const projectType = data.projectType.trim();
+    const budget = data.budget.trim();
+    const projectDescription = data.projectDescription.trim();
+
+    const buildAdminNotificationPayload = (request: InstanceType<typeof TalentRequest> | null, dbSaveSucceeded: boolean) => ({
+      requestId: request?._id?.toString() ?? null,
+      companyName,
+      companyWebsite,
       contactFirstName,
       contactLastName,
+      contactEmail,
       phoneNumber: contactPhone,
-      email: contactEmail,
-      projectType: data.projectType.trim(),
-      budget: data.budget.trim(),
-      projectDescription: data.projectDescription.trim(),
-      requestedServices: (data.requestedServices ?? []).map((service) => service.trim()),
+      projectType,
+      budget,
+      projectDescription,
+      requestedServices,
+      dbSaveSucceeded,
     });
 
-    created(res, {
-      id: request._id,
-      status: request.status,
-      createdAt: request.createdAt,
-    });
+    try {
+      const request = await TalentRequest.create({
+        companyId,
+        workerId: null,
+        workerName: 'Open talent request',
+        workerRole: 'Best-fit marketplace candidate to be suggested',
+        workerProfileUrl: '',
+        companyName,
+        companyWebsite,
+        contactFirstName,
+        contactLastName,
+        phoneNumber: contactPhone,
+        email: contactEmail,
+        projectType,
+        budget,
+        projectDescription,
+        requestedServices,
+      });
+
+      created(res, {
+        id: request._id.toString(),
+        status: request.status,
+        createdAt: request.createdAt,
+      });
+
+      void sendTalentRequestAdminNotificationEmail(
+        BOOK_A_DEMO_NOTIFICATION_TO,
+        buildAdminNotificationPayload(request, true),
+      ).catch((err) => {
+        logger.error('Failed to send marketplace talent request admin notification email', err);
+      });
+
+      return;
+    } catch (dbSaveError) {
+      logger.error('Failed to save marketplace talent request', dbSaveError);
+
+      try {
+        await sendTalentRequestAdminNotificationEmail(
+          BOOK_A_DEMO_NOTIFICATION_TO,
+          buildAdminNotificationPayload(null, false),
+        );
+
+        created(res, {
+          id: `email-only-${Date.now()}`,
+          status: 'email_only',
+          createdAt: new Date().toISOString(),
+        });
+        return;
+      } catch (emailError) {
+        logger.error('Failed to send marketplace talent request admin notification email', emailError);
+        next(dbSaveError ?? emailError);
+        return;
+      }
+    }
   } catch (err) {
     next(err);
   }

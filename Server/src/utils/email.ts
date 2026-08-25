@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from './logger';
@@ -12,6 +14,40 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function resolveBridgeLogoPath(): string | null {
+  const candidates = [
+    resolve(process.cwd(), 'assets', 'bridge-logo-email.png'),
+    resolve(process.cwd(), 'Server', 'assets', 'bridge-logo-email.png'),
+    resolve(__dirname, '../../assets/bridge-logo-email.png'),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+const bridgeLogoPath = resolveBridgeLogoPath();
+
+function getBridgeLogoDataUri(): string | null {
+  if (!bridgeLogoPath) {
+    return null;
+  }
+
+  try {
+    const fileBuffer = readFileSync(bridgeLogoPath);
+    return `data:image/png;base64,${fileBuffer.toString('base64')}`;
+  } catch (error) {
+    logger.warn('Failed to read bridge email logo, using text fallback', error);
+    return null;
+  }
+}
+
+const bridgeLogoDataUri = getBridgeLogoDataUri();
+
 // Verify connection on startup
 transporter.verify().then(() => {
   logger.info('✅  SMTP transporter ready');
@@ -22,6 +58,10 @@ transporter.verify().then(() => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function baseTemplate(body: string): string {
+  const headerLogoMarkup = bridgeLogoDataUri
+    ? `<img src="${bridgeLogoDataUri}" alt="Bridge" class="logo-image" />`
+    : `<span class="logo-word">Bridge</span>`;
+
   return `
 <!DOCTYPE html>
 <html>
@@ -32,7 +72,9 @@ function baseTemplate(body: string): string {
     body { font-family: 'DM Sans', Arial, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
     .wrapper { max-width: 560px; margin: 40px auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 16px rgba(0,0,0,0.08); }
     .header { background: linear-gradient(135deg, #0a1628, #162d54); padding: 32px 40px; }
-    .logo { color: #00c9a7; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo { display: inline-flex; align-items: center; }
+    .logo-image { display: block; width: 220px; max-width: 100%; height: auto; }
+    .logo-word { color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
     .content { padding: 40px; color: #0f172a; line-height: 1.65; }
     h1 { font-size: 22px; font-weight: 700; margin: 0 0 16px; color: #0f172a; }
     p { margin: 0 0 16px; font-size: 15px; color: #475569; }
@@ -44,7 +86,9 @@ function baseTemplate(body: string): string {
 </head>
 <body>
   <div class="wrapper">
-    <div class="header"><span class="logo">Dechub</span></div>
+    <div class="header">
+      <span class="logo">${headerLogoMarkup}</span>
+    </div>
     <div class="content">${body}</div>
     <div class="footer">© ${new Date().getFullYear()} Dechub Pvt. Ltd. · J.P. Nagar, Bengaluru</div>
   </div>
@@ -52,9 +96,20 @@ function baseTemplate(body: string): string {
 </html>`.trim();
 }
 
-async function send(to: string, subject: string, html: string): Promise<void> {
+async function send(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<void> {
   try {
-    await transporter.sendMail({ from: env.EMAIL_FROM, to, subject, html });
+    await transporter.sendMail({
+      from: env.EMAIL_FROM.includes('<')
+        ? env.EMAIL_FROM
+        : `Dechub-Bridge <${env.EMAIL_FROM}>`,
+      to,
+      subject,
+      html,
+    });
     logger.debug(`Email sent: "${subject}" → ${to}`);
   } catch (err) {
     logger.error(`Email failed: "${subject}" → ${to}`, err);
@@ -128,4 +183,59 @@ export async function sendContractActivatedEmail(
     <p class="muted">You’ll also see this update inside your Dechub account notifications.</p>
   `);
   await send(to, `Your ${companyName} contract is active`, html);
+}
+
+type TalentRequestAdminNotificationInput = {
+  requestId?: string | null;
+  companyName: string;
+  companyWebsite: string;
+  contactFirstName: string;
+  contactLastName: string;
+  contactEmail: string;
+  phoneNumber?: string;
+  projectType: string;
+  budget: string;
+  projectDescription: string;
+  requestedServices: string[];
+  dbSaveSucceeded: boolean;
+};
+
+export async function sendTalentRequestAdminNotificationEmail(
+  to: string,
+  input: TalentRequestAdminNotificationInput,
+): Promise<void> {
+  const contactName = [input.contactFirstName, input.contactLastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || 'Company Contact';
+
+  const requestedServicesMarkup = input.requestedServices.length
+    ? `<ul style="margin:8px 0 16px;padding-left:20px;color:#475569;font-size:15px;line-height:1.8;">${input.requestedServices
+        .map((service) => `<li>${service}</li>`)
+        .join('')}</ul>`
+    : '<p style="margin:8px 0 16px;font-size:15px;color:#475569;">None selected</p>';
+
+  const html = baseTemplate(`
+    <h1>New Book a demo request</h1>
+    <p>A new landing-page hiring request was submitted.</p>
+    <p><strong>DB save status:</strong> ${input.dbSaveSucceeded ? 'Saved successfully' : 'Email fallback only'}</p>
+    ${input.requestId ? `<p><strong>Request ID:</strong> ${input.requestId}</p>` : ''}
+    <p><strong>Company name:</strong> ${input.companyName}</p>
+    <p><strong>Company website:</strong> ${input.companyWebsite}</p>
+    <p><strong>Contact name:</strong> ${contactName}</p>
+    <p><strong>Contact email:</strong> ${input.contactEmail}</p>
+    <p><strong>Phone number:</strong> ${input.phoneNumber || 'Not provided'}</p>
+    <p><strong>Project type:</strong> ${input.projectType}</p>
+    <p><strong>Budget:</strong> ${input.budget}</p>
+    <p><strong>Requested services:</strong></p>
+    ${requestedServicesMarkup}
+    <p><strong>Project description:</strong></p>
+    <p>${input.projectDescription.replace(/\n/g, '<br />')}</p>
+  `);
+
+  await send(
+    to,
+    `New Book a demo request - ${input.companyName}`,
+    html,
+  );
 }
