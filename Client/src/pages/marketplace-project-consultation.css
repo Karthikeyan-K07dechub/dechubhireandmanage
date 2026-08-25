@@ -1,12 +1,11 @@
 .mpc-root {
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, #fafafa 0%, #ffffff 52%);
+  background: transparent;
 }
 
 .mpc-topbar {
   border-bottom: 1px solid #eceff3;
-  background: rgba(255, 255, 255, 0.94);
+  background: #ffffff;
 }
 
 .mpc-topbar-inner {

@@ -27,6 +27,7 @@ interface MarketplaceTalentProfilePageProps {
   onLogout: () => void;
   onNotifications: () => void;
   onLogin: () => void;
+  embedded?: boolean;
 }
 
 function formatRate(rate: number, currency: string): string {
@@ -94,6 +95,7 @@ export default function MarketplaceTalentProfilePage({
   onLogout,
   onNotifications,
   onLogin,
+  embedded = false,
 }: MarketplaceTalentProfilePageProps) {
   const [profile, setProfile] = useState<MarketplaceTalentProfileDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -150,7 +152,7 @@ export default function MarketplaceTalentProfilePage({
 
   return (
     <div className="mpp-root">
-      <header className="mpp-topbar">
+      {!embedded ? <header className="mpp-topbar">
         <button className="mpp-back" onClick={onBack}>← Back to marketplace</button>
         {isAuthenticated ? (
           <button
@@ -182,9 +184,38 @@ export default function MarketplaceTalentProfilePage({
             </>
           )}
         </div>
-      </header>
+      </header> : null}
 
       <main className="mpp-shell">
+        {embedded ? (
+          <div
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'flex-start',
+              marginBottom: 20,
+            }}
+          >
+            <button
+              type="button"
+              className="mpp-back"
+              onClick={onBack}
+              style={{
+                background: '#fff',
+                border: '1px solid rgba(148, 163, 184, 0.28)',
+                borderRadius: 999,
+                padding: '10px 16px',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#0f172a',
+                cursor: 'pointer',
+                boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
+              }}
+            >
+              ← Back to Talent Marketplace
+            </button>
+          </div>
+        ) : null}
         {loading ? <div className="mpp-state-card">Loading contractor profile...</div> : null}
         {!loading && error ? <div className="mpp-state-card mpp-state-card-error">{error}</div> : null}
 

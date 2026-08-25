@@ -2,79 +2,36 @@ import React, { useMemo, useState } from "react";
 
 const stories = [
   {
-    company: "Revolut",
-    logo: "/deel-assets/images/website-media.deel.com/logo_revolut_black_0c39688f55-093259cd.svg",
-    summary: "See how the Revolut team has hired 150+ workers and relocated 10+ people through Deel.",
-    href: "/case-studies/revolut/",
-    video: "/deel-assets/videos/website-media.deel.com/DEEL_REVOLUT_MASTER_01_16_X9_1080_2_416352e078-eabba7f3.mp4",
+    company: "Tanishq",
+    summary: "Watch how Tanishq presents its customer story and brand experience through a polished video showcase.",
+    href: "https://www.youtube.com/watch?v=I1ZoIkiNRQc",
+    embedUrl: "https://www.youtube-nocookie.com/embed/I1ZoIkiNRQc",
   },
   {
-    company: "Cocoroco",
-    logo: "/deel-assets/images/website-media.deel.com/cocoroco_logo_1_1_7e36f56f96-bcf104df.webp",
-    summary: "By embedding Deel into their platform, Cocoroco automated every hire, contract, and payment through a single, fully branded experience. Check out more on how Deel's become the perfect product partner for Cocoroco.",
-    href: "/case-studies/cocoroco/",
-    video: "/deel-assets/videos/website-media.deel.com/144ddb7a_bc53_4180_8193_76a9e3715957_fc410b502d-88a83d90.mp4",
+    company: "Titan",
+    summary: "Explore Titan's video story and how the brand communicates trust, scale, and customer connection.",
+    href: "https://www.youtube.com/watch?v=pTgCCnCMb8w",
+    embedUrl: "https://www.youtube-nocookie.com/embed/pTgCCnCMb8w",
   },
   {
-    company: "Cal.com",
-    logo: "/deel-assets/images/website-media.deel.com/Cal_com_idvc_Cwb_TDI_0_e1df06512b-dd005d31.svg",
-    summary: "Cal.com wins in the competitive global market with Deel. From wiring money by hand to running a borderless company on one platform, see how Cal.com uses Deel to hire, pay, and support a global team — without borders slowing them down.",
-    href: "/case-studies/",
-    video: "/deel-assets/videos/website-media.deel.com/Cal_com_Brand_Love_Final_V1_1_1_720888d162-f33d60e8.mp4",
+    company: "Wildcraft",
+    summary: "See Wildcraft's customer-facing video and the way the brand brings its product story to life on screen.",
+    href: "https://www.youtube.com/watch?v=hZqaKCEIxUM",
+    embedUrl: "https://www.youtube-nocookie.com/embed/hZqaKCEIxUM",
   },
   {
-    company: "Strada",
-    logo: "/deel-assets/images/website-media.deel.com/logo_strada_black_94a9eca00a-ba94915d.svg",
-    summary: "Strada, a conversational AI platform for insurance brokers, uses Deel to effortlessly manage US payroll, global hiring, and compliance for its growing team.",
-    href: "/case-studies/strada/",
-    video: "/deel-assets/videos/website-media.deel.com/How_Strada_uses_Deel_to_save_thousands_i_Media_hv_X7_Gm_Q5_Cx_A_001_1080p_9b8e5f1ca2-94b7efdb.mp4",
+    company: "Fastrack",
+    summary: "Watch Fastrack's energetic brand video and how it speaks to a modern, fast-moving customer audience.",
+    href: "https://www.youtube.com/watch?v=EK63GyM8Dew",
+    embedUrl: "https://www.youtube-nocookie.com/embed/EK63GyM8Dew",
   },
   {
-    company: "Sardine",
-    logo: "/deel-assets/images/website-media.deel.com/sardine_74fae8b063-c3e1bfbe.webp",
-    summary: "With Deel, Sardine can seamlessly hire the best talent worldwide, ensuring competitive, market-aligned salaries while optimizing capital spend.",
-    href: "/case-studies/sardine/",
-    video: "/deel-assets/videos/website-media.deel.com/How_Sardine_uses_Deel_to_build_a_world_c_Media_6_OM_94sus_Fwo_001_1080p_ce26f880bd-27846725.mp4",
-  },
-  {
-    company: "Superfiliate",
-    logo: "/deel-assets/images/website-media.deel.com/superfiliate_2x_b68ce07b6c-0256f0e3.webp",
-    summary: "Superfiliate, a growing word-of-mouth marketing platform, turned to Deel after frustrations with Rippling.",
-    href: "/case-studies/superfiliate/",
-    video: "/deel-assets/videos/website-media.deel.com/How_Superfiliate_Streamlined_Global_Work_Media_qgu_xa_WN_Ug_001_1080p_3a81172692-5f230102.mp4",
-  },
-  {
-    company: "Bowmans",
-    logo: "/deel-assets/images/website-media.deel.com/bowmans_2x_976c4e427c-a1f17c64.webp",
-    summary: "Bowmans, a leading pan-African law firm, adopted Deel Local Payroll to unify its payroll operations across a complex, multi-country landscape—covering six jurisdictions and over 400,000 square miles.",
-    href: "/case-studies/bowmans/",
-    video: "/deel-assets/videos/website-media.deel.com/How_Bowmans_Unified_Payroll_Across_Six_C_Media_ns_Bkc_K_If_MM_001_1080p_04ef940e1f-a34546a4.mp4",
-  },
-  {
-    company: "DICE",
-    logo: "/deel-assets/images/website-media.deel.com/DICE_logo_2022_23d2ab39a3-c207c2e9.svg",
-    summary: "From wiring payments by hand to running a borderless company on one platform, see how DICE uses Deel to hire, pay, and support a global team without the admin overhead.",
-    href: "/case-studies/",
-    video: "/deel-assets/videos/website-media.deel.com/Brand_Love_Dicex_Deel_F5_f385fc27c5-f8844b30.mp4",
+    company: "Mia",
+    summary: "Discover Mia's brand video and the visual storytelling approach used to connect with customers.",
+    href: "https://www.youtube.com/watch?v=RLwzZ_vxUTw",
+    embedUrl: "https://www.youtube-nocookie.com/embed/RLwzZ_vxUTw",
   },
 ];
-
-function ArrowForwardIcon() {
-  return (
-    <svg className="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mui-vubbuv" focusable="false" aria-hidden="true" viewBox="0 0 24 24">
-      <path d="m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-    </svg>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg className="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mui-3mhonh" focusable="false" aria-hidden="true" viewBox="0 0 128 128" width="128" height="128" fill="none">
-      <circle cx="64" cy="64" r="64" fill="#1B1B1B" fillOpacity="0.7" />
-      <path d="M88 64L51 39V89L88 64Z" fill="white" />
-    </svg>
-  );
-}
 
 function Section06() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -105,10 +62,10 @@ function Section06() {
             <p className="m-0 text-tertiary overline-large-medium text-content-secondary">TESTIMONIALS</p>
             <div className="w-full flex flex-col md:flex-row gap-xxs md:gap-sm md:items-center justify-between">
               <h2 className="text-balance m-0 heading-h2 text-content-primary" style={{ marginBottom: "24px" }}>
-                Our customer reviews
+                Our customers
               </h2>
               <p className="m-0 text-tertiary paragraph-large max-w-[444px] text-content-secondary" style={{ marginBottom: "24px" }}>
-                Discover the insights from customers regarding their experiences with Dechub-Bridge.
+                Discover customer videos and brand stories from the companies we work with.
               </p>
             </div>
           </div>
@@ -126,46 +83,18 @@ function Section06() {
                     <div>
                       <div className="w-full flex flex-col gap-md">
                         <div className="relative w-full h-[250px] sm-old:h-[350px] md:h-[500px] bg-neutral-900 rounded-xl overflow-hidden">
-                          <div className="w-full h-full flex items-center justify-center relative [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:rounded-b-none">
-                            <video
-                              src={story.video}
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              preload="metadata"
-                              className="w-full h-full object-cover rounded-b-none"
-                            />
-                          </div>
-                          {story.isActive ? (
-                            <>
-                              <button className="hidden md:block absolute bottom-4 left-lg transform -translate-x-1/2 z-10 bg-transparent hover:bg-opacity-90 rounded-full p-2 transition-all border-0" aria-label="Play video" type="button">
-                                <PlayIcon />
-                              </button>
-                              <button className="md:hidden absolute bottom-4 left-sm transform -translate-x-1/2 z-10 bg-transparent hover:bg-opacity-90 rounded-full p-2 transition-all border-0" aria-label="Play video" type="button">
-                                <PlayIcon />
-                              </button>
-                            </>
-                          ) : null}
+                          <iframe
+                            src={story.embedUrl}
+                            title={`${story.company} customer video`}
+                            className="w-full h-full rounded-b-none border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allowFullScreen
+                          />
                         </div>
 
                         <div className="w-full flex flex-col gap-xxs">
-                          <div className="w-fit max-w-[99.2px] h-[26px]">
-                            <img alt={`${story.company} logo`} loading="lazy" className="w-full h-full object-contain" src={story.logo} />
-                          </div>
-                          <div className="w-full flex flex-col md:flex-row md:items-end md:justify-between gap-xxs">
-                            <p className="m-0 text-tertiary subtitle-small text-content-accessory max-w-[550px]">{story.summary}</p>
-                            <div className="w-fit">
-                              <a href={story.href} target="_self" className="mui-15k05j0">
-                                <span type="button" className="mui-mv42ai">
-                                  Learn more
-                                  <div className="cta-icon mui-1e5u1e9">
-                                    <ArrowForwardIcon />
-                                  </div>
-                                </span>
-                              </a>
-                            </div>
-                          </div>
+                          <h3 className="m-0 heading-h5 text-content-primary">{story.company}</h3>
                         </div>
                       </div>
                     </div>
@@ -204,4 +133,3 @@ function Section06() {
 }
 
 export default Section06;
-

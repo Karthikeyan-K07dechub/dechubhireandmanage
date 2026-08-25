@@ -42,6 +42,66 @@ function StatCard({
   );
 }
 
+function QuickActionIcon({ kind }: { kind: 'requests' | 'contracts' | 'invoices' | 'documents' }) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    xmlns: 'http://www.w3.org/2000/svg',
+    stroke: '#0f172a',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+
+  switch (kind) {
+    case 'requests':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M8 7h8" />
+          <path d="M8 12h8" />
+          <path d="M8 17h5" />
+          <path d="M5 7h.01" />
+          <path d="M5 12h.01" />
+          <path d="M5 17h.01" />
+          <rect x="3" y="4" width="18" height="16" rx="3" />
+        </svg>
+      );
+    case 'contracts':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M8 3h6l5 5v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+          <path d="M14 3v5h5" />
+          <path d="M9 13h6" />
+          <path d="M9 17h6" />
+        </svg>
+      );
+    case 'invoices':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M8 7h8" />
+          <path d="M8 12h8" />
+          <path d="M8 17h5" />
+          <path d="M6 3v2" />
+          <path d="M18 3v2" />
+          <rect x="4" y="5" width="16" height="16" rx="3" />
+        </svg>
+      );
+    case 'documents':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M8 3h6l5 5v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+          <path d="M14 3v5h5" />
+          <path d="M12 11v6" />
+          <path d="m9.5 14.5 2.5 2.5 2.5-2.5" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
 interface Props {
   onNavigate: (page: string) => void;
 }
@@ -269,10 +329,10 @@ export default function DashboardHome({ onNavigate }: Props) {
             </div>
             <div className="db-action-list">
               {[
-                { icon: 'Requests', bg: '#f0f9ff', label: 'Open talent requests', sub: 'Track approvals and next steps', action: () => { window.location.href = '/marketplace/requests'; } },
-                { icon: 'Docs', bg: '#fdf4ff', label: 'View contracts', sub: 'All contract statuses', action: () => onNavigate('contracts') },
-                { icon: 'Bills', bg: '#fff7ed', label: 'Manage invoices', sub: 'Approve pending payments', action: () => onNavigate('invoices') },
-                { icon: 'Files', bg: '#f0fdf4', label: 'Download documents', sub: 'Contracts, payslips', action: () => onNavigate('documents') },
+                { icon: <QuickActionIcon kind="requests" />, bg: '#f0f9ff', label: 'Open talent requests', sub: 'Track approvals and next steps', action: () => { window.location.href = '/marketplace/requests'; } },
+                { icon: <QuickActionIcon kind="contracts" />, bg: '#fdf4ff', label: 'View contracts', sub: 'All contract statuses', action: () => onNavigate('contracts') },
+                { icon: <QuickActionIcon kind="invoices" />, bg: '#fff7ed', label: 'Manage invoices', sub: 'Approve pending payments', action: () => onNavigate('invoices') },
+                { icon: <QuickActionIcon kind="documents" />, bg: '#f0fdf4', label: 'Download documents', sub: 'Contracts, payslips', action: () => onNavigate('documents') },
               ].map(({ icon, bg, label, sub, action }) => (
                 <button
                   key={label}

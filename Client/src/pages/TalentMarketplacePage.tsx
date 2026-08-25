@@ -3,7 +3,6 @@ import './talent-marketplace.css';
 import { FALLBACK_MARKETPLACE_TALENT, getMarketplaceTalent, type MarketplaceTalentProfile } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
 import { resolveImageUrl } from '../utils/imageUrl';
-import UserMenu from '../components/common/UserMenu';
 
 interface TalentMarketplacePageProps {
   initialQuery: string;
@@ -14,6 +13,7 @@ interface TalentMarketplacePageProps {
   onLogout: () => void;
   onNotifications: () => void;
   onLogin: () => void;
+  embedded?: boolean;
 }
 
 const DEFAULT_MARKETPLACE_BLURBS = new Set([
@@ -74,12 +74,9 @@ function isCompletedMarketplaceProfile(profile: MarketplaceTalentProfile): boole
 export default function TalentMarketplacePage({
   initialQuery,
   isAuthenticated,
-  userName,
   onOpenProfile,
   onOpenTalentRequests,
-  onLogout,
-  onNotifications,
-  onLogin,
+  embedded = false,
 }: TalentMarketplacePageProps) {
   const [query, setQuery] = useState(initialQuery);
   const [availability, setAvailability] = useState('All');
@@ -130,73 +127,89 @@ export default function TalentMarketplacePage({
     [talentPool],
   );
 
+  const marketplaceFlowItems = [
+    {
+      title: '1. Discover',
+      description: 'Search talent and shortlist relevant profiles inside Marketplace.',
+    },
+    {
+      title: '2. Request',
+      description: 'Open and track talent requests with your hiring details.',
+    },
+    {
+      title: '3. Convert',
+      description: 'Move approved hires into workers, contracts, and payroll execution.',
+    },
+  ];
+
   return (
     <div className="tmp-root">
-      <header className="tmp-topbar">
-        <div className="tmp-brand">
-          <div className="tmp-brand-mark" />
-          <div>
-            <div className="tmp-brand-name">Dechub</div>
-            <div className="tmp-brand-sub">Talent marketplace</div>
-          </div>
-        </div>
-
-        {isAuthenticated ? (
-          <button
-            type="button"
-            onClick={onOpenTalentRequests}
+      <main className="tmp-shell">
+        {!embedded ? (
+          <div
             style={{
-              border: '1px solid #dbe4f0',
-              background: '#fff',
-              borderRadius: 999,
-              padding: '10px 16px',
-              fontSize: 14,
-              fontWeight: 700,
-              color: '#0f172a',
-              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 16,
+              marginBottom: 24,
             }}
           >
-            Talent Requests
-          </button>
+            <button
+              type="button"
+              onClick={() => { window.location.href = '/dashboard?tab=marketplace'; }}
+              style={{
+                border: '1px solid #dbe4f0',
+                background: '#fff',
+                borderRadius: 999,
+                padding: '12px 18px',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#0f172a',
+                cursor: 'pointer',
+              }}
+            >
+              Back to dashboard
+            </button>
+
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={onOpenTalentRequests}
+                style={{
+                  border: '1px solid #dbe4f0',
+                  background: '#fff',
+                  borderRadius: 999,
+                  padding: '10px 16px',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  cursor: 'pointer',
+                }}
+              >
+                Talent Requests
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
-        <div className="tmp-user">
-          {isAuthenticated ? (
-            <UserMenu userName={userName} onLogout={onLogout} onNotifications={onNotifications} />
-          ) : (
-            <>
-              <span>Guest company</span>
-              <button type="button" className="tmp-login-button" onClick={onLogin}>
-                Login
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      <main className="tmp-shell">
-        <section className="tmp-hero">
-          <div className="tmp-hero-copy">
-            <div className="tmp-kicker">Company workspace</div>
-            <h1>Find talent and move straight into hiring.</h1>
-            <p>
-              Browse contractor profiles updated by freelancers themselves, filter by role and
-              availability, and start outreach from one place.
-            </p>
+        <section className="tmp-overview-grid">
+          <div className="tmp-overview-heading">
+            <h1>Source talent faster from one hiring workspace</h1>
+            <p>Browse approved contractor and specialist profiles, track requests, and move selected talent into hiring.</p>
           </div>
 
-          <div className="tmp-summary">
-            <div className="tmp-summary-card">
-              <strong>{talentPool.length}</strong>
-              <span>Active talent profiles</span>
+          <div className="tmp-overview-card tmp-overview-flow">
+            <div className="tmp-overview-card-header">
+              <span>Recommended flow</span>
             </div>
-            <div className="tmp-summary-card">
-              <strong>{availableThisWeek}</strong>
-              <span>Available now or this week</span>
-            </div>
-            <div className="tmp-summary-card">
-              <strong>{filteredTalent.length}</strong>
-              <span>Profiles matching your filters</span>
+            <div className="tmp-overview-flow-grid">
+              {marketplaceFlowItems.map((item) => (
+                <div key={item.title} className="tmp-overview-flow-item">
+                  <strong>{item.title}</strong>
+                  <span>{item.description}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>

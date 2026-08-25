@@ -15,6 +15,8 @@ interface MarketplaceProjectConsultationPageProps {
   onLogout: () => void;
   onNotifications: () => void;
   onLogin: () => void;
+  embedded?: boolean;
+  onSuccess?: () => void;
 }
 
 interface ConsultationFormValues {
@@ -111,6 +113,8 @@ export default function MarketplaceProjectConsultationPage({
   onLogout,
   onNotifications,
   onLogin,
+  embedded = false,
+  onSuccess,
 }: MarketplaceProjectConsultationPageProps) {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -222,7 +226,7 @@ export default function MarketplaceProjectConsultationPage({
 
   return (
     <div className="mpc-root">
-      <header className="mpc-topbar">
+      {!embedded ? <header className="mpc-topbar">
         <div className="mpc-topbar-inner">
           <button type="button" onClick={onBack} className="mpc-back">
             ← Back to service details
@@ -240,9 +244,38 @@ export default function MarketplaceProjectConsultationPage({
             )}
           </div>
         </div>
-      </header>
+      </header> : null}
 
       <main className="mpc-main">
+        {embedded ? (
+          <div
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'flex-start',
+              marginBottom: 20,
+            }}
+          >
+            <button
+              type="button"
+              onClick={onBack}
+              className="mpc-back"
+              style={{
+                background: '#fff',
+                border: '1px solid #dfe3e8',
+                borderRadius: 12,
+                minHeight: 42,
+                padding: '0 16px',
+                fontSize: 13,
+                fontWeight: 700,
+                color: '#111827',
+                boxShadow: '0 10px 30px rgba(17, 24, 39, 0.06)',
+              }}
+            >
+              ← Back to service details
+            </button>
+          </div>
+        ) : null}
         <section className="mpc-shell">
           <div className="mpc-heading">
             <p className="mpc-helper">
@@ -360,6 +393,10 @@ export default function MarketplaceProjectConsultationPage({
           message={`Thank you for choosing this talent. Our team has received your request and will connect with you shortly to discuss your requirements and help you find the perfect match.`}
           onClose={() => {
             setShowSuccessModal(false);
+            if (onSuccess) {
+              onSuccess();
+              return;
+            }
             window.location.replace('/marketplace/requests');
           }}
         />

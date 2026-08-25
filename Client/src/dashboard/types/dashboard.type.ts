@@ -6,7 +6,16 @@ export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'dispu
 export type Track         = 'track_1_india' | 'track_2_us';
 export type WorkerType    = 'contractor' | 'full_time_employee';
 export type PayFrequency  = 'monthly' | 'biweekly' | 'hourly';
-export type DashboardPage = 'home' | 'workers' | 'contracts' | 'invoices' | 'documents' | 'settings';
+export type DashboardPage =
+  | 'home'
+  | 'marketplace'
+  | 'workers'
+  | 'hiring'
+  | 'contracts'
+  | 'payroll'
+  | 'invoices'
+  | 'documents'
+  | 'settings';
 
 // ─── Dechub service IDs ───────────────────────────────────────────────────────
 

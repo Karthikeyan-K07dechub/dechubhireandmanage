@@ -482,27 +482,41 @@ export default function App() {
 
     setUserName(getUserNameFromToken());
 
-    const signupStep = typeof result.signupStep === 'number' ? result.signupStep : 1;
+    const destination = getCompanyDestination();
 
-    if (signupStep < 7) {
-      const nextStep = getNextCompanyStep(signupStep);
-      if (nextStep) {
-        setCompanyOnboardingStep(nextStep);
-        setPage('company-onboarding');
-      } else {
-        window.location.replace('/dashboard');
-      }
+    if (destination === 'dashboard') {
+      window.location.replace('/dashboard');
       return;
     }
 
-    // completed onboarding: go to destination (dashboard or marketplace)
-    if (getCompanyDestination() === 'dashboard') {
-      window.location.replace('/dashboard');
+    if (destination === 'marketplace-profile') {
+      setPage('marketplace-profile');
       return;
     }
 
     setPage('marketplace');
   }, []);
+
+  useEffect(() => {
+    if (page !== 'company-onboarding' || !tokenStore.getAccess()) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const signupStep = (await getSignupStepFromServer()) ?? getSignupStepFromToken() ?? 1;
+      const nextStep = getNextCompanyStep(signupStep) ?? 1;
+
+      if (!cancelled) {
+        setCompanyOnboardingStep(nextStep);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
 
   const completePendingShortlistClaim = async (): Promise<boolean> => {
     const pending = readSessionJson<PendingShortlistClaim>(PENDING_SHORTLIST_CLAIM_KEY);
@@ -669,11 +683,9 @@ export default function App() {
     // Remember the destination for after onboarding completes
     const destination = getCompanyDestination();
     console.log('[handleAuthSuccess] Destination from sessionStorage:', destination);
-    
-    setCompanyOnboardingFromMarketplace(destination === 'marketplace' || destination === 'marketplace-profile');
 
-    const signupStep = typeof result.signupStep === 'number' ? result.signupStep : 1;
-    console.log('[handleAuthSuccess] Signup step:', signupStep);
+    setCompanyOnboardingFromMarketplace(destination === 'marketplace' || destination === 'marketplace-profile');
+    console.log('[handleAuthSuccess] Signup step:', typeof result.signupStep === 'number' ? result.signupStep : 1);
 
     if (destination === 'marketplace') {
       console.log('[handleAuthSuccess] Marketplace origin login; redirecting to marketplace immediately');
@@ -684,21 +696,6 @@ export default function App() {
     if (destination === 'marketplace-profile') {
       console.log('[handleAuthSuccess] Marketplace profile origin login; redirecting to profile immediately');
       setPage('marketplace-profile');
-      return;
-    }
-
-    if (signupStep < 7) {
-      // User needs onboarding
-      console.log('[handleAuthSuccess] User needs onboarding');
-      const nextStep = getNextCompanyStep(signupStep);
-      if (nextStep) {
-        setCompanyOnboardingStep(nextStep);
-        setPage('company-onboarding');
-      } else {
-        // Fallback: go to dashboard if no next step available
-        console.log('[handleAuthSuccess] No next onboarding step, going to dashboard');
-        window.location.replace('/dashboard');
-      }
       return;
     }
 
@@ -755,6 +752,27 @@ export default function App() {
     window.location.replace('/dashboard');
   };
 
+  const handleCompanyOnboardingBack = () => {
+    const destination = getCompanyDestination();
+
+    if (destination === 'dashboard' && tokenStore.getAccess()) {
+      window.location.replace('/dashboard');
+      return;
+    }
+
+    if (destination === 'marketplace-profile') {
+      setPage('marketplace-profile');
+      return;
+    }
+
+    if (companyOnboardingFromMarketplace || destination === 'marketplace') {
+      setPage('marketplace');
+      return;
+    }
+
+    setPage('company-dashboard-auth');
+  };
+
   const handleMarketplaceCheckoutSelection = (selection: MarketplaceCheckoutSelection) => {
     setSelectedMarketplaceProfileId(selection.workerId);
     setSelectedMarketplacePackage(selection);
@@ -777,18 +795,6 @@ export default function App() {
       setCompanyDestination('dashboard');
       setPage('company-dashboard-auth');
       return;
-    }
-
-    const signupStep = (await getSignupStepFromServer()) ?? getSignupStepFromToken();
-    if (signupStep !== null && signupStep < 7) {
-      const nextStep = getNextCompanyStep(signupStep);
-      if (nextStep !== null) {
-        setCompanyDestination('dashboard');
-        setCompanyOnboardingFromMarketplace(false);
-        setCompanyOnboardingStep(nextStep);
-        setPage('company-onboarding');
-        return;
-      }
     }
 
     try {
@@ -945,18 +951,6 @@ export default function App() {
         }}
         onDashboard={async () => {
           if (tokenStore.getAccess()) {
-            const signupStep = (await getSignupStepFromServer()) ?? getSignupStepFromToken();
-            if (signupStep !== null && signupStep < 7) {
-              const nextStep = getNextCompanyStep(signupStep);
-              if (nextStep !== null) {
-                setCompanyDestination('dashboard');
-                setCompanyOnboardingFromMarketplace(false);
-                setCompanyOnboardingStep(nextStep);
-                setPage('company-onboarding');
-                return;
-              }
-            }
-
             window.location.replace('/dashboard');
             return;
           }
@@ -1016,7 +1010,7 @@ export default function App() {
         initialStep={companyOnboardingStep}
         hideProgress={companyOnboardingFromMarketplace}
         completeAfterStep1={companyOnboardingFromMarketplace}
-        onBack={() => setPage('company-dashboard-auth')}
+        onBack={handleCompanyOnboardingBack}
         onComplete={handleCompanyOnboardingComplete}
       />
     );

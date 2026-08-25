@@ -946,7 +946,7 @@ function Header() {
 
           <div className="items-center gap-2 flex justify-end">
             <div className="MuiBox-root mui-fy11xf">
-              <a href="/company/login" title="Log in" target="_self" aria-label="Log in" className="mui-15k05j0">
+              <a href="/get-started" title="Log in" target="_self" aria-label="Log in" className="mui-15k05j0">
                 <button type="button" className="hidden-phone mui-ti8o1k">
                   Log in
                 </button>

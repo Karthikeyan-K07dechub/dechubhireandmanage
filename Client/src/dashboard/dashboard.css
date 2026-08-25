@@ -154,6 +154,41 @@
 .db-nav-item:hover .db-nav-label { color: rgba(255,255,255,0.85); }
 .db-nav-item.active .db-nav-label { color: #00c9a7; font-weight: 600; }
 
+.db-nav-group {
+  display: grid;
+  gap: 2px;
+}
+
+.db-nav-sublist {
+  display: grid;
+  gap: 2px;
+  padding: 0 12px 8px 54px;
+}
+
+.db-nav-subitem {
+  border: none;
+  background: none;
+  color: rgba(255,255,255,0.45);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.db-nav-subitem:hover {
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.82);
+}
+
+.db-nav-subitem.active {
+  background: rgba(0,201,167,0.1);
+  color: #00c9a7;
+  font-weight: 600;
+}
+
 .db-nav-badge {
   margin-left: auto;
   background: rgba(239,68,68,0.2);
@@ -298,6 +333,86 @@
   padding: 32px;
   flex: 1;
   min-width: 0;
+}
+
+.db-setup-banner {
+  margin: 24px 32px 0;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 55%, #ffffff 100%);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.08);
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.db-setup-banner__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.db-setup-banner__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+  margin-bottom: 8px;
+}
+
+.db-setup-banner__title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.db-setup-banner__text {
+  margin: 0;
+  max-width: 760px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #475569;
+}
+
+.db-setup-banner__meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.db-setup-banner__progress {
+  margin-top: 12px;
+  width: min(420px, 100%);
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  overflow: hidden;
+}
+
+.db-setup-banner__progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb 0%, #00c9a7 100%);
+  transition: width 220ms ease;
+}
+
+.db-setup-banner__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+  min-width: 240px;
 }
 
 .db-page-header {
@@ -1225,6 +1340,20 @@
   .db-page {
     padding: 24px 20px;
   }
+
+  .db-setup-banner {
+    margin: 20px 20px 0;
+    padding: 22px 24px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .db-setup-banner__actions {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1257,6 +1386,34 @@
     justify-content: center;
   }
 
+  .db-setup-banner {
+    margin: 16px 16px 0;
+    padding: 18px;
+    gap: 18px;
+  }
+
+  .db-setup-banner__title {
+    font-size: 20px;
+  }
+
+  .db-setup-banner__text {
+    font-size: 13.5px;
+  }
+
+  .db-setup-banner__meta {
+    gap: 10px;
+  }
+
+  .db-setup-banner__actions {
+    flex-direction: column;
+  }
+
+  .db-setup-banner__actions .db-btn-primary,
+  .db-setup-banner__actions .db-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
   .db-filters {
     padding: 14px 16px;
   }
@@ -1271,5 +1428,402 @@
   .db-filter-count {
     margin-left: 0;
     width: 100%;
+  }
+}
+
+/* New workspace pages */
+
+.db-workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.db-workspace-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.db-marketplace-grid {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+
+.db-workspace-hero {
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  min-height: 100%;
+  justify-content: space-between;
+}
+
+.db-marketplace-hero {
+  min-height: 262px;
+}
+
+.db-workspace-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.db-workspace-card .db-card-header {
+  padding: 20px 24px 18px;
+}
+
+.db-workspace-card .db-feature-stack,
+.db-workspace-card .db-kpi-list {
+  padding: 20px 24px 24px;
+}
+
+.db-workspace-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.db-workspace-title {
+  margin: 0 0 12px;
+  font-size: 30px;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.db-workspace-copy {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+}
+
+.db-workspace-copy--compact {
+  margin-bottom: 20px;
+}
+
+.db-workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.db-marketplace-hero .db-workspace-actions .db-btn-primary,
+.db-marketplace-hero .db-workspace-actions .db-btn-secondary {
+  min-height: 46px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+.db-marketplace-hero .db-workspace-actions .db-btn-primary {
+  box-shadow: 0 10px 24px rgba(10, 22, 40, 0.16);
+}
+
+.db-marketplace-hero .db-workspace-actions .db-btn-secondary {
+  border-width: 1.5px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.db-marketplace-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.db-marketplace-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.db-feature-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-feature-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.db-feature-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.db-kpi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.db-kpi-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.db-kpi-item strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.db-kpi-item span {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.db-marketplace-flow {
+  grid-column: 1 / -1;
+}
+
+.db-marketplace-flow .db-kpi-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.db-marketplace-flow .db-kpi-item {
+  padding: 6px 0;
+}
+
+.db-hiring-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100%;
+  padding: 20px 24px 24px;
+}
+
+.db-hiring-card .db-card-header {
+  padding: 0;
+  border-bottom: 0;
+  margin-bottom: 14px;
+}
+
+.db-hiring-card .db-workspace-copy {
+  margin-bottom: 22px;
+}
+
+.db-hiring-card .db-btn-secondary {
+  align-self: flex-start;
+}
+
+.db-payroll-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px 28px 28px;
+}
+
+.db-payroll-topline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.db-payroll-summary {
+  flex: 1 1 420px;
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.db-payroll-currency {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.db-segmented-control {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+}
+
+.db-segmented-control__item {
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #475569;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.db-segmented-control__item:hover {
+  background: rgba(10, 22, 40, 0.05);
+  color: #0f172a;
+}
+
+.db-segmented-control__item.active,
+.db-segmented-control__item.is-active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.db-payroll-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.db-payroll-metric {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.db-payroll-metric__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.db-payroll-metric__value {
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.db-payroll-metric__note {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.db-payroll-note {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.db-payroll-note-card {
+  background: #fff;
+  border-color: #dbeafe;
+}
+
+.db-payroll-note-card .db-card-header {
+  padding: 18px 22px 12px;
+  border-bottom: 0;
+}
+
+.db-payroll-note-card .db-feature-stack {
+  padding: 0 22px 20px;
+}
+
+@media (max-width: 1200px) {
+  .db-marketplace-flow .db-kpi-list,
+  .db-workspace-grid--three,
+  .db-payroll-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .db-marketplace-grid,
+  .db-workspace-grid,
+  .db-workspace-grid--three,
+  .db-payroll-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-marketplace-flow .db-kpi-list {
+    grid-template-columns: 1fr;
+  }
+
+  .db-workspace-title {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 760px) {
+  .db-workspace-hero,
+  .db-hiring-card,
+  .db-payroll-shell {
+    padding: 20px;
+  }
+
+  .db-workspace-card .db-card-header,
+  .db-workspace-card .db-feature-stack,
+  .db-workspace-card .db-kpi-list,
+  .db-payroll-note-card .db-feature-stack,
+  .db-payroll-note-card .db-card-header {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .db-payroll-topline {
+    flex-direction: column;
+  }
+
+  .db-payroll-currency {
+    align-self: flex-start;
+  }
+
+  .db-segmented-control {
+    width: 100%;
+  }
+
+  .db-segmented-control__item {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+  }
+
+  .db-workspace-actions {
+    flex-direction: column;
+  }
+
+  .db-workspace-actions .db-btn-primary,
+  .db-workspace-actions .db-btn-secondary {
+    width: 100%;
+    justify-content: center;
   }
 }
