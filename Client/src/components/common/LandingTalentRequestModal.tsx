@@ -9,6 +9,8 @@ import './landing-talent-request-modal.css';
 interface LandingTalentRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
+  requestedServices?: string[];
+  onSuccess?: () => void;
 }
 
 interface LandingTalentRequestFormValues {
@@ -21,6 +23,8 @@ interface LandingTalentRequestFormValues {
   contactEmail: string;
   phoneNumber: string;
 }
+
+const HERO_REQUESTED_SERVICES_STORAGE_KEY = 'dechub_hero_requested_services';
 
 const PROJECT_TYPE_OPTIONS = [
   'Hire freelance talent',
@@ -44,10 +48,13 @@ const MIN_PROJECT_DESCRIPTION = 150;
 export default function LandingTalentRequestModal({
   isOpen,
   onClose,
+  requestedServices = [],
+  onSuccess,
 }: LandingTalentRequestModalProps) {
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const touchStartYRef = useRef<number | null>(null);
+  const requestedServicesRef = useRef<string[]>(requestedServices);
   const {
     register,
     reset,
@@ -71,6 +78,21 @@ export default function LandingTalentRequestModal({
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
+    requestedServicesRef.current = requestedServices;
+
+    try {
+      if (requestedServices.length) {
+        window.sessionStorage.setItem(
+          HERO_REQUESTED_SERVICES_STORAGE_KEY,
+          JSON.stringify(requestedServices),
+        );
+      }
+    } catch {
+      // Ignore storage failures and keep in-memory fallback only.
+    }
+  }, [requestedServices]);
+
+  useEffect(() => {
     const host = document.createElement('div');
     host.className = 'ltrm-portal-root';
     document.documentElement.appendChild(host);
@@ -87,6 +109,11 @@ export default function LandingTalentRequestModal({
     const previousHtmlOverflow = document.documentElement.style.overflow;
 
     if (!isOpen) {
+      try {
+        window.sessionStorage.removeItem(HERO_REQUESTED_SERVICES_STORAGE_KEY);
+      } catch {
+        // Ignore storage cleanup failures.
+      }
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
       setSubmitError('');
@@ -141,6 +168,24 @@ export default function LandingTalentRequestModal({
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError('');
 
+    let persistedRequestedServices = requestedServicesRef.current;
+
+    if (!persistedRequestedServices.length) {
+      try {
+        const rawStoredServices = window.sessionStorage.getItem(HERO_REQUESTED_SERVICES_STORAGE_KEY);
+        if (rawStoredServices) {
+          const parsedStoredServices = JSON.parse(rawStoredServices);
+          if (Array.isArray(parsedStoredServices)) {
+            persistedRequestedServices = parsedStoredServices.filter(
+              (item): item is string => typeof item === 'string' && item.trim().length > 0,
+            );
+          }
+        }
+      } catch {
+        // Ignore storage parse failures and submit without requestedServices.
+      }
+    }
+
     try {
       await createPublicTalentRequest({
         companyName: values.companyName.trim(),
@@ -151,7 +196,16 @@ export default function LandingTalentRequestModal({
         contactName: values.contactName.trim(),
         contactEmail: values.contactEmail.trim(),
         phoneNumber: values.phoneNumber.trim(),
+        requestedServices: persistedRequestedServices.length ? persistedRequestedServices : undefined,
       });
+
+      try {
+        window.sessionStorage.removeItem(HERO_REQUESTED_SERVICES_STORAGE_KEY);
+      } catch {
+        // Ignore storage cleanup failures.
+      }
+
+      onSuccess?.();
       setIsSubmitted(true);
     } catch (err) {
       const apiError = err as ApiError;

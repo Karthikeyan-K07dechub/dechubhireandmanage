@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import heroBackground from "../../pages/assets/hero-image.png";
 import paperRocket from "../../pages/assets/paper-rocket.png";
+
+const HERO_REQUESTED_SERVICES_STORAGE_KEY = "dechub_hero_requested_services";
 
 const PRIMARY_ACTIONS = [
   "Hire anywhere",
@@ -29,8 +31,12 @@ function HeroOption({ label, ariaLabel, checked, onToggle }) {
   );
 }
 
-function Section01() {
+function Section01({ onBookDemo, resetKey = 0 }) {
   const [selectedActions, setSelectedActions] = useState([]);
+
+  useEffect(() => {
+    setSelectedActions([]);
+  }, [resetKey]);
 
   const toggleAction = (label) => {
     setSelectedActions((currentSelections) =>
@@ -38,6 +44,21 @@ function Section01() {
         ? currentSelections.filter((selectedLabel) => selectedLabel !== label)
         : [...currentSelections, label],
     );
+  };
+
+  const normalizedSelectedActions = selectedActions.map((action) => action.replace(/\s+/g, " ").trim());
+
+  const handleBookDemoClick = () => {
+    try {
+      window.sessionStorage.setItem(
+        HERO_REQUESTED_SERVICES_STORAGE_KEY,
+        JSON.stringify(normalizedSelectedActions),
+      );
+    } catch {
+      // Ignore storage failures and fall back to in-memory modal handoff.
+    }
+
+    onBookDemo?.(normalizedSelectedActions);
   };
 
   return (
@@ -101,7 +122,12 @@ function Section01() {
                 </div>
 
                 <div className="deel-hero__cta-wrap">
-                  <button type="button" className="deel-hero__cta">
+                  <button
+                    type="button"
+                    className="deel-hero__cta"
+                    data-requested-services={JSON.stringify(normalizedSelectedActions)}
+                    onClick={handleBookDemoClick}
+                  >
                     Book a demo
                   </button>
                 </div>

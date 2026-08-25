@@ -336,10 +336,21 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
   const mountNodeRef = useRef<HTMLDivElement | null>(null);
   const [markup, setMarkup] = useState('');
   const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
+  const [requestedServices, setRequestedServices] = useState<string[]>([]);
   const scriptTemplatesRef = useRef<HTMLScriptElement[]>([]);
+
+  const openTalentRequestModal = (services?: string[]) => {
+    setRequestedServices(
+      Array.isArray(services)
+        ? services.filter((item): item is string => typeof item === 'string')
+        : [],
+    );
+    setIsTalentRequestModalOpen(true);
+  };
 
   useEffect(() => {
     setIsTalentRequestModalOpen(false);
+    setRequestedServices([]);
   }, [sourcePath]);
 
   useEffect(() => {
@@ -462,7 +473,19 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
       if (clickable.matches('.static-hero-button-secondary')) {
         event.preventDefault();
         event.stopPropagation();
-        setIsTalentRequestModalOpen(true);
+        const requestedServicesAttr = clickable.getAttribute('data-requested-services');
+        openTalentRequestModal(
+          requestedServicesAttr
+            ? (() => {
+                try {
+                  const parsed = JSON.parse(requestedServicesAttr);
+                  return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                  return [];
+                }
+              })()
+            : [],
+        );
         return;
       }
 
@@ -549,7 +572,11 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
   return (
     <LandingTalentRequestModal
       isOpen={isTalentRequestModalOpen}
-      onClose={() => setIsTalentRequestModalOpen(false)}
+      onClose={() => {
+        setIsTalentRequestModalOpen(false);
+        setRequestedServices([]);
+      }}
+      requestedServices={requestedServices}
     />
   );
 }

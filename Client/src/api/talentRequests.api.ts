@@ -22,6 +22,7 @@ export interface PublicTalentRequestPayload {
   contactName?: string;
   contactEmail?: string;
   phoneNumber?: string;
+  requestedServices?: string[];
 }
 
 export interface TalentRequestSignupPrefill {

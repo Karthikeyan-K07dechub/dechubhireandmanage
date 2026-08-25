@@ -21,7 +21,22 @@ function Section07() {
             <div className="MuiBox-root mui-179v373" key={metric.label}>
               <div className="MuiBox-root mui-11ph1yg">
                 <p className="MuiTypography-root MuiTypography-body1 center !font-bagoss-extended key-fig-title mui-10ex3ld">
-                  {metric.value}
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "6px 14px",
+                      borderRadius: "999px",
+                      background: "#efe7ff",
+                      color: "#5b35d5",
+                      fontSize: "0.52em",
+                      fontWeight: 700,
+                      lineHeight: 1.1,
+                      letterSpacing: "0.03em",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {metric.value}
+                  </span>
                 </p>
                 <p className="MuiTypography-root MuiTypography-body1 semibd key-fig-subtitle mui-85xu46">
                   {metric.label}
@@ -41,4 +56,3 @@ function Section07() {
 }
 
 export default Section07;
-

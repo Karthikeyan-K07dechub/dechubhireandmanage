@@ -293,6 +293,7 @@ const marketplaceTalentRequestSchema = z.object({
   contactName: z.string().trim().min(2).max(120).optional(),
   contactEmail: z.string().trim().email().max(200).optional(),
   phoneNumber: z.string().trim().max(40).optional(),
+  requestedServices: z.array(z.string().trim().min(1).max(100)).max(20).optional(),
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -643,6 +644,7 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       projectType: data.projectType.trim(),
       budget: data.budget.trim(),
       projectDescription: data.projectDescription.trim(),
+      requestedServices: (data.requestedServices ?? []).map((service) => service.trim()),
     });
 
     created(res, {

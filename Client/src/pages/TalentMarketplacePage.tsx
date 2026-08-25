@@ -122,11 +122,6 @@ export default function TalentMarketplacePage({
     });
   }, [availability, query, talentPool]);
 
-  const availableThisWeek = useMemo(
-    () => talentPool.filter((talent) => talent.availability === 'available_now' || talent.availability === 'this_week').length,
-    [talentPool],
-  );
-
   const marketplaceFlowItems = [
     {
       title: '1. Discover',

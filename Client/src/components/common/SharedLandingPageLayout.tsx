@@ -47,6 +47,16 @@ interface SharedLandingPageLayoutProps {
 export default function SharedLandingPageLayout({ children }: SharedLandingPageLayoutProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
+  const [requestedServices, setRequestedServices] = useState<string[]>([]);
+
+  const openTalentRequestModal = (services?: string[]) => {
+    setRequestedServices(
+      Array.isArray(services)
+        ? services.filter((item): item is string => typeof item === 'string')
+        : [],
+    );
+    setIsTalentRequestModalOpen(true);
+  };
 
   useEffect(() => {
     const appRoot = document.getElementById('root');
@@ -95,7 +105,19 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
 
       if (isDemoTrigger) {
         event.preventDefault();
-        setIsTalentRequestModalOpen(true);
+        const requestedServicesAttr = actionElement.getAttribute('data-requested-services');
+        openTalentRequestModal(
+          requestedServicesAttr
+            ? (() => {
+                try {
+                  const parsed = JSON.parse(requestedServicesAttr);
+                  return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                  return [];
+                }
+              })()
+            : [],
+        );
         return;
       }
 
@@ -155,7 +177,11 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
       </div>
       <LandingTalentRequestModal
         isOpen={isTalentRequestModalOpen}
-        onClose={() => setIsTalentRequestModalOpen(false)}
+        onClose={() => {
+          setIsTalentRequestModalOpen(false);
+          setRequestedServices([]);
+        }}
+        requestedServices={requestedServices}
       />
     </div>
   );

@@ -63,6 +63,13 @@ export default function LandingPageDeel({
 }: LandingPageDeelProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
+  const [requestedServices, setRequestedServices] = useState<string[]>([]);
+  const [heroSelectionResetKey, setHeroSelectionResetKey] = useState(0);
+
+  const openTalentRequestModal = (services?: string[]) => {
+    setRequestedServices(Array.isArray(services) ? services.filter((item): item is string => typeof item === 'string') : []);
+    setIsTalentRequestModalOpen(true);
+  };
 
   useEffect(() => {
     document.title = 'Deel | Global Payroll, Compliance, HR Solutions | HRIS';
@@ -135,7 +142,19 @@ export default function LandingPageDeel({
 
       if (BOOK_DEMO_LABELS.has(label) || href.includes('book-a-demo')) {
         event.preventDefault();
-        setIsTalentRequestModalOpen(true);
+        const requestedServicesAttr = actionElement.getAttribute('data-requested-services');
+        openTalentRequestModal(
+          requestedServicesAttr
+            ? (() => {
+                try {
+                  const parsed = JSON.parse(requestedServicesAttr);
+                  return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                  return [];
+                }
+              })()
+            : [],
+        );
         return;
       }
 
@@ -213,7 +232,7 @@ export default function LandingPageDeel({
         <div className="relative">
           <div data-ab-page="true" className="bg-surface-secondary flex flex-col items-center">
             <div className="deel-clone-band deel-clone-band--hero">
-              <Section01 />
+              <Section01 onBookDemo={openTalentRequestModal} resetKey={heroSelectionResetKey} />
             </div>
             <div id="deel-proof" className="deel-clone-band deel-clone-band--proof">
               <div className="deel-clone-shell">
@@ -261,7 +280,15 @@ export default function LandingPageDeel({
       </div>
       <LandingTalentRequestModal
         isOpen={isTalentRequestModalOpen}
-        onClose={() => setIsTalentRequestModalOpen(false)}
+        onClose={() => {
+          setIsTalentRequestModalOpen(false);
+          setRequestedServices([]);
+        }}
+        requestedServices={requestedServices}
+        onSuccess={() => {
+          setRequestedServices([]);
+          setHeroSelectionResetKey((currentValue) => currentValue + 1);
+        }}
       />
     </div>
   );

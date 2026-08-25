@@ -35,6 +35,7 @@ export interface ITalentRequest extends Document {
   projectType: string;
   budget: string;
   projectDescription: string;
+  requestedServices: string[];
   status: TalentRequestStatus;
   reviewNotes: string;
   shortlistedWorkerIds: mongoose.Types.ObjectId[];
@@ -80,6 +81,7 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     projectType: { type: String, required: true, trim: true },
     budget: { type: String, required: true, trim: true },
     projectDescription: { type: String, required: true, trim: true },
+    requestedServices: { type: [String], default: [] },
 
     status: {
       type: String,

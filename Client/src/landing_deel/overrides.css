@@ -771,8 +771,9 @@
 
 .deel-clone-root .deel-nav-dropdown-shell {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   left: -84px;
+  padding-top: 10px;
   z-index: 700;
   transform-origin: top left;
   will-change: opacity, transform, filter;

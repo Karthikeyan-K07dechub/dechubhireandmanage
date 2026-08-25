@@ -4,14 +4,14 @@ const stories = [
   {
     company: "Tanishq",
     summary: "Watch how Tanishq presents its customer story and brand experience through a polished video showcase.",
-    href: "https://www.youtube.com/watch?v=I1ZoIkiNRQc",
-    embedUrl: "https://www.youtube-nocookie.com/embed/I1ZoIkiNRQc",
+    href: "https://www.youtube.com/watch?v=QONO-d6seDI",
+    embedUrl: "https://www.youtube-nocookie.com/embed/QONO-d6seDI",
   },
   {
     company: "Titan",
     summary: "Explore Titan's video story and how the brand communicates trust, scale, and customer connection.",
-    href: "https://www.youtube.com/watch?v=pTgCCnCMb8w",
-    embedUrl: "https://www.youtube-nocookie.com/embed/pTgCCnCMb8w",
+    href: "https://www.youtube.com/watch?v=3rzHKUMeWMM",
+    embedUrl: "https://www.youtube-nocookie.com/embed/3rzHKUMeWMM",
   },
   {
     company: "Wildcraft",
@@ -22,8 +22,8 @@ const stories = [
   {
     company: "Fastrack",
     summary: "Watch Fastrack's energetic brand video and how it speaks to a modern, fast-moving customer audience.",
-    href: "https://www.youtube.com/watch?v=EK63GyM8Dew",
-    embedUrl: "https://www.youtube-nocookie.com/embed/EK63GyM8Dew",
+    href: "https://www.youtube.com/watch?v=2Hgu2zkD0JU",
+    embedUrl: "https://www.youtube-nocookie.com/embed/2Hgu2zkD0JU",
   },
   {
     company: "Mia",
