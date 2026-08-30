@@ -92,6 +92,39 @@ const DEFAULT_PACKAGE_PRESETS: ContractorProfile['servicePackages'] = [
   },
 ];
 
+function inferOnboardingStepFromProfile(profile: Partial<ContractorProfile>): number {
+  const hasPersonalDetails = Boolean(
+    profile.dateOfBirth
+    && profile.nationality?.trim()
+    && profile.addressLine1?.trim()
+    && profile.city?.trim()
+    && profile.postalCode?.trim()
+    && profile.country?.trim()
+    && profile.taxId?.trim(),
+  );
+
+  if (!hasPersonalDetails) {
+    return 1;
+  }
+
+  const hasKycSubmission = Boolean(profile.idType?.trim() && profile.idNumber?.trim());
+  if (!hasKycSubmission) {
+    return 2;
+  }
+
+  const hasPaymentDetails = Boolean(
+    (profile.paymentMethod === 'wise' && profile.wiseEmail?.trim())
+    || (profile.paymentMethod === 'paypal' && profile.paypalEmail?.trim())
+    || (profile.paymentMethod === 'bank_transfer' && profile.bankName?.trim() && profile.accountNumber?.trim()),
+  );
+
+  if (!hasPaymentDetails) {
+    return 3;
+  }
+
+  return 4;
+}
+
 function FileUploadControl({
   value,
   accept = 'image/*',
@@ -135,6 +168,7 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
   const availabilityOption = MARKETPLACE_AVAILABILITY_OPTIONS.find(
     (option) => option.value === profile.marketplaceAvailability,
   );
+  const inferredOnboardingStep = inferOnboardingStepFromProfile(profile);
 
   return {
     workerId: profile.workerId ?? '',
@@ -184,7 +218,26 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
     faqItems: Array.isArray(profile.faqItems)
       ? profile.faqItems.map((item) => ({ question: item.question ?? '', answer: item.answer ?? '' }))
       : [],
-    onboardingStep: typeof profile.onboardingStep === 'number' ? profile.onboardingStep : 0,
+    onboardingStep:
+      typeof profile.onboardingStep === 'number' && profile.onboardingStep > 0
+        ? profile.onboardingStep
+        : inferredOnboardingStep,
+    dateOfBirth: profile.dateOfBirth ?? '',
+    nationality: profile.nationality ?? '',
+    addressLine1: profile.addressLine1 ?? '',
+    addressLine2: profile.addressLine2 ?? '',
+    state: profile.state ?? '',
+    postalCode: profile.postalCode ?? '',
+    taxId: profile.taxId ?? '',
+    idType: profile.idType ?? '',
+    idNumber: profile.idNumber ?? '',
+    paymentMethod: profile.paymentMethod ?? '',
+    wiseEmail: profile.wiseEmail ?? '',
+    bankName: profile.bankName ?? '',
+    accountNumber: profile.accountNumber ?? '',
+    routingNumber: profile.routingNumber ?? '',
+    swiftCode: profile.swiftCode ?? '',
+    paypalEmail: profile.paypalEmail ?? '',
   };
 }
 
@@ -383,11 +436,72 @@ function DashboardHome({
   const totalPending = invoices.filter((invoice) => invoice.status === 'submitted').reduce((sum, invoice) => sum + invoice.amountGross, 0);
   const nextPayment = invoices.find((invoice) => invoice.status === 'approved');
   const recentInvoices = invoices.slice(0, 4);
+  const isSetupIncomplete = profile.onboardingStep > 0 && profile.onboardingStep < 4;
+  const completedSteps = Math.max(1, Math.min(profile.onboardingStep, 4));
+  const progressPercent = Math.round((completedSteps / 4) * 100);
 
   return (
     <div className="cd-page">
       <div className="cd-page-title">Welcome back, {profile.firstName}</div>
       <div className="cd-page-sub">{profile.roleTitle} at {profile.companyName}</div>
+
+      {isSetupIncomplete ? (
+        <section
+          style={{
+            background: '#ffffff',
+            border: '1px solid #dbe4f0',
+            borderRadius: 24,
+            padding: '26px 28px',
+            marginBottom: 22,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 20,
+            boxShadow: '0 16px 40px rgba(15, 23, 42, 0.05)',
+          }}
+          aria-label="Complete freelancer setup"
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4f46e5', marginBottom: 10 }}>
+              Complete freelancer setup
+            </div>
+            <h2 style={{ margin: '0 0 8px', fontSize: 34, lineHeight: 1.08, letterSpacing: '-0.04em', color: '#0f172a' }}>
+              Your dashboard is ready. Finish setup whenever you&apos;re ready.
+            </h2>
+            <p style={{ margin: '0 0 14px', maxWidth: 760, fontSize: 15, lineHeight: 1.7, color: '#64748b' }}>
+              You can explore the dashboard now and complete your personal details, identity check, and payment details later.
+            </p>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12, fontSize: 13.5, fontWeight: 600, color: '#334155' }}>
+              <span>{completedSteps}/4 setup steps completed</span>
+              <span>{progressPercent}% done</span>
+            </div>
+            <div style={{ height: 10, background: '#e5edff', borderRadius: 999, overflow: 'hidden', maxWidth: 480 }}>
+              <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #2563eb, #14b8a6)', borderRadius: 999 }} />
+            </div>
+          </div>
+
+          <div style={{ width: 240, display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
+            <button
+              type="button"
+              className="cp-btn-primary"
+              style={{ width: '100%' }}
+              onClick={() => {
+                window.location.href = '/freelancer/signup?resume=1';
+              }}
+            >
+              Complete freelancer setup
+            </button>
+            <button
+              type="button"
+              className="cp-btn-secondary"
+              style={{ width: '100%' }}
+              onClick={() => onNavigate('dashboard')}
+            >
+              Keep exploring dashboard
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="cd-stats">
         <div className="cd-stat">

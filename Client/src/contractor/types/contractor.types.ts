@@ -183,4 +183,20 @@ export interface ContractorProfile {
   servicePackages: ContractorServicePackage[];
   faqItems: ContractorFaqItem[];
   onboardingStep: number;
+  dateOfBirth?: string;
+  nationality?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  state?: string;
+  postalCode?: string;
+  taxId?: string;
+  idType?: 'passport' | 'drivers_license' | 'national_id' | '';
+  idNumber?: string;
+  paymentMethod?: 'wise' | 'bank_transfer' | 'paypal' | '';
+  wiseEmail?: string;
+  bankName?: string;
+  accountNumber?: string;
+  routingNumber?: string;
+  swiftCode?: string;
+  paypalEmail?: string;
 }

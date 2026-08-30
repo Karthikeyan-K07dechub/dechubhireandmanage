@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import '../contractor/contractor.css';
 import './freelancer-signup.css';
 import type { ContractorOnboardingData } from '../contractor/types/contractor.types';
 import { INITIAL_ONBOARDING } from '../contractor/types/contractor.types';
-import { selfSignupContractor } from '../contractor/api/contractor.api';
+import { contractorTokenStore, getContractorProfile, selfSignupContractor } from '../contractor/api/contractor.api';
 import Step2PersonalDetails from '../contractor/steps/Step2PersonalDetails';
 import Step3KYC from '../contractor/steps/Step3Kyc';
 import Step4BankDetails from '../contractor/steps/Step4BankDetails';
@@ -38,6 +38,54 @@ interface FreelancerSignupPageProps {
   onComplete: (profile: FreelancerProfile) => void;
 }
 
+function inferOnboardingStepFromProfile(profile: {
+  dateOfBirth?: string;
+  nationality?: string;
+  addressLine1?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
+  taxId?: string;
+  idType?: string;
+  idNumber?: string;
+  paymentMethod?: string;
+  wiseEmail?: string;
+  bankName?: string;
+  accountNumber?: string;
+  paypalEmail?: string;
+}): number {
+  const hasPersonalDetails = Boolean(
+    profile.dateOfBirth
+    && profile.nationality?.trim()
+    && profile.addressLine1?.trim()
+    && profile.city?.trim()
+    && profile.postalCode?.trim()
+    && profile.country?.trim()
+    && profile.taxId?.trim(),
+  );
+
+  if (!hasPersonalDetails) {
+    return 1;
+  }
+
+  const hasKycSubmission = Boolean(profile.idType?.trim() && profile.idNumber?.trim());
+  if (!hasKycSubmission) {
+    return 2;
+  }
+
+  const hasPaymentDetails = Boolean(
+    (profile.paymentMethod === 'wise' && profile.wiseEmail?.trim())
+    || (profile.paymentMethod === 'paypal' && profile.paypalEmail?.trim())
+    || (profile.paymentMethod === 'bank_transfer' && profile.bankName?.trim() && profile.accountNumber?.trim()),
+  );
+
+  if (!hasPaymentDetails) {
+    return 3;
+  }
+
+  return 4;
+}
+
 function LogoMark() {
   return (
     <div className="cp-logo-mark">
@@ -70,6 +118,7 @@ export default function FreelancerSignupPage({
   onComplete,
 }: FreelancerSignupPageProps) {
   const [step, setStep] = useState(0);
+  const [resumeLoading, setResumeLoading] = useState(true);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountError, setAccountError] = useState('');
   const [account, setAccount] = useState({
@@ -86,8 +135,81 @@ export default function FreelancerSignupPage({
     paymentMethod: 'wise',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const resumeMode = new URLSearchParams(window.location.search).get('resume') === '1';
 
   const currentMeta = useMemo(() => STEPS[step], [step]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadExistingContractor() {
+      if (!contractorTokenStore.getAccess()) {
+        if (!cancelled) {
+          setResumeLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const profile = await getContractorProfile();
+        if (cancelled) return;
+
+        setAccount((prev) => ({
+          ...prev,
+          firstName: profile.firstName ?? prev.firstName,
+          lastName: profile.lastName ?? prev.lastName,
+          email: profile.email ?? prev.email,
+        }));
+
+        setForm((prev) => ({
+          ...prev,
+          dateOfBirth: profile.dateOfBirth ?? '',
+          nationality: profile.nationality ?? '',
+          addressLine1: profile.addressLine1 ?? '',
+          addressLine2: profile.addressLine2 ?? '',
+          city: profile.city ?? '',
+          state: profile.state ?? '',
+          postalCode: profile.postalCode ?? '',
+          country: profile.country ?? '',
+          taxId: profile.taxId ?? '',
+          idType: profile.idType ?? '',
+          idNumber: profile.idNumber ?? '',
+          paymentMethod: profile.paymentMethod || 'wise',
+          wiseEmail: profile.wiseEmail ?? '',
+          bankName: profile.bankName ?? '',
+          accountNumber: profile.accountNumber ?? '',
+          routingNumber: profile.routingNumber ?? '',
+          swiftCode: profile.swiftCode ?? '',
+          paypalEmail: profile.paypalEmail ?? '',
+        }));
+
+        const inferredOnboardingStep =
+          typeof profile.onboardingStep === 'number' && profile.onboardingStep > 0
+            ? profile.onboardingStep
+            : inferOnboardingStepFromProfile(profile);
+
+        if (resumeMode && inferredOnboardingStep > 0 && inferredOnboardingStep < 4) {
+          setStep(inferredOnboardingStep);
+        } else if (resumeMode && inferredOnboardingStep >= 4) {
+          window.location.replace('/contractor/dashboard');
+          return;
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setAccountError((err as Error).message ?? 'Failed to load your signup progress.');
+      } finally {
+        if (!cancelled) {
+          setResumeLoading(false);
+        }
+      }
+    }
+
+    void loadExistingContractor();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resumeMode]);
 
   const updateAccountField = (key: keyof typeof account, value: string) => {
     setAccount((prev) => ({ ...prev, [key]: value }));
@@ -166,6 +288,7 @@ export default function FreelancerSignupPage({
     };
 
     onComplete(profile);
+    window.location.replace('/contractor/dashboard');
   };
 
   const handleFirstStepContinue = async () => {
@@ -185,7 +308,7 @@ export default function FreelancerSignupPage({
         phone: `${account.phoneCode} ${account.phone.trim()}`,
         password: account.password,
       });
-      setStep(1);
+      window.location.replace('/contractor/dashboard');
     } catch (err) {
       setAccountError((err as Error).message ?? 'Failed to create your account.');
     } finally {
@@ -195,11 +318,26 @@ export default function FreelancerSignupPage({
 
   const handleBack = () => {
     if (step === 0) {
+      if (resumeMode && contractorTokenStore.getAccess()) {
+        window.location.replace('/contractor/dashboard');
+        return;
+      }
       onBack();
       return;
     }
     setStep((prev) => prev - 1);
   };
+
+  if (resumeLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="cp-spinner dark" style={{ width: 28, height: 28, borderWidth: 3, margin: '0 auto 16px' }} />
+          <p style={{ color: '#94a3b8', fontSize: 14 }}>Loading your signup progress...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cp-root">
@@ -214,7 +352,9 @@ export default function FreelancerSignupPage({
             <div className="cp-welcome-tag">Freelancer signup</div>
             <div className="cp-welcome-company">Create your freelancer account</div>
             <div className="cp-welcome-role">
-              Complete your signup, skip contract acceptance, and go straight to your dashboard when finished.
+              {resumeMode
+                ? 'Complete the remaining setup steps and keep your freelancer profile ready for payments.'
+                : 'Create your account first, then finish the remaining setup later from your dashboard.'}
             </div>
 
             <div className="cp-progress-steps">
@@ -337,11 +477,11 @@ export default function FreelancerSignupPage({
               </div>
 
               <p className="fsp-note">
-                Step {step + 1} of {STEPS.length}. Once you finish payment details, you&apos;ll be taken directly to your dashboard.
+                Step {step + 1} of {STEPS.length}. Once your account is created, you&apos;ll be taken to your dashboard and can finish the remaining setup later.
               </p>
 
               <button type="button" className="cp-btn-primary" onClick={handleFirstStepContinue} disabled={accountLoading}>
-                {accountLoading ? 'Creating account...' : 'Continue to next step'}
+                {accountLoading ? 'Creating account...' : 'Create account and go to dashboard'}
               </button>
             </div>
           )}

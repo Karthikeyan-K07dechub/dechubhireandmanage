@@ -45,6 +45,10 @@ function hasCompletedKyc(worker: InstanceType<typeof Worker>): boolean {
   return Boolean(worker.kycData?.idFrontPath && worker.kycStatus === 'approved');
 }
 
+function hasSubmittedKyc(worker: InstanceType<typeof Worker>): boolean {
+  return Boolean(worker.kycData?.idFrontPath);
+}
+
 function hasCompletedPaymentDetails(worker: InstanceType<typeof Worker>): boolean {
   const details = worker.paymentDetails;
   if (!details?.paymentMethod) {
@@ -72,6 +76,26 @@ function getInviteOnboardingStep(worker: InstanceType<typeof Worker>): number {
   }
 
   if (!hasCompletedKyc(worker)) {
+    return 2;
+  }
+
+  if (!hasCompletedPaymentDetails(worker)) {
+    return 3;
+  }
+
+  return 4;
+}
+
+function getSelfSignupOnboardingStep(worker: InstanceType<typeof Worker>): number {
+  if (!worker.passwordHash) {
+    return 0;
+  }
+
+  if (!hasCompletedPersonalDetails(worker)) {
+    return 1;
+  }
+
+  if (!hasSubmittedKyc(worker)) {
     return 2;
   }
 
@@ -847,7 +871,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       payCurrency: worker.payCurrency,
       payFrequency: worker.payFrequency,
       skills: marketplaceProfile.skills,
-      onboardingStep: 0,
+      onboardingStep: getSelfSignupOnboardingStep(worker),
       marketplaceTitle: marketplaceProfile.marketplaceTitle,
       marketplaceBio: marketplaceProfile.marketplaceBio,
       marketplaceAvailability: marketplaceProfile.marketplaceAvailability,
@@ -1056,7 +1080,23 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
       portfolioProjects: marketplaceProfile.portfolioProjects,
       servicePackages: marketplaceProfile.servicePackages,
       faqItems: marketplaceProfile.faqItems,
-      onboardingStep:0,
+      onboardingStep: getSelfSignupOnboardingStep(worker),
+      dateOfBirth: worker.contractorProfile?.dateOfBirth?.toISOString?.().slice(0, 10) ?? '',
+      nationality: worker.contractorProfile?.nationality ?? '',
+      addressLine1: worker.contractorProfile?.address?.line1 ?? '',
+      addressLine2: worker.contractorProfile?.address?.line2 ?? '',
+      state: worker.contractorProfile?.address?.state ?? '',
+      postalCode: worker.contractorProfile?.address?.postalCode ?? '',
+      taxId: worker.contractorProfile?.taxId ?? '',
+      idType: worker.kycData?.idType ?? '',
+      idNumber: worker.kycData?.idNumber ?? '',
+      paymentMethod: worker.paymentDetails?.paymentMethod ?? '',
+      wiseEmail: worker.paymentDetails?.wiseEmail ?? '',
+      bankName: worker.paymentDetails?.bankName ?? '',
+      accountNumber: worker.paymentDetails?.accountNumber ?? '',
+      routingNumber: worker.paymentDetails?.routingNumber ?? '',
+      swiftCode: worker.paymentDetails?.swiftCode ?? '',
+      paypalEmail: worker.paymentDetails?.paypalEmail ?? '',
     });
   } catch (err) { next(err); }
 }
