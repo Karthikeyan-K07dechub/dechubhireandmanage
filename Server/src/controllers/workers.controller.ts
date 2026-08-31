@@ -10,6 +10,7 @@ import { TalentRequest } from '../models/TalentRequest';
 import { ok, created, Errors, AppError } from '../utils/response';
 import { logger } from '../utils/logger';
 import { sendTalentRequestAdminNotificationEmail } from '../utils/email';
+import { queueBookDemoSubmissionToGoogleSheets } from '../services/googleSheets.service';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 
@@ -653,6 +654,21 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       dbSaveSucceeded,
     });
 
+    const buildGoogleSheetsPayload = (request: InstanceType<typeof TalentRequest> | null, dbSaveStatus: 'saved' | 'failed') => ({
+      submittedAt: request?.createdAt?.toISOString() ?? new Date().toISOString(),
+      companyName,
+      companyWebsite,
+      contactName: [contactFirstName, contactLastName].filter(Boolean).join(' ').trim(),
+      workEmail: contactEmail,
+      phoneNumber: contactPhone,
+      projectType,
+      budget,
+      projectDescription,
+      requestedServices,
+      dbSaveStatus,
+      requestId: request?._id?.toString() ?? null,
+    });
+
     try {
       const request = await TalentRequest.create({
         companyId,
@@ -685,6 +701,8 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
         logger.error('Failed to send marketplace talent request admin notification email', err);
       });
 
+      queueBookDemoSubmissionToGoogleSheets(buildGoogleSheetsPayload(request, 'saved'));
+
       return;
     } catch (dbSaveError) {
       logger.error('Failed to save marketplace talent request', dbSaveError);
@@ -700,6 +718,8 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
           status: 'email_only',
           createdAt: new Date().toISOString(),
         });
+
+        queueBookDemoSubmissionToGoogleSheets(buildGoogleSheetsPayload(null, 'failed'));
         return;
       } catch (emailError) {
         logger.error('Failed to send marketplace talent request admin notification email', emailError);

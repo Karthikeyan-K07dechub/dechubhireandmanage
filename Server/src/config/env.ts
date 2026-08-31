@@ -32,6 +32,8 @@ const envSchema = z.object({
   DOCUSIGN_BASE_URL:        z.string().default('https://demo.docusign.net'),
   DECHUB_ADMIN_EMAILS:      z.string().default(''), // comma-separated list of internal Dechub admin emails
   DECHUB_ADMIN_PASSWORD:    z.string().default(''), // admin login password for hidden admin portal
+  GOOGLE_SHEETS_ENABLED:    z.string().default('false'),
+  GOOGLE_SHEETS_WEBHOOK_URL:z.string().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);
