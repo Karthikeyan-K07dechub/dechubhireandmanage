@@ -101,7 +101,7 @@ export default function MarketplaceTalentRequestsPage({
                     </span>
                   </div>
                   <h2 style={{ margin: 0, fontSize: 26, color: '#0f172a' }}>{item.workerName}</h2>
-                  <p style={{ margin: '8px 0 0', color: '#475569' }}>{item.workerRole} · {item.projectType} · {item.budget}</p>
+                  <p style={{ margin: '8px 0 0', color: '#475569' }}>{item.workerRole} · {item.projectType}</p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
