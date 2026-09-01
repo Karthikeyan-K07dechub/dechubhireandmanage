@@ -111,7 +111,9 @@ export default function TalentRequestDetailPage({
         setReviewNotes(detail.reviewNotes ?? '');
         setShowFullPortfolio(false);
         setActionSuccess('');
-        setEditingShortlist(false);
+        // A new open-talent request should immediately show the live shortlist
+        // preview and send controls. Sent shortlists retain their read-only tracker.
+        setEditingShortlist(!detail.workerId && !detail.shortlistSentAt && !(detail.shortlistedTalentProfiles?.length) && !(detail.shortlistHistory?.length));
         setShowPreviousSends(false);
       } catch (err) {
         if (active) {
@@ -249,6 +251,7 @@ export default function TalentRequestDetailPage({
       || shortlistHistory.length > 0
     ),
   );
+  const isShortlistDraft = Boolean(request && !request.workerId && !isShortlistFlowRequest);
   const isGeneralRequest = Boolean(request && !request.workerId && !isShortlistFlowRequest);
   const isGeneralShortlistTracking = Boolean(
     isShortlistFlowRequest && request && ['shortlisted_sent', 'candidate_selected', 'hire_started', 'hired', 'talent_hired'].includes(request.status),
@@ -294,7 +297,7 @@ export default function TalentRequestDetailPage({
         (profile) => profile.workerId === activeChosenRequest.workerId,
       ) ?? null
     : null;
-  const visibleSidebarProfiles = isShortlistEditable && editingShortlist
+  const visibleSidebarProfiles = (isShortlistDraft || (isShortlistEditable && editingShortlist))
     ? selectedProfiles
       : isShortlistEditable
       ? sentProfiles
@@ -695,14 +698,14 @@ export default function TalentRequestDetailPage({
                       <div>
                         <div className="atd-section-head" style={{ marginBottom: 18 }}>
                           <div>
-                            <h2 style={{ margin: 0 }}>{editingShortlist ? 'Update shortlist' : 'Shortlist candidates'}</h2>
+                            <h2 style={{ margin: 0 }}>{editingShortlist && !isShortlistDraft ? 'Update shortlist' : 'Shortlist candidates'}</h2>
                             <p className="atd-helper-copy" style={{ marginTop: 8 }}>
-                              {editingShortlist
+                              {editingShortlist && !isShortlistDraft
                                 ? 'Add or remove marketplace profiles, then resend the updated shortlist to the company.'
                                 : 'Start with the best matching marketplace profiles for this hiring brief, then refine with search and filters.'}
                             </p>
                           </div>
-                          {editingShortlist ? (
+                          {editingShortlist && !isShortlistDraft ? (
                             <button
                               type="button"
                               className="atd-inline-button"
@@ -1009,13 +1012,15 @@ export default function TalentRequestDetailPage({
                               ? 'Resend profiles to company email'
                               : 'Send profiles to company email'}
                         </button>
-                        <button
-                          type="button"
-                          className="atd-inline-button atd-sidebar-button"
-                          onClick={closeShortlistEditor}
-                        >
-                          Close
-                        </button>
+                        {!isShortlistDraft ? (
+                          <button
+                            type="button"
+                            className="atd-inline-button atd-sidebar-button"
+                            onClick={closeShortlistEditor}
+                          >
+                            Close
+                          </button>
+                        ) : null}
                         {actionError ? (
                           <p className="atd-action-error">{actionError}</p>
                         ) : null}

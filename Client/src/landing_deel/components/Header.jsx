@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 const megaMenus = {
   Solutions: {
     featured: true,
-    disableOfferLinks: true,
     disableUtilityLinks: true,
     offerTitle: "WHAT WE OFFER",
     offerItems: [

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { resolve } from 'path';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
@@ -31,22 +31,7 @@ function resolveBridgeLogoPath(): string | null {
 }
 
 const bridgeLogoPath = resolveBridgeLogoPath();
-
-function getBridgeLogoDataUri(): string | null {
-  if (!bridgeLogoPath) {
-    return null;
-  }
-
-  try {
-    const fileBuffer = readFileSync(bridgeLogoPath);
-    return `data:image/png;base64,${fileBuffer.toString('base64')}`;
-  } catch (error) {
-    logger.warn('Failed to read bridge email logo, using text fallback', error);
-    return null;
-  }
-}
-
-const bridgeLogoDataUri = getBridgeLogoDataUri();
+const bridgeLogoCid = 'bridge-logo-email@dechub.in';
 
 // Verify connection on startup
 transporter.verify().then(() => {
@@ -58,8 +43,8 @@ transporter.verify().then(() => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function baseTemplate(body: string): string {
-  const headerLogoMarkup = bridgeLogoDataUri
-    ? `<img src="${bridgeLogoDataUri}" alt="Bridge" class="logo-image" />`
+  const headerLogoMarkup = bridgeLogoPath
+    ? `<img src="cid:${bridgeLogoCid}" alt="Bridge" class="logo-image" />`
     : `<span class="logo-word">Bridge</span>`;
 
   return `
@@ -109,6 +94,14 @@ async function send(
       to,
       subject,
       html,
+      attachments: bridgeLogoPath
+        ? [{
+            filename: 'bridge-logo-email.png',
+            path: bridgeLogoPath,
+            cid: bridgeLogoCid,
+            contentDisposition: 'inline',
+          }]
+        : [],
     });
     logger.debug(`Email sent: "${subject}" → ${to}`);
   } catch (err) {

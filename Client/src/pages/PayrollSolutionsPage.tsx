@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   PAYROLL_SOLUTIONS_HTML_CLASSES,
   PAYROLL_SOLUTIONS_INLINE_STYLES,
@@ -7,9 +8,283 @@ import {
   PayrollSolutionsContent,
 } from './payrollSolutions/generatedPageData';
 import SharedLandingPageLayout from '../components/common/SharedLandingPageLayout';
+import Section02 from '../landing_deel/components/Section02.jsx';
+import Section07 from '../landing_deel/components/Section07.jsx';
 
 const STYLE_DATA_ATTR = 'data-payroll-solutions-style';
 const LINK_DATA_ATTR = 'data-payroll-solutions-stylesheet';
+const PAYROLL_HERO_LAYOUT_FIXES = `
+  html:has(.payroll-solutions-page),
+  body:has(.payroll-solutions-page) {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .payroll-solutions-page,
+  .payroll-solutions-page > .w-full {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  .payroll-solutions-page section {
+    max-width: 100%;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child {
+    width: 100%;
+    overflow: hidden;
+    padding: 12px !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child > div {
+    width: 100% !important;
+    max-width: 1704px !important;
+    min-width: 0;
+    margin-inline: auto !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child > div > div {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child > div > div:first-child {
+    padding: 24px 20px 32px !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child h1 {
+    display: block !important;
+    margin: 0 0 28px !important;
+    color: #fff !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="group"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="group"] > div {
+    display: flex !important;
+    gap: 12px !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="checkbox"] {
+    min-height: 72px !important;
+    padding: 12px !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="group"] + div {
+    margin-top: 24px !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="group"] + div + div {
+    display: none !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child h1 + div > p {
+    transform: translateY(-8px);
+  }
+
+  .payroll-solutions-page .payroll-generated-logo-strip {
+    display: none !important;
+  }
+
+  .payroll-solutions-page .payroll-generated-key-figures {
+    display: none !important;
+  }
+
+  .payroll-solutions-page .mui-16f0pz5 .mui-1si5xjn {
+    display: none !important;
+  }
+
+  .payroll-solutions-page .payroll-landing-logo-strip-mount,
+  .payroll-solutions-page .deel-logo-strip,
+  .payroll-solutions-page .deel-logo-strip__viewport {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .payroll-solutions-page .deel-logo-strip__track {
+    min-width: max-content;
+  }
+
+  .payroll-product-needs-section {
+    width: 100%;
+    overflow: hidden;
+    padding: 12px !important;
+  }
+
+  .payroll-product-needs-section > div {
+    width: 100%;
+    max-width: 1704px;
+    margin-inline: auto;
+    padding: 64px clamp(24px, 6vw, 112px) !important;
+  }
+
+  .payroll-product-needs-section .MuiTabs-scroller {
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+
+  .payroll-product-needs-section .MuiTabs-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .payroll-product-needs-section [role="tablist"] {
+    width: max-content !important;
+    min-width: max-content;
+    margin-inline: auto !important;
+  }
+
+  .payroll-product-needs-section .MuiTabs-root + div > div {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 48px !important;
+  }
+
+  .payroll-product-needs-section .MuiTabs-root + div > div > div {
+    width: auto !important;
+    min-width: 0 !important;
+    flex: initial !important;
+  }
+
+  /* Product CTA banner: restore the original centered desktop frame and padding. */
+  .payroll-solutions-page section[id="4"] {
+    padding: clamp(40px, 4.8vw, 92px) clamp(24px, 3.125vw, 60px) clamp(48px, 5vw, 96px) !important;
+    margin-bottom: 0 !important;
+    background: #fff !important;
+  }
+
+  .payroll-solutions-page section[id="4"] + .MuiBox-root {
+    margin-top: 0 !important;
+  }
+
+  .payroll-solutions-page section[id="4"] > div:first-child {
+    width: 100% !important;
+    max-width: 1776px !important;
+    min-height: 718px !important;
+    margin-inline: auto !important;
+    border-radius: 30px !important;
+  }
+
+  .payroll-solutions-page section[id="4"] > div:first-child > div:first-child {
+    height: 100% !important;
+    padding-inline: clamp(32px, 3.125vw, 60px) !important;
+  }
+
+  @media (max-width: 1199px) {
+    .payroll-solutions-page section[id="4"] > div:first-child {
+      min-height: 600px !important;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .payroll-solutions-page section[id="4"] {
+      padding: 32px 16px 48px !important;
+    }
+
+    .payroll-solutions-page section[id="4"] > div:first-child {
+      min-height: 620px !important;
+      border-radius: 20px !important;
+    }
+
+    .payroll-solutions-page section[id="4"] > div:first-child > div:first-child {
+      padding: 48px 24px 24px !important;
+    }
+
+    .payroll-solutions-page section[id="4"] > div:first-child > div:first-child > div:first-child {
+      align-items: center !important;
+      text-align: center !important;
+    }
+
+    .payroll-solutions-page section[id="4"] h2 {
+      text-align: center !important;
+    }
+
+    .payroll-solutions-page section[id="4"] h2 + div {
+      justify-content: center !important;
+    }
+
+    .payroll-solutions-page .mui-3lz68q {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .payroll-solutions-page .mui-3lz68q > .mui-pjjft1 {
+      grid-column: auto !important;
+      padding-right: 0 !important;
+    }
+  }
+
+  @media (max-width: 1049px) {
+    .payroll-solutions-page > .w-full > section:first-child > div {
+      flex-direction: column !important;
+      min-height: auto !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child > div > div:first-child,
+    .payroll-solutions-page > .w-full > section:first-child > div > div:last-child {
+      width: 100% !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child > div > div:last-child {
+      display: none !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child h1 {
+      font-size: 38px !important;
+      line-height: 1.05 !important;
+      overflow-wrap: anywhere;
+    }
+
+    .payroll-product-needs-section > div {
+      padding: 48px 20px !important;
+    }
+
+    .payroll-product-needs-section [role="tablist"] {
+      margin-inline: 0 !important;
+    }
+
+    .payroll-product-needs-section .MuiTabs-root + div > div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 20px !important;
+    }
+
+    .payroll-product-needs-section .MuiTabs-root + div > div > div:first-child {
+      padding: 24px !important;
+    }
+  }
+
+  @media (min-width: 1050px) {
+    .payroll-solutions-page > .w-full > section:first-child > div {
+      display: flex !important;
+      flex-direction: row !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child > div > div:first-child,
+    .payroll-solutions-page > .w-full > section:first-child > div > div:last-child {
+      width: 50% !important;
+      flex: 0 1 50% !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child > div > div:first-child {
+      padding-top: var(--spacing-xxxl) !important;
+      padding-right: var(--spacing-md) !important;
+      padding-bottom: var(--spacing-xl) !important;
+      padding-left: var(--spacing-big) !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child h1 {
+      margin-bottom: 64px !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child [role="checkbox"] {
+      min-height: 80px !important;
+    }
+  }
+`;
 const PAYROLL_PRODUCT_TAB_LABELS = [
   'Deel Payroll',
   'EOR',
@@ -245,8 +520,222 @@ function wirePayrollProductTabs(root: HTMLElement) {
   };
 }
 
+function wireCustomerStoriesSlider(root: HTMLElement) {
+  const slider = root.querySelector<HTMLElement>('#comparison-slider');
+  const wrapper = slider?.querySelector<HTMLElement>('.swiper-wrapper');
+  const previousButton = root.querySelector<HTMLButtonElement>('#nav-comparison-slider .swiper-button-prev');
+  const nextButton = root.querySelector<HTMLButtonElement>('#nav-comparison-slider .swiper-button-next');
+  const telinSlide = Array.from(wrapper?.querySelectorAll<HTMLElement>(':scope > .swiper-slide') ?? []).find(
+    (slide) => slide.textContent?.includes('How Telin cut onboarding time'),
+  );
+
+  telinSlide?.remove();
+
+  const slides = wrapper
+    ? Array.from(wrapper.querySelectorAll<HTMLElement>(':scope > .swiper-slide'))
+    : [];
+
+  if (!slider || !wrapper || !previousButton || !nextButton || slides.length === 0) {
+    return () => undefined;
+  }
+
+  const gap = 24;
+
+  // Keep the browser responsible for the track geometry. The controls scroll to
+  // real card offsets, which remains correct at every viewport size.
+  slider.style.overflowX = 'auto';
+  slider.style.overflowY = 'hidden';
+  slider.style.scrollBehavior = 'smooth';
+  slider.style.scrollSnapType = 'x mandatory';
+  slider.style.scrollbarWidth = 'none';
+  wrapper.style.display = 'flex';
+  wrapper.style.width = 'max-content';
+  wrapper.style.minWidth = '100%';
+  wrapper.style.gap = `${gap}px`;
+  wrapper.style.transform = 'none';
+  wrapper.style.transition = 'none';
+
+  const updateLayout = () => {
+    const cardWidth = Math.min(380, Math.max(280, slider.clientWidth - 24));
+
+    slides.forEach((slide) => {
+      slide.style.flex = `0 0 ${cardWidth}px`;
+      slide.style.width = `${cardWidth}px`;
+      slide.style.maxWidth = 'none';
+      slide.style.minWidth = '0';
+      slide.style.marginRight = '0';
+      slide.style.boxSizing = 'border-box';
+      slide.style.scrollSnapAlign = 'start';
+
+      const storyLink = slide.querySelector<HTMLAnchorElement>(':scope > a');
+      const storyCard = storyLink?.querySelector<HTMLElement>('.MuiCard-root');
+      const storyContent = storyCard?.querySelector<HTMLElement>('.MuiCardContent-root');
+      const storyTitle = storyCard?.querySelector<HTMLElement>('h3');
+      const titleWrapper = storyTitle?.parentElement as HTMLElement | null;
+
+      if (storyLink) {
+        storyLink.style.display = 'block';
+        storyLink.style.width = '100%';
+      }
+
+      if (storyCard) {
+        storyCard.style.width = '100%';
+        storyCard.style.minWidth = '0';
+        storyCard.style.boxSizing = 'border-box';
+      }
+
+      if (storyContent) {
+        storyContent.style.width = '100%';
+        storyContent.style.boxSizing = 'border-box';
+      }
+
+      if (titleWrapper) {
+        titleWrapper.style.width = '100%';
+        titleWrapper.style.minWidth = '0';
+        titleWrapper.style.alignSelf = 'stretch';
+      }
+
+      if (storyTitle) {
+        storyTitle.style.width = '100%';
+        storyTitle.style.whiteSpace = 'normal';
+        storyTitle.style.overflowWrap = 'normal';
+      }
+    });
+
+    updateControls();
+  };
+
+  const updateControls = () => {
+    const lastScrollPosition = Math.max(0, slider.scrollWidth - slider.clientWidth);
+    previousButton.disabled = slider.scrollLeft <= 1;
+    nextButton.disabled = slider.scrollLeft >= lastScrollPosition - 1;
+    previousButton.setAttribute('aria-disabled', String(previousButton.disabled));
+    nextButton.setAttribute('aria-disabled', String(nextButton.disabled));
+  };
+
+  const handlePrevious = () => {
+    const target = [...slides].reverse().find((slide) => slide.offsetLeft < slider.scrollLeft - 1);
+    slider.scrollTo({ left: target?.offsetLeft ?? 0, behavior: 'smooth' });
+  };
+
+  const handleNext = () => {
+    const target = slides.find((slide) => slide.offsetLeft > slider.scrollLeft + 1);
+    slider.scrollTo({ left: target?.offsetLeft ?? slider.scrollWidth, behavior: 'smooth' });
+  };
+
+  previousButton.addEventListener('click', handlePrevious);
+  nextButton.addEventListener('click', handleNext);
+  slider.addEventListener('scroll', updateControls, { passive: true });
+  window.addEventListener('resize', updateLayout);
+  updateLayout();
+
+  return () => {
+    previousButton.removeEventListener('click', handlePrevious);
+    nextButton.removeEventListener('click', handleNext);
+    slider.removeEventListener('scroll', updateControls);
+    window.removeEventListener('resize', updateLayout);
+  };
+}
+
+function wirePayrollFaqs(root: HTMLElement) {
+  const summaries = Array.from<HTMLElement>(
+    root.querySelectorAll('.product-faqs .MuiAccordionSummary-root[role="button"]'),
+  );
+
+  if (summaries.length === 0) {
+    return () => undefined;
+  }
+
+  const setExpanded = (summary: HTMLElement, expanded: boolean) => {
+    const accordion = summary.parentElement;
+    const panel = accordion?.querySelector<HTMLElement>('.MuiCollapse-root');
+    const panelContent = panel?.querySelector<HTMLElement>('.MuiCollapse-wrapperInner');
+
+    if (!panel || !panelContent) {
+      return;
+    }
+
+    summary.setAttribute('aria-expanded', String(expanded));
+    summary.classList.toggle('Mui-expanded', expanded);
+    panel.classList.toggle('MuiCollapse-hidden', !expanded);
+    panel.style.visibility = expanded ? 'visible' : 'hidden';
+    panel.style.height = expanded ? `${panelContent.scrollHeight}px` : '0px';
+
+    const expandIcon = summary.querySelector<HTMLElement>('.expandIconWrapper');
+    const collapseIcon = summary.querySelector<HTMLElement>('.collapseIconWrapper');
+    if (expandIcon) {
+      expandIcon.style.display = expanded ? 'block' : 'none';
+    }
+    if (collapseIcon) {
+      collapseIcon.style.display = expanded ? 'none' : 'block';
+    }
+  };
+
+  const disposers = summaries.map((summary) => {
+    const handleToggle = () => {
+      const willExpand = summary.getAttribute('aria-expanded') !== 'true';
+      summaries.forEach((candidate) => setExpanded(candidate, candidate === summary && willExpand));
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        handleToggle();
+      }
+    };
+
+    summary.style.cursor = 'pointer';
+    summary.addEventListener('click', handleToggle);
+    summary.addEventListener('keydown', handleKeyDown);
+    setExpanded(summary, false);
+
+    return () => {
+      summary.removeEventListener('click', handleToggle);
+      summary.removeEventListener('keydown', handleKeyDown);
+    };
+  });
+
+  return () => disposers.forEach((dispose) => dispose());
+}
+
+function wirePayrollReviewSlider(root: HTMLElement) {
+  const slider = root.querySelector<HTMLElement>('#g2-reviews-671');
+  const wrapper = slider?.querySelector<HTMLElement>('.swiper-wrapper');
+  const previousButton = root.querySelector<HTMLButtonElement>('#nav-g2-reviews-671 .swiper-button-prev');
+  const nextButton = root.querySelector<HTMLButtonElement>('#nav-g2-reviews-671 .swiper-button-next');
+
+  if (!wrapper || !previousButton || !nextButton) {
+    return () => undefined;
+  }
+
+  const handlePrevious = () => {
+    const lastReview = wrapper.lastElementChild;
+    if (lastReview) {
+      wrapper.insertBefore(lastReview, wrapper.firstElementChild);
+    }
+  };
+
+  const handleNext = () => {
+    const firstReview = wrapper.firstElementChild;
+    if (firstReview) {
+      wrapper.appendChild(firstReview);
+    }
+  };
+
+  previousButton.style.cursor = 'pointer';
+  nextButton.style.cursor = 'pointer';
+  previousButton.addEventListener('click', handlePrevious);
+  nextButton.addEventListener('click', handleNext);
+
+  return () => {
+    previousButton.removeEventListener('click', handlePrevious);
+    nextButton.removeEventListener('click', handleNext);
+  };
+}
+
 export default function PayrollSolutionsPage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [landingLogoStripTarget, setLandingLogoStripTarget] = useState<HTMLDivElement | null>(null);
+  const [landingKeyFiguresTarget, setLandingKeyFiguresTarget] = useState<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -288,6 +777,12 @@ export default function PayrollSolutionsPage() {
       document.head.appendChild(style);
       cleanupNodes.push(style);
     });
+
+    const heroLayoutStyle = document.createElement('style');
+    heroLayoutStyle.setAttribute(STYLE_DATA_ATTR, 'hero-layout-fixes');
+    heroLayoutStyle.textContent = PAYROLL_HERO_LAYOUT_FIXES;
+    document.head.appendChild(heroLayoutStyle);
+    cleanupNodes.push(heroLayoutStyle);
 
     return () => {
       cleanupNodes.forEach((node) => node.remove());
@@ -340,19 +835,86 @@ export default function PayrollSolutionsPage() {
     };
 
     const cleanupPayrollTabs = wirePayrollProductTabs(root);
+    const cleanupCustomerStoriesSlider = wireCustomerStoriesSlider(root);
+    const cleanupPayrollFaqs = wirePayrollFaqs(root);
+    const cleanupPayrollReviewSlider = wirePayrollReviewSlider(root);
 
     root.addEventListener('click', handleAnchorClick);
 
     return () => {
       root.removeEventListener('click', handleAnchorClick);
       cleanupPayrollTabs();
+      cleanupCustomerStoriesSlider();
+      cleanupPayrollFaqs();
+      cleanupPayrollReviewSlider();
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const heading = Array.from(root?.querySelectorAll('h2') ?? []).find(
+      (node) => node.textContent?.trim() === 'A product fit for every need',
+    );
+    const section = heading?.closest<HTMLElement>('div[class*="bg-surface-primary"]');
+
+    if (!section) {
+      return undefined;
+    }
+
+    section.classList.add('payroll-product-needs-section');
+    return () => section.classList.remove('payroll-product-needs-section');
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const generatedLogoStrip = root?.querySelector<HTMLElement>('section.logo-stripe-standard-wrapper');
+
+    if (!generatedLogoStrip?.parentElement) {
+      return undefined;
+    }
+
+    const mount = document.createElement('div');
+    mount.className = 'payroll-landing-logo-strip-mount';
+    generatedLogoStrip.classList.add('payroll-generated-logo-strip');
+    generatedLogoStrip.parentElement.insertBefore(mount, generatedLogoStrip);
+    setLandingLogoStripTarget(mount);
+
+    return () => {
+      generatedLogoStrip.classList.remove('payroll-generated-logo-strip');
+      mount.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const generatedKeyFigures = Array.from(root?.querySelectorAll<HTMLElement>('div.key-figures-wrapper') ?? []).find(
+      (section) =>
+        section.querySelector('h3')?.textContent?.trim() ===
+        'Deel makes growing remote and international teams effortless',
+    );
+
+    if (!generatedKeyFigures?.parentElement) {
+      return undefined;
+    }
+
+    const mount = document.createElement('div');
+    mount.className = 'payroll-landing-key-figures-mount';
+    generatedKeyFigures.classList.add('payroll-generated-key-figures');
+    generatedKeyFigures.parentElement.insertBefore(mount, generatedKeyFigures);
+    setLandingKeyFiguresTarget(mount);
+
+    return () => {
+      generatedKeyFigures.classList.remove('payroll-generated-key-figures');
+      mount.remove();
     };
   }, []);
 
   return (
     <SharedLandingPageLayout>
-      <div ref={rootRef} data-page="payroll-solutions-react">
+      <div ref={rootRef} className="payroll-solutions-page" data-page="payroll-solutions-react">
         <PayrollSolutionsContent />
+        {landingLogoStripTarget ? createPortal(<Section02 />, landingLogoStripTarget) : null}
+        {landingKeyFiguresTarget ? createPortal(<Section07 />, landingKeyFiguresTarget) : null}
       </div>
     </SharedLandingPageLayout>
   );
