@@ -277,7 +277,7 @@ const PAYROLL_HERO_LAYOUT_FIXES = `
 
     .payroll-solutions-page > .w-full > section:first-child > div > div:first-child {
       display: flex !important;
-      padding: 64px !important;
+      padding: 96px 64px !important;
     }
 
     .payroll-solutions-page > .w-full > section:first-child > div > div:first-child > div:first-child {

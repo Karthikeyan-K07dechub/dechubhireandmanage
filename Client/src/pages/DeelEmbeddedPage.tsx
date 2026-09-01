@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_EMBEDDED_HTML_CLASSES,
   DEEL_EMBEDDED_INLINE_STYLES,
@@ -7,9 +8,76 @@ import {
   DeelEmbeddedContent,
 } from './deelEmbedded/generatedPageData';
 import SharedLandingPageLayout from '../components/common/SharedLandingPageLayout';
+import Section02 from '../landing_deel/components/Section02.jsx';
+import Section07 from '../landing_deel/components/Section07.jsx';
 
 const STYLE_DATA_ATTR = 'data-deel-embedded-style';
 const LINK_DATA_ATTR = 'data-deel-embedded-stylesheet';
+const EMBEDDED_LAYOUT_FIXES = `
+  html:has(.deel-embedded-page), body:has(.deel-embedded-page) { max-width: 100%; overflow-x: hidden; }
+  .deel-embedded-page, .deel-embedded-page [data-ab-page="true"] > .w-full { width: 100%; max-width: 100vw; overflow-x: clip; }
+  .deel-embedded-page section { max-width: 100%; }
+  .deel-embedded-page .embedded-generated-logo-strip,
+  .deel-embedded-page .embedded-generated-key-figures,
+  .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] + div + div,
+  .deel-embedded-page .mui-16f0pz5 .mui-1si5xjn { display: none !important; }
+  .deel-embedded-page .embedded-landing-logo-strip-mount,
+  .deel-embedded-page .deel-logo-strip,
+  .deel-embedded-page .deel-logo-strip__viewport { width: 100%; max-width: 100%; overflow: hidden; }
+  .deel-embedded-page .deel-logo-strip__track { min-width: max-content; }
+  .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child { width: 100%; overflow: hidden; padding: 12px !important; }
+  .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div { width: 100% !important; max-width: 1704px !important; min-width: 0; margin-inline: auto !important; }
+  .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div { min-width: 0; overflow: hidden; }
+  .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] { display: flex !important; flex-direction: column !important; gap: 12px !important; }
+  .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] > div { display: flex !important; gap: 12px !important; }
+  .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] + div { margin-top: 24px !important; }
+  .deel-embedded-page .swiper-slider-comparison-slider { overflow-x: auto !important; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .deel-embedded-page .swiper-slider-comparison-slider::-webkit-scrollbar { display: none; }
+  .deel-embedded-page .swiper-slider-comparison-slider .swiper-wrapper { display: flex !important; width: max-content !important; }
+  .deel-embedded-page .swiper-slider-comparison-slider .swiper-slide { flex: 0 0 min(31vw, 560px); scroll-snap-align: start; }
+  .deel-embedded-page section[id="10"] { margin-bottom: 0 !important; padding: clamp(40px, 4.8vw, 92px) clamp(24px, 3.125vw, 60px) clamp(48px, 5vw, 96px) !important; }
+  .deel-embedded-page section[id="10"] > div:first-child { width: 100% !important; max-width: 1776px !important; min-height: 600px !important; margin-inline: auto !important; border-radius: 30px !important; }
+  .deel-embedded-page section[id="10"] > div:first-child > div:first-child { height: 100% !important; padding-inline: clamp(32px, 5vw, 96px) !important; align-items: center !important; }
+  .deel-embedded-page section[id="10"] > div:first-child > div:first-child > div:first-child { gap: 32px !important; justify-content: center !important; }
+  .deel-embedded-page section[id="10"] h2 { margin: 0 !important; }
+  .deel-embedded-page section[id="10"] + .MuiBox-root { margin-top: 0 !important; }
+  @media (min-width: 1050px) {
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div { display: flex !important; flex-direction: row !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:first-child,
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:last-child { width: 50% !important; flex: 0 1 50% !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:first-child { display: flex !important; padding: 96px 64px !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:first-child > div:first-child { width: 100% !important; max-width: 450px !important; margin: auto !important; align-items: center !important; justify-content: center !important; text-align: center !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child h1,
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child h1 + div,
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child h1 + div > p { text-align: center !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child h1 { margin-bottom: 48px !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child h1 + div { margin-top: 24px !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="checkbox"] { min-height: 80px !important; padding-top: 20px !important; padding-bottom: 20px !important; }
+  }
+  @media (max-width: 1049px) {
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div { flex-direction: column !important; min-height: auto !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:first-child,
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:last-child { width: 100% !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:first-child { padding: 48px 24px !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child > div > div:last-child { display: none !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child h1 { font-size: 38px !important; line-height: 1.05 !important; overflow-wrap: anywhere; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] { width: 100% !important; gap: 12px !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] > div { min-width: 0; gap: 12px !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="checkbox"] { min-width: 0 !important; min-height: 76px !important; padding: 12px !important; overflow-wrap: anywhere; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] + div { width: 100% !important; margin-top: 24px !important; }
+    .deel-embedded-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] + div button { width: 100% !important; min-height: 52px; }
+    .deel-embedded-page .swiper-slider-comparison-slider .swiper-slide { flex-basis: min(82vw, 420px); }
+    .deel-embedded-page section[id="10"] { padding: 32px 16px 48px !important; }
+    .deel-embedded-page section[id="10"] > div:first-child { min-height: 620px !important; border-radius: 20px !important; }
+    .deel-embedded-page section[id="10"] > div:first-child > div:first-child { padding: 48px 24px 24px !important; }
+    .deel-embedded-page section[id="10"] > div:first-child > div:first-child > div:first-child { align-items: center !important; text-align: center !important; }
+    .deel-embedded-page section[id="10"] h2, .deel-embedded-page section[id="10"] h2 + div { text-align: center !important; justify-content: center !important; }
+  }
+  @media (max-width: 700px) {
+    .deel-embedded-page .mui-3lz68q { grid-template-columns: minmax(0, 1fr) !important; gap: 28px !important; }
+    .deel-embedded-page .mui-3lz68q > .mui-pjjft1 { grid-column: auto !important; padding-right: 0 !important; }
+  }
+`;
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
@@ -226,6 +294,35 @@ function wireAccordions(root: HTMLElement) {
     const expandIcon = ensureIconWrapper('expandIconWrapper', '+');
     const collapseIcon = ensureIconWrapper('collapseIconWrapper', '−');
 
+    // The generated SVG wrapper names are reversed, so use direct symbols for each state.
+    const openIcon = accordion.querySelector<HTMLElement>('.expandIconWrapper');
+    const closedIcon = accordion.querySelector<HTMLElement>('.collapseIconWrapper');
+    const setIcon = (icon: HTMLElement | null, symbol: '+' | '-') => {
+      if (!icon) {
+        return;
+      }
+
+      icon.replaceChildren(symbol);
+      icon.setAttribute('aria-hidden', 'true');
+      icon.style.display = 'inline-flex';
+      icon.style.alignItems = 'center';
+      icon.style.justifyContent = 'center';
+      icon.style.width = '48px';
+      icon.style.height = '48px';
+      icon.style.minWidth = '48px';
+      icon.style.borderRadius = '999px';
+      icon.style.backgroundColor = '#1B1B1B';
+      icon.style.color = '#FFFFFF';
+      icon.style.fontSize = symbol === '+' ? '32px' : '28px';
+      icon.style.fontWeight = '500';
+      icon.style.lineHeight = '1';
+      icon.style.flexShrink = '0';
+      icon.style.marginLeft = 'auto';
+    };
+
+    setIcon(openIcon, '-');
+    setIcon(closedIcon, '+');
+
     const summaryId = `deel-embedded-accordion-header-${index}`;
     const regionId = `deel-embedded-accordion-panel-${index}`;
 
@@ -253,8 +350,8 @@ function wireAccordions(root: HTMLElement) {
       region.style.display = expanded ? '' : 'none';
       details.style.display = expanded ? '' : 'none';
 
-      expandIcon.style.display = expanded ? 'inline-flex' : 'none';
-      collapseIcon.style.display = expanded ? 'none' : 'inline-flex';
+      expandIcon.style.setProperty('display', expanded ? 'inline-flex' : 'none', 'important');
+      collapseIcon.style.setProperty('display', expanded ? 'none' : 'inline-flex', 'important');
     };
 
     const toggle = () => {
@@ -334,6 +431,8 @@ function wireCheckboxButtons(root: HTMLElement) {
 
 export default function DeelEmbeddedPage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [landingLogoStripTarget, setLandingLogoStripTarget] = useState<HTMLDivElement | null>(null);
+  const [landingKeyFiguresTarget, setLandingKeyFiguresTarget] = useState<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -376,11 +475,57 @@ export default function DeelEmbeddedPage() {
       cleanupNodes.push(style);
     });
 
+    const layoutStyle = document.createElement('style');
+    layoutStyle.setAttribute(STYLE_DATA_ATTR, 'layout-fixes');
+    layoutStyle.textContent = EMBEDDED_LAYOUT_FIXES;
+    document.head.appendChild(layoutStyle);
+    cleanupNodes.push(layoutStyle);
+
     return () => {
       cleanupNodes.forEach((node) => node.remove());
       document.title = previousTitle;
       document.documentElement.className = previousHtmlClassName;
       document.body.className = previousBodyClassName;
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const generatedLogoStrip = root?.querySelector<HTMLElement>('section.logo-stripe-standard-wrapper');
+
+    if (!generatedLogoStrip?.parentElement) {
+      return undefined;
+    }
+
+    const mount = document.createElement('div');
+    mount.className = 'embedded-landing-logo-strip-mount';
+    generatedLogoStrip.classList.add('embedded-generated-logo-strip');
+    generatedLogoStrip.parentElement.insertBefore(mount, generatedLogoStrip);
+    setLandingLogoStripTarget(mount);
+
+    return () => {
+      generatedLogoStrip.classList.remove('embedded-generated-logo-strip');
+      mount.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const generatedKeyFigures = root?.querySelector<HTMLElement>('div.key-figures-wrapper');
+
+    if (!generatedKeyFigures?.parentElement) {
+      return undefined;
+    }
+
+    const mount = document.createElement('div');
+    mount.className = 'embedded-landing-key-figures-mount';
+    generatedKeyFigures.classList.add('embedded-generated-key-figures');
+    generatedKeyFigures.parentElement.insertBefore(mount, generatedKeyFigures);
+    setLandingKeyFiguresTarget(mount);
+
+    return () => {
+      generatedKeyFigures.classList.remove('embedded-generated-key-figures');
+      mount.remove();
     };
   }, []);
 
@@ -456,8 +601,10 @@ export default function DeelEmbeddedPage() {
 
   return (
     <SharedLandingPageLayout>
-      <div ref={rootRef} data-page="deel-embedded-react">
+      <div ref={rootRef} className="deel-embedded-page" data-page="deel-embedded-react">
         <DeelEmbeddedContent />
+        {landingLogoStripTarget ? createPortal(<Section02 />, landingLogoStripTarget) : null}
+        {landingKeyFiguresTarget ? createPortal(<Section07 />, landingKeyFiguresTarget) : null}
       </div>
     </SharedLandingPageLayout>
   );
