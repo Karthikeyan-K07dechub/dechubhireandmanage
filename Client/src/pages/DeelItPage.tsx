@@ -833,7 +833,7 @@ export default function DeelItPage() {
       if (window.innerWidth < 1050 || !content || !headingContainer || !panel) {
         elements.forEach((element) => {
           const originalStyle = originalStyles.get(element);
-          if (originalStyle === null) element.removeAttribute('style');
+          if (originalStyle == null) element.removeAttribute('style');
           else element.setAttribute('style', originalStyle);
         });
         return;
@@ -863,7 +863,7 @@ export default function DeelItPage() {
       window.removeEventListener('resize', applyDesktopLayout);
       elements.forEach((element) => {
         const originalStyle = originalStyles.get(element);
-        if (originalStyle === null) element.removeAttribute('style');
+        if (originalStyle == null) element.removeAttribute('style');
         else element.setAttribute('style', originalStyle);
       });
       section.classList.remove('deel-it-audience-section');

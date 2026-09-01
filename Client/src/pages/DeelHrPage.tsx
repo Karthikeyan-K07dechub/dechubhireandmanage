@@ -1266,7 +1266,7 @@ export default function DeelHrPage() {
       if (window.innerWidth < 1050 || !content || !headingContainer || !panel) {
         elements.forEach((element) => {
           const originalStyle = originalStyles.get(element);
-          if (originalStyle === null) {
+          if (originalStyle == null) {
             element.removeAttribute('style');
           } else {
             element.setAttribute('style', originalStyle);
@@ -1300,7 +1300,7 @@ export default function DeelHrPage() {
       window.removeEventListener('resize', applyDesktopLayout);
       elements.forEach((element) => {
         const originalStyle = originalStyles.get(element);
-        if (originalStyle === null) {
+        if (originalStyle == null) {
           element.removeAttribute('style');
         } else {
           element.setAttribute('style', originalStyle);
