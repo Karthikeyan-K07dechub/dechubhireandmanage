@@ -3,7 +3,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_HR_HTML_CLASSES,
   DEEL_HR_INLINE_STYLES,
-  DEEL_HR_PAGE_TITLE,
   DEEL_HR_STYLESHEET_HREFS,
   DeelHrContent,
 } from './deelHr/generatedPageData';
@@ -47,6 +46,28 @@ const HR_LAYOUT_FIXES = `
   .deel-hr-page > .w-full > section:first-child > div > div {
     min-width: 0;
     overflow: hidden;
+  }
+
+  .deel-hr-page [role="checkbox"][aria-checked="true"] {
+    background: rgba(149, 113, 255, 0.24) !important;
+    border-color: rgba(202, 182, 255, 0.88) !important;
+  }
+
+  .deel-hr-page .hr-hero-option-check {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .deel-hr-page [role="checkbox"][aria-checked="true"] > .hr-hero-option-check::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 4px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg);
+    top: 4px;
+    left: 3px;
   }
 
   .deel-hr-page .hr-generated-logo-strip,
@@ -114,11 +135,19 @@ const HR_LAYOUT_FIXES = `
 
   .deel-hr-ecosystem-section {
     width: 100%;
+    overflow: hidden;
     margin: 0 !important;
-    padding: 64px clamp(24px, 6vw, 112px) !important;
+    padding: 12px !important;
   }
 
   .deel-hr-ecosystem-section > div:first-child {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+    padding: 64px clamp(24px, 6vw, 112px) !important;
+  }
+
+  .deel-hr-ecosystem-section > div:first-child > div:first-child {
     width: 100% !important;
     max-width: 1312px !important;
     margin-inline: auto !important;
@@ -311,7 +340,7 @@ const HR_LAYOUT_FIXES = `
       padding: 0 !important;
     }
 
-    .deel-hr-ecosystem-section {
+    .deel-hr-ecosystem-section > div:first-child {
       padding: 48px 20px !important;
       border-radius: 0 !important;
     }
@@ -487,6 +516,235 @@ const HR_ECOSYSTEM_TABS: Record<
     imageSrc: '/solutions/hr/assets/images/services_2x_85463012f8-8223ea0977.webp',
   },
 };
+
+Object.assign(HR_ECOSYSTEM_TABS['In your tools'], {
+  title: 'Keep everyday HR work connected',
+  description:
+    'Give your team one organized place for employee information, requests, approvals, and updates, so HR work stays clear and easy to follow.',
+  ctaLabel: 'Explore HR workflows',
+  ctaLink: '/solutions/hr/',
+});
+Object.assign(HR_ECOSYSTEM_TABS.Talent, {
+  title: 'Bring hiring and HR together',
+  description:
+    'Keep candidate, employee, and onboarding details connected as your team grows, without creating another disconnected process.',
+  ctaLabel: 'Explore hiring support',
+});
+Object.assign(HR_ECOSYSTEM_TABS.IT, {
+  title: 'Support onboarding from day one',
+  description:
+    'Coordinate onboarding tasks, employee details, and access requirements so new team members can start with the information they need.',
+  ctaLabel: 'Explore HR and IT',
+});
+Object.assign(HR_ECOSYSTEM_TABS.Services, {
+  title: 'Get HR support as your team grows',
+  description:
+    'Use Dechub-Bridge to keep HR processes structured while your team gets the support needed for changing workforce requirements.',
+});
+
+const DECHUB_BRIDGE_HR_COPY: Record<string, string> = {
+  'Run global HR from one system': 'Manage your people from one HR platform',
+  'What would you like to do with Deel HR?': 'What can Dechub-Bridge HR help you manage?',
+  'End to end HR management': 'HR management for growing teams',
+  'Start with HRIS. Add on as you grow.': 'Start with organized people operations. Grow with confidence.',
+  'Deel HR is the global HR software for companies managing distributed teams across multiple countries.':
+    'Dechub-Bridge helps teams organize employee information, onboarding, approvals, and HR workflows in one place.',
+  'Lay a solid foundation with HRIS': 'Keep employee information organized',
+  'Set up and manage people data, workflows, policies, time off, and approvals with HRIS as your source of truth for HR and payroll.':
+    'Manage employee details, documents, time off, policies, and approvals through one clear HR workflow.',
+  'Plan headcount with confidence': 'Make workforce decisions with clarity',
+  'Forecast roles, costs, and growth using live workforce and hiring data in Workforce Planning, instead of scattered spreadsheets.':
+    'Keep workforce information current so HR and business teams can plan roles, changes, and growth with confidence.',
+  'Fuel performance and growth': 'Support employee growth',
+  'Reward fairly and consistently': 'Keep people decisions consistent',
+  'Stay compliant from hire to exit': 'Keep HR processes organized from hire to exit',
+  'The impact of one connected HR system': 'One HR process for your entire team',
+  'WHY TEAMS CHOOSE DEEL HR': 'WHY TEAMS CHOOSE DECHUB-BRIDGE HR',
+  'Made for HR leaders who move the business forward': 'Built for teams managing people operations',
+  'Everything runs on the same data': 'One source for employee information',
+  'Global first platform since day one': 'Built for distributed teams',
+  'Flexible by design': 'Flexible as your team grows',
+  'Tools people love, powered by AI': 'Simple tools for everyday HR work',
+  'Comprehensive reporting': 'Clear workforce visibility',
+  'Compliance that keeps you moving': 'Organized processes that support your team',
+  'How Deel HR fits into your ecosystem': 'How Dechub-Bridge HR fits your workflow',
+  'See what customers are saying': 'Built for teams that need better HR operations',
+  'How Turing expedites payments for 6,000+ global workers with Deel':
+    'How a growing team keeps employee operations organized',
+  'How Revolut streamlined employee relocation with Deel': 'How a distributed team simplifies onboarding',
+  'How Magic saves 50+ hours a month on admin using Deel': 'How HR teams reduce repetitive admin work',
+  'How BCG centralized payroll across 6 nations with Deel': 'How one team centralizes workforce information',
+  'How Telin cut onboarding time and expanded globally with Deel': 'How a growing team keeps onboarding on track',
+  'Excellent global payroll': 'HR support for growing teams',
+  'See the products that help you manage anywhere': 'See how Dechub-Bridge supports your people operations',
+};
+
+const DECHUB_BRIDGE_HR_FAQS = [
+  ['Is Dechub-Bridge HR built for distributed teams?', 'Yes. Dechub-Bridge HR helps teams keep employee information, workflows, and approvals organized across locations.'],
+  ['Will expanding into new markets require new HR tools?', 'No. You can keep your core HR process organized in one platform as your team grows.'],
+  ['Is Dechub-Bridge HR suitable for a growing team?', 'Yes. It is designed to give growing teams a clear place to manage people operations without unnecessary complexity.'],
+  ['Will managers and employees actually use it?', 'The workflows are designed to make everyday requests, approvals, and employee information easy to access.'],
+  ['How long does implementation take?', 'Our team can review your current process and guide you through the right setup for your organization.'],
+  ['We already have an HRIS. Do we need another one?', 'We can discuss your current setup and help determine how Dechub-Bridge can support or simplify your HR workflow.'],
+  ['Do I need to use every product to use Dechub-Bridge HR?', 'No. Start with the HR capabilities your team needs and expand your workflow as requirements grow.'],
+  ['Is Dechub-Bridge HR an HCM?', 'Dechub-Bridge provides a connected HR workspace for employee information, workflows, and people operations.'],
+  ['Is employee information secure?', 'Dechub-Bridge is designed to keep employee information organized and accessible to the appropriate people in your organization.'],
+  ['How will Dechub-Bridge support migration?', 'Our team can help you plan a practical transition from your current HR process into a more organized workflow.'],
+  ['What countries does Dechub-Bridge HR support?', 'Talk to our team about your workforce locations and the HR workflow your organization needs.'],
+  ['Does Dechub-Bridge HR work for remote teams?', 'Yes. It helps distributed teams coordinate employee records, onboarding, requests, and approvals in one place.'],
+];
+
+function applyDechubBridgeHrContent(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>('h1, h2, h3, h5, p, button, [role="tab"]').forEach((element) => {
+    const replacement = DECHUB_BRIDGE_HR_COPY[element.textContent?.trim() ?? ''];
+    if (replacement) element.textContent = replacement;
+  });
+
+  root.querySelectorAll<HTMLElement>('p').forEach((paragraph) => {
+    const content = paragraph.textContent?.trim() ?? '';
+    if (content.startsWith('ATS uses AI to source candidates')) {
+      paragraph.textContent =
+        'Keep candidate details, interviews, offers, and onboarding tasks organized in one clear hiring workflow.';
+    } else if (content.startsWith('Run reviews, set goals')) {
+      paragraph.textContent =
+        'Keep goals, feedback, and employee development conversations organized as your team grows.';
+    } else if (content.startsWith('Make decisions based on role')) {
+      paragraph.textContent =
+        'Use consistent employee information and approval workflows to support clear people decisions.';
+    } else if (content.startsWith('Lower risk with built-in policies')) {
+      paragraph.textContent =
+        'Keep documents, policies, offboarding steps, and HR records organized throughout the employee lifecycle.';
+    }
+  });
+
+  const heroChoiceLabels: Record<string, string> = {
+    'Centralize HR globally': 'Manage employee information',
+    'Start with HRIS, add later': 'Build your HR workflow',
+    'Automate workflows': 'Streamline requests and approvals',
+    'Get workforce insights': 'View workforce information',
+    'Connect hiring to payroll': 'Keep hiring and payroll connected',
+  };
+  root.querySelectorAll<HTMLButtonElement>('[role="checkbox"]').forEach((button) => {
+    const label = button.getAttribute('aria-label') ?? '';
+    const replacement = heroChoiceLabels[label];
+    if (!replacement) return;
+
+    button.setAttribute('aria-label', replacement);
+    const labelNode = Array.from(button.querySelectorAll('span')).find((span) => span.textContent?.trim());
+    if (labelNode) labelNode.textContent = replacement;
+  });
+
+  root.querySelectorAll<HTMLElement>('.MuiAccordion-root').forEach((accordion, index) => {
+    const content = DECHUB_BRIDGE_HR_FAQS[index];
+    if (!content) return;
+
+    const question = accordion.querySelector<HTMLElement>('h3');
+    const answer = accordion.querySelector<HTMLElement>('.MuiAccordionDetails-root');
+    if (question) question.textContent = content[0];
+    if (answer) answer.textContent = content[1];
+  });
+
+  root.querySelectorAll<HTMLElement>('a, button').forEach((element) => {
+    if (element.textContent?.trim() === 'Read more') {
+      element.closest('a, button')?.remove();
+    }
+  });
+
+  const hrStory = Array.from(root.querySelectorAll<HTMLElement>('h3')).find(
+    (heading) => heading.textContent?.trim() === 'How a growing team keeps employee operations organized',
+  );
+  const storyLogo = hrStory?.closest<HTMLElement>('.MuiCardContent-root')?.querySelector<HTMLImageElement>('img');
+  if (storyLogo) {
+    storyLogo.src = '/dechub-assets/trusted-logos/tanishq_logo.png';
+    storyLogo.removeAttribute('srcset');
+    storyLogo.alt = 'Tanishq';
+    storyLogo.style.filter = 'brightness(0)';
+  }
+
+  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let textNode = textWalker.nextNode();
+  while (textNode) {
+    if (textNode.nodeValue) {
+      textNode.nodeValue = textNode.nodeValue
+        .replace(/Deel/g, 'Dechub-Bridge')
+        .replace(/\bDechub\b(?!-Bridge)/g, 'Dechub-Bridge');
+    }
+    textNode = textWalker.nextNode();
+  }
+}
+
+function wireHrHeroChoices(root: HTMLElement) {
+  const hero = Array.from(root.querySelectorAll<HTMLElement>('section')).find(
+    (section) => Boolean(section.querySelector('h1') && section.querySelector('[role="checkbox"]')),
+  );
+  if (!hero) {
+    return () => undefined;
+  }
+
+  const choices = Array.from(hero.querySelectorAll<HTMLButtonElement>('[role="checkbox"]'));
+  const demoButton = Array.from(hero.querySelectorAll<HTMLButtonElement>('button')).find(
+    (button) => button.textContent?.trim() === 'Book a demo',
+  );
+  const selectedChoices = new Set(
+    choices
+      .filter((button) => button.getAttribute('aria-checked') === 'true')
+      .map((button) => button.getAttribute('aria-label') ?? ''),
+  );
+
+  const syncRequestedServices = () => {
+    const requestedServices = Array.from(selectedChoices).filter(Boolean);
+    demoButton?.setAttribute('data-demo-trigger', 'true');
+    demoButton?.setAttribute('data-requested-services', JSON.stringify(requestedServices));
+  };
+
+  const resetChoices = () => {
+    selectedChoices.clear();
+    choices.forEach((button) => {
+      button.setAttribute('aria-checked', 'false');
+      button.classList.remove('hr-hero-option--selected');
+    });
+    syncRequestedServices();
+  };
+
+  const listeners = choices.map((button) => {
+    let indicator =
+      button.querySelector<HTMLElement>('.hr-hero-option-check') ??
+      button.querySelector<HTMLElement>('span[aria-hidden="true"]');
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.setAttribute('aria-hidden', 'true');
+      indicator.className =
+        'hr-hero-option-check inline-flex items-center justify-center w-[18px] h-[18px] rounded-[4px] border-2 border-[var(--color-purple-525)] bg-transparent';
+      button.prepend(indicator);
+    }
+
+    indicator.classList.add('hr-hero-option-check');
+    const label = button.getAttribute('aria-label') ?? button.textContent?.trim() ?? '';
+    const handleChoiceClick = () => {
+      const isSelected = !selectedChoices.has(label);
+      button.setAttribute('aria-checked', String(isSelected));
+      button.classList.toggle('hr-hero-option--selected', isSelected);
+
+      if (isSelected) {
+        selectedChoices.add(label);
+      } else {
+        selectedChoices.delete(label);
+      }
+
+      syncRequestedServices();
+    };
+
+    button.addEventListener('click', handleChoiceClick);
+    return () => button.removeEventListener('click', handleChoiceClick);
+  });
+
+  syncRequestedServices();
+  window.addEventListener('dechub:talent-request-submitted', resetChoices);
+  return () => {
+    listeners.forEach((removeListener) => removeListener());
+    window.removeEventListener('dechub:talent-request-submitted', resetChoices);
+  };
+}
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
@@ -707,6 +965,7 @@ function wireHrEcosystemTabs(root: HTMLElement) {
     descriptionNode.textContent = nextContent.description;
     ctaAnchor.href = nextContent.ctaLink;
     ctaAnchor.setAttribute('aria-label', ` ${nextContent.ctaLink.replace(/\//g, ' ').trim()} `);
+    ctaAnchor.setAttribute('data-demo-trigger', 'true');
     ctaButton.textContent = nextContent.ctaLabel;
     imageNode.src = nextContent.imageSrc;
     imageNode.setAttribute('srcset', nextContent.imageSrc);
@@ -887,7 +1146,7 @@ export default function DeelHrPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = DEEL_HR_PAGE_TITLE;
+    document.title = 'Dechub-Bridge HR | People Operations Platform';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -955,7 +1214,12 @@ export default function DeelHrPage() {
 
   useEffect(() => {
     const root = rootRef.current;
-    const generatedKeyFigures = root?.querySelector<HTMLElement>('div.key-figures-wrapper');
+    const generatedKeyFigures = Array.from(root?.querySelectorAll<HTMLElement>('.key-figures-wrapper') ?? []).find(
+      (section) => {
+        const values = section.textContent ?? '';
+        return values.includes('150+') && values.includes('40,000');
+      },
+    );
 
     if (!generatedKeyFigures?.parentElement) {
       return undefined;
@@ -973,24 +1237,76 @@ export default function DeelHrPage() {
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = rootRef.current;
-    const heading = Array.from(root?.querySelectorAll('h2') ?? []).find(
-      (node) => node.textContent?.trim() === 'How Deel HR fits into your ecosystem',
-    );
-    const section = heading?.closest<HTMLElement>('.bg-surface-dark');
-    const frame = section?.parentElement;
+    const tabList = Array.from(root?.querySelectorAll<HTMLElement>('[role="tablist"]') ?? []).find((list) => {
+      const labels = Array.from(list.querySelectorAll<HTMLElement>('[role="tab"]')).map((tab) =>
+        tab.textContent?.trim(),
+      );
+      return ['In your tools', 'Talent', 'IT', 'Services'].every((label) => labels.includes(label));
+    });
+    const section = tabList?.closest<HTMLElement>('.bg-surface-dark');
+    const frame = section?.parentElement as HTMLElement | null;
 
     if (!section || !frame) {
       return undefined;
     }
 
-    section.classList.add('deel-hr-ecosystem-section');
-    frame.classList.add('deel-hr-ecosystem-frame');
+    frame.classList.add('deel-hr-ecosystem-section');
+
+    const content = section.firstElementChild as HTMLElement | null;
+    const headingContainer = content?.firstElementChild as HTMLElement | null;
+    const panel = section.querySelector<HTMLElement>('.MuiTabs-root + div > div');
+    const elements = [frame, section, content, headingContainer, panel].filter(
+      (element): element is HTMLElement => element instanceof HTMLElement,
+    );
+    const originalStyles = new Map(elements.map((element) => [element, element.getAttribute('style')]));
+
+    const applyDesktopLayout = () => {
+      if (window.innerWidth < 1050 || !content || !headingContainer || !panel) {
+        elements.forEach((element) => {
+          const originalStyle = originalStyles.get(element);
+          if (originalStyle === null) {
+            element.removeAttribute('style');
+          } else {
+            element.setAttribute('style', originalStyle);
+          }
+        });
+        return;
+      }
+
+      frame.style.setProperty('width', '100%', 'important');
+      frame.style.setProperty('padding', '12px', 'important');
+      section.style.setProperty('width', '100%', 'important');
+      section.style.setProperty('max-width', 'none', 'important');
+      section.style.setProperty('margin-inline', '0', 'important');
+      section.style.setProperty('padding', '64px clamp(24px, 6vw, 112px)', 'important');
+      content.style.setProperty('width', '100%', 'important');
+      content.style.setProperty('max-width', '1312px', 'important');
+      content.style.setProperty('margin-inline', 'auto', 'important');
+      headingContainer.style.setProperty('width', '100%', 'important');
+      headingContainer.style.setProperty('max-width', '667px', 'important');
+      headingContainer.style.setProperty('margin-inline', 'auto', 'important');
+      headingContainer.style.setProperty('text-align', 'center', 'important');
+      panel.style.setProperty('display', 'grid', 'important');
+      panel.style.setProperty('grid-template-columns', 'minmax(0, 1fr) minmax(0, 1fr)', 'important');
+      panel.style.setProperty('gap', '48px', 'important');
+    };
+
+    applyDesktopLayout();
+    window.addEventListener('resize', applyDesktopLayout);
 
     return () => {
-      section.classList.remove('deel-hr-ecosystem-section');
-      frame.classList.remove('deel-hr-ecosystem-frame');
+      window.removeEventListener('resize', applyDesktopLayout);
+      elements.forEach((element) => {
+        const originalStyle = originalStyles.get(element);
+        if (originalStyle === null) {
+          element.removeAttribute('style');
+        } else {
+          element.setAttribute('style', originalStyle);
+        }
+      });
+      frame.classList.remove('deel-hr-ecosystem-section');
     };
   }, []);
 
@@ -999,6 +1315,8 @@ export default function DeelHrPage() {
     if (!root) {
       return;
     }
+
+    applyDechubBridgeHrContent(root);
 
     root.querySelectorAll('header, footer').forEach((element) => {
       element.remove();
@@ -1012,6 +1330,15 @@ export default function DeelHrPage() {
 
       const anchor = target.closest('a[href]');
       if (!(anchor instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      // Let the shared layout handle all Book a demo triggers.
+      if (
+        anchor.getAttribute('data-demo-trigger') === 'true' ||
+        anchor.textContent?.trim().toLowerCase() === 'book a demo' ||
+        anchor.getAttribute('href')?.includes('book-a-demo')
+      ) {
         return;
       }
 
@@ -1049,6 +1376,7 @@ export default function DeelHrPage() {
     };
 
     const cleanupSlider = wireSlider(root);
+    const cleanupHrHeroChoices = wireHrHeroChoices(root);
     const cleanupTabs = wireTabs(root);
     const cleanupHrEcosystemTabs = wireHrEcosystemTabs(root);
     const cleanupAccordions = wireAccordions(root);
@@ -1058,6 +1386,7 @@ export default function DeelHrPage() {
     return () => {
       root.removeEventListener('click', handleAnchorClick);
       cleanupSlider();
+      cleanupHrHeroChoices();
       cleanupTabs();
       cleanupHrEcosystemTabs();
       cleanupAccordions();

@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import {
   PAYROLL_SOLUTIONS_HTML_CLASSES,
   PAYROLL_SOLUTIONS_INLINE_STYLES,
-  PAYROLL_SOLUTIONS_PAGE_TITLE,
   PAYROLL_SOLUTIONS_STYLESHEET_HREFS,
   PayrollSolutionsContent,
 } from './payrollSolutions/generatedPageData';
@@ -73,6 +72,26 @@ const PAYROLL_HERO_LAYOUT_FIXES = `
   .payroll-solutions-page > .w-full > section:first-child [role="checkbox"] {
     min-height: 72px !important;
     padding: 12px !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="checkbox"][aria-checked="true"] {
+    background: rgba(149, 113, 255, 0.24) !important;
+    border-color: rgba(202, 182, 255, 0.88) !important;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="checkbox"] > .payroll-hero-option-check {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .payroll-solutions-page > .w-full > section:first-child [role="checkbox"][aria-checked="true"] > .payroll-hero-option-check::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 4px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translate(0, -1px);
   }
 
   .payroll-solutions-page > .w-full > section:first-child [role="group"] + div {
@@ -305,15 +324,15 @@ const PAYROLL_HERO_LAYOUT_FIXES = `
   }
 `;
 const PAYROLL_PRODUCT_TAB_LABELS = [
-  'Deel Payroll',
-  'EOR',
-  'PEO',
-  'Contractor',
-  'Local Payroll',
-  'Payroll Connect',
-  'Expense Management',
-  'Benefits',
-  'AI Agent',
+  'India',
+  'United States',
+  'UAE',
+  'Payroll Setup',
+  'Compliance',
+  'Approvals',
+  'Payslips',
+  'Reporting',
+  'Support',
 ] as const;
 
 const PAYROLL_PRODUCT_TABS: Record<
@@ -326,71 +345,368 @@ const PAYROLL_PRODUCT_TABS: Record<
     imageSrc: string;
   }
 > = {
-  'Deel Payroll': {
-    title: 'For companies running payroll through their own entities',
-    description:
-      'Run multi-country payroll for employees and contractors. Self-serve or fully managed.',
+  India: {
+    title: 'Payroll built for teams in India',
+    description: 'Manage salaries, statutory deductions, payslips, and monthly payroll in one clear workflow.',
+    ctaLabel: 'Talk to payroll expert',
+    ctaLink: '/solutions/payroll/',
+    imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
+  },
+  'United States': {
+    title: 'Run US payroll with confidence',
+    description: 'Organize employee pay, payroll approvals, and records for your US workforce from one platform.',
+    ctaLabel: 'Talk to payroll expert',
+    ctaLink: '/solutions/payroll/',
+    imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
+  },
+  UAE: {
+    title: 'Keep UAE payroll organized',
+    description: 'Coordinate payroll data, approvals, and employee records for teams operating across the UAE.',
+    ctaLabel: 'Talk to payroll expert',
+    ctaLink: '/solutions/payroll/',
+    imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
+  },
+  'Payroll Setup': {
+    title: 'Launch payroll with a guided setup',
+    description: 'Bring employee data, pay components, and approval rules into one reliable payroll process.',
     ctaLabel: 'Book a demo',
     ctaLink: '/solutions/payroll/',
     imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
   },
-  EOR: {
-    title: 'Employer of Record',
-    description: 'Hire and pay teams globally',
-    ctaLabel: 'Explore EOR',
-    ctaLink: '/solutions/payroll/eor',
-    imageSrc: '/solutions/payroll/eor/assets/images/eor_4c9368273e-e690716c19.webp',
-  },
-  PEO: {
-    title: 'Professional Employer Organization',
-    description: 'Support US employees with payroll, benefits, and compliance.',
-    ctaLabel: 'Explore PEO',
-    ctaLink: '/solutions/payroll/peo',
-    imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
-  },
-  Contractor: {
-    title: 'Contractor management',
-    description: 'Onboard, pay, and manage contractors in one platform.',
-    ctaLabel: 'Explore Contractor',
-    ctaLink: '/solutions/payroll/contractors',
-    imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
-  },
-  'Local Payroll': {
-    title: 'Local payroll',
-    description: 'Run compliant local payroll with one global system of record.',
-    ctaLabel: 'Explore Local Payroll',
+  Compliance: {
+    title: 'Stay on top of payroll requirements',
+    description: 'Keep payroll information and required records organized for India, the USA, and the UAE.',
+    ctaLabel: 'Book a demo',
     ctaLink: '/solutions/payroll',
     imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
   },
-  'Payroll Connect': {
-    title: 'Payroll Connect',
-    description: 'Unify Deel-run and third-party payrolls in one dashboard.',
-    ctaLabel: 'Explore Payroll Connect',
+  Approvals: {
+    title: 'Review before every payroll run',
+    description: 'Give the right people a simple approval step before payroll is finalized.',
+    ctaLabel: 'Book a demo',
     ctaLink: '/solutions/payroll',
     imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
   },
-  'Expense Management': {
-    title: 'Expense management',
-    description: 'Track and reimburse global expenses alongside payroll.',
-    ctaLabel: 'Explore Expense Management',
+  Payslips: {
+    title: 'Give employees clear payslips',
+    description: 'Keep salary details and payroll records accessible in one secure employee experience.',
+    ctaLabel: 'Book a demo',
     ctaLink: '/solutions/payroll',
     imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
   },
-  Benefits: {
-    title: 'Benefits',
-    description: 'Offer localized benefits without managing separate vendors.',
-    ctaLabel: 'Explore Benefits',
+  Reporting: {
+    title: 'See payroll status at a glance',
+    description: 'Track payroll progress, employee changes, and country-level activity from one dashboard.',
+    ctaLabel: 'Book a demo',
     ctaLink: '/solutions/benefits',
     imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
   },
-  'AI Agent': {
-    title: 'AI Agent',
-    description: 'Catch anomalies, automate checks, and move payroll faster.',
-    ctaLabel: 'Explore AI Agent',
-    ctaLink: '/hr-platform/ai',
+  Support: {
+    title: 'Get help when payroll needs attention',
+    description: 'Work with the Dechub-Bridge team to keep your payroll process moving across all three countries.',
+    ctaLabel: 'Book a demo',
+    ctaLink: '/solutions/payroll',
     imageSrc: '/solutions/payroll/assets/images/Deel_Payroll_f1478e71c3-2a3cd820c9.png',
   },
 };
+
+const DECHUB_PAYROLL_COPY: Record<string, string> = {
+  'Run payroll on one platform, globally': 'Payroll for India, the USA, and the UAE',
+  'What would you like to do with Deel Payroll?': 'What can Dechub-Bridge Payroll help you manage?',
+  'Simplify your entire global operations': 'Simplify payroll across your key markets',
+  'One platform for payroll': 'One platform for every payroll run',
+  'Run payroll your way': 'Run payroll with a process your team can trust',
+  'Track payroll status, variances, and global workforce costs in one intuitive dashboard.':
+    'See payroll progress, employee changes, and approval status across India, the USA, and the UAE.',
+  'Choose self-serve or managed payroll by country. Mix models as your business scales.':
+    'Use one structured workflow while your team manages the payroll needs of each country.',
+  'Local rules, filings, and statutory requirements apply automatically before payroll runs.':
+    'Keep the records, inputs, and approval steps your payroll team needs in one organized process.',
+  'Receive fast, accurate support across multiple channels, including email, phone, live chat, Slack, and Teams.':
+    'Work with the Dechub-Bridge team when you need help setting up or managing your payroll workflow.',
+  'Approve once. Deel handles FX, local payment rails, and multi-currency payouts, including crypto.':
+    'Give finance and payroll teams a clear review point before each payroll run is approved.',
+  'SOC 2 Type II, ISO 27001, and GDPR-compliant. Integrates with Workday, SAP, Oracle, NetSuite, Okta, Azure AD, and more.':
+    'Keep your payroll data, employee details, and operational records coordinated in one platform.',
+  'Built-in compliance': 'Organized payroll records',
+  'Modern 24/7 support': 'Support when your team needs it',
+  'Reliable global payments': 'Clear payroll approvals',
+  'Enterprise ready': 'Built to grow with your workforce',
+  'The impact of one connected payroll platform': 'A clearer payroll process for your team',
+  'Explore how simple global payroll can be': 'See how Dechub-Bridge Payroll works',
+  'A simple payroll flow from start to finish': 'A simple payroll flow from setup to payslip',
+  'Get set up fast': 'Set up your payroll workflow',
+  'Get compliant payroll live in days without building in-house expertise.':
+    'Start with a guided discussion of your payroll requirements for India, the USA, and the UAE.',
+  'Launch payroll country by country with guided onboarding and clear timelines — SMBs can be live in as little as 1–2 weeks.':
+    'Launch payroll country by country with guided onboarding and clear timelines.',
+  'Bring your workforce into Deel': 'Bring your employee payroll data together',
+  'Add new countries without re-implementing payroll each time.':
+    'Keep employee information and pay components organized before each payroll cycle.',
+  'Configure payroll by country': 'Configure payroll for each country',
+  'Integrate with Workday, SAP, or Oracle and maintain governance, auditability, and security.':
+    'Set country-specific payroll information, reviewers, and supporting records in a consistent workflow.',
+  'Automate compliance': 'Keep records and approvals organized',
+  'Approve once. Pay everywhere.': 'Review and approve payroll with confidence',
+  'Finalize payroll, manage FX, and pay workers in local currency—with optional crypto payouts where supported.':
+    'Finalize payroll and pay workers in local currency.',
+  'Track everything in one place': 'Track payroll progress in one place',
+  'Built for every business size': 'Payroll that grows with your business',
+  'Startups and remote-first teams': 'Growing teams',
+  'Scaling and mid-market teams': 'Expanding businesses',
+  Enterprises: 'Established organizations',
+  'A product fit for every need': 'Payroll support for every stage of growth',
+  'PRODUCT NEEDS': 'DECHUB-BRIDGE PAYROLL',
+  'See what customers are saying': 'Built for payroll teams that need clarity',
+  'How Turing expedites payments for 6,000+ global workers with Deel':
+    'How a growing team keeps India payroll organized',
+  'How Revolut streamlined employee relocation with Deel':
+    'How a US team simplifies payroll approvals',
+  'How Magic saves 50+ hours a month on admin using Deel':
+    'How a UAE team centralizes payroll records',
+  'How BCG centralized payroll across 6 nations with Deel':
+    'How finance teams keep payroll information in one place',
+  'See the products that help you pay anywhere': 'Run payroll with confidence in India, the USA, and the UAE',
+  'Excellent global payroll': 'Payroll support for growing teams',
+};
+
+const DECHUB_PAYROLL_FAQS = [
+  {
+    question: 'What is Dechub-Bridge Payroll?',
+    answer:
+      'Dechub-Bridge Payroll helps businesses organize payroll operations for teams in India, the USA, and the UAE from one platform.',
+  },
+  {
+    question: 'Which countries does Dechub-Bridge Payroll support?',
+    answer: 'Dechub-Bridge Payroll is currently designed for payroll operations in India, the USA, and the UAE.',
+  },
+  {
+    question: 'Can we manage payroll approvals in Dechub-Bridge?',
+    answer: 'Yes. Dechub-Bridge provides a clear review and approval workflow before each payroll run is finalized.',
+  },
+  {
+    question: 'Can employees access payslip information?',
+    answer: 'Dechub-Bridge keeps payroll records and payslip information organized in one secure employee experience.',
+  },
+  {
+    question: 'Can we manage employee changes before payroll runs?',
+    answer: 'Yes. Teams can keep employee and payroll changes organized before the payroll approval stage.',
+  },
+  {
+    question: 'How does Dechub-Bridge help with payroll compliance?',
+    answer: 'Dechub-Bridge helps your team maintain organized payroll records and workflows for the countries you operate in.',
+  },
+  {
+    question: 'How quickly can we get started?',
+    answer: 'Our team can review your payroll requirements and guide you through the appropriate setup process.',
+  },
+  {
+    question: 'Can Dechub-Bridge support teams in more than one country?',
+    answer: 'Yes. Dechub-Bridge Payroll is built to help teams coordinate payroll across India, the USA, and the UAE.',
+  },
+  {
+    question: 'Can Dechub-Bridge work alongside our current payroll process?',
+    answer: 'Yes. We can discuss your current process and help you plan the right workflow for your team.',
+  },
+  {
+    question: 'Is payroll information kept secure?',
+    answer: 'Dechub-Bridge is designed to keep payroll information organized and accessible to the right people in your team.',
+  },
+];
+
+function applyDechubPayrollContent(root: HTMLElement) {
+  const textTargets = Array.from(root.querySelectorAll<HTMLElement>('h1, h2, h3, h5, p, button, [role="tab"]'));
+
+  textTargets.forEach((element) => {
+    const currentText = element.textContent?.trim() ?? '';
+    const replacement = DECHUB_PAYROLL_COPY[currentText];
+    if (replacement) {
+      element.textContent = replacement;
+    }
+  });
+
+  const hero = root.querySelector<HTMLElement>(':scope > .w-full > section:first-child');
+  const heroChoices = [
+    'Run payroll in India',
+    'Manage US payroll',
+    'Coordinate UAE payroll',
+    'Prepare payslips',
+    'Review payroll approvals',
+  ];
+
+  hero?.querySelectorAll<HTMLButtonElement>('[role="checkbox"]').forEach((button, index) => {
+    const label = heroChoices[index];
+    if (!label) {
+      return;
+    }
+
+    button.setAttribute('aria-label', label);
+    const labelNode = Array.from(button.querySelectorAll('span')).find((span) => span.textContent?.trim());
+    if (labelNode) {
+      labelNode.textContent = label;
+    }
+  });
+
+  const productTabLabels = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]')).find(
+    (tab) => tab.textContent?.trim() === 'Deel Payroll',
+  )?.parentElement;
+  const productTabs = productTabLabels
+    ? Array.from(productTabLabels.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+    : [];
+  productTabs.forEach((tab, index) => {
+    const label = PAYROLL_PRODUCT_TAB_LABELS[index];
+    if (label) {
+      tab.textContent = label;
+    }
+  });
+
+  root.querySelectorAll<HTMLElement>('.MuiAccordion-root').forEach((accordion, index) => {
+    const content = DECHUB_PAYROLL_FAQS[index];
+    if (!content) {
+      return;
+    }
+
+    const question = accordion.querySelector<HTMLElement>('h3');
+    const answer = accordion.querySelector<HTMLElement>('.MuiAccordionDetails-root');
+    if (question) {
+      question.textContent = content.question;
+    }
+    if (answer) {
+      answer.textContent = content.answer;
+    }
+  });
+
+  root.querySelectorAll<HTMLElement>('p').forEach((paragraph) => {
+    if (paragraph.textContent?.trim() === '(Forrester TEI™)') {
+      paragraph.remove();
+    }
+  });
+
+  root.querySelectorAll<HTMLButtonElement>('.key-figures-wrapper button').forEach((button) => {
+    if (button.textContent?.trim() === 'Learn more') {
+      button.closest('a')?.remove();
+    }
+  });
+
+  root.querySelectorAll<HTMLAnchorElement>('a[href*="using-multiple-payroll-vendors"]').forEach((link) => {
+    link.replaceWith(document.createTextNode(link.textContent ?? 'third-party payrolls'));
+  });
+
+  root.querySelectorAll<HTMLAnchorElement>('a[href*="/hr-platform/ai/"]').forEach((link) => {
+    link.replaceWith(document.createTextNode(link.textContent ?? 'AI'));
+  });
+
+  const audienceCtas = new Set(['Explore Startups', 'Explore Mid-market', 'Explore Enterprise']);
+  root.querySelectorAll<HTMLAnchorElement>('a').forEach((link) => {
+    if (audienceCtas.has(link.textContent?.trim() ?? '')) {
+      link.remove();
+    }
+  });
+
+  root.querySelectorAll<HTMLElement>('a, button').forEach((element) => {
+    if (element.textContent?.trim() === 'Talk to payroll expert') {
+      (element.closest('a, button') ?? element).setAttribute('data-demo-trigger', 'true');
+    }
+  });
+
+  root.querySelectorAll<HTMLElement>('a, button').forEach((element) => {
+    if (element.textContent?.trim() === 'Read more') {
+      element.closest('a, button')?.remove();
+    }
+  });
+
+  const indiaPayrollStory = Array.from(root.querySelectorAll<HTMLElement>('h3')).find(
+    (heading) => heading.textContent?.trim() === 'How a growing team keeps India payroll organized',
+  );
+  const storyLogo = indiaPayrollStory?.closest<HTMLElement>('.MuiCardContent-root')?.querySelector<HTMLImageElement>('img');
+  if (storyLogo) {
+    storyLogo.src = '/dechub-assets/trusted-logos/tanishq_logo.png';
+    storyLogo.removeAttribute('srcset');
+    storyLogo.alt = 'Tanishq';
+    storyLogo.style.filter = 'brightness(0)';
+  }
+
+  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let textNode = textWalker.nextNode();
+  while (textNode) {
+    if (textNode.nodeValue) {
+      textNode.nodeValue = textNode.nodeValue
+        .replace(/Deel/g, 'Dechub-Bridge')
+        .replace(/\bDechub\b(?!-Bridge)/g, 'Dechub-Bridge');
+    }
+    textNode = textWalker.nextNode();
+  }
+}
+
+function wirePayrollHeroChoices(root: HTMLElement) {
+  const hero = root.querySelector<HTMLElement>(':scope > .w-full > section:first-child');
+  if (!hero) {
+    return () => undefined;
+  }
+
+  const choices = Array.from(hero.querySelectorAll<HTMLButtonElement>('[role="checkbox"]'));
+  const demoButton = Array.from(hero.querySelectorAll<HTMLButtonElement>('button')).find(
+    (button) => button.textContent?.trim() === 'Book a demo',
+  );
+  const selectedChoices = new Set(
+    choices
+      .filter((button) => button.getAttribute('aria-checked') === 'true')
+      .map((button) => button.getAttribute('aria-label') ?? ''),
+  );
+
+  const syncRequestedServices = () => {
+    const requestedServices = Array.from(selectedChoices).filter(Boolean);
+    demoButton?.setAttribute('data-demo-trigger', 'true');
+    demoButton?.setAttribute('data-requested-services', JSON.stringify(requestedServices));
+  };
+
+  const resetChoices = () => {
+    selectedChoices.clear();
+    choices.forEach((button) => {
+      button.setAttribute('aria-checked', 'false');
+      button.classList.remove('payroll-hero-option--selected');
+    });
+    syncRequestedServices();
+  };
+
+  const listeners = choices.map((button) => {
+    let indicator =
+      button.querySelector<HTMLElement>('.payroll-hero-option-check') ??
+      button.querySelector<HTMLElement>('span[aria-hidden="true"]');
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.setAttribute('aria-hidden', 'true');
+      indicator.className = 'payroll-hero-option-check inline-flex items-center justify-center w-[18px] h-[18px] rounded-[4px] border-2 border-[var(--color-purple-525)] bg-transparent';
+      button.prepend(indicator);
+    }
+
+    indicator.classList.add('payroll-hero-option-check');
+    const label = button.getAttribute('aria-label') ?? button.textContent?.trim() ?? '';
+    const handleChoiceClick = () => {
+      const isSelected = !selectedChoices.has(label);
+      button.setAttribute('aria-checked', String(isSelected));
+      button.classList.toggle('payroll-hero-option--selected', isSelected);
+
+      if (isSelected) {
+        selectedChoices.add(label);
+      } else {
+        selectedChoices.delete(label);
+      }
+
+      syncRequestedServices();
+    };
+
+    button.addEventListener('click', handleChoiceClick);
+    return () => button.removeEventListener('click', handleChoiceClick);
+  });
+
+  syncRequestedServices();
+  window.addEventListener('dechub:talent-request-submitted', resetChoices);
+  return () => {
+    listeners.forEach((removeListener) => removeListener());
+    window.removeEventListener('dechub:talent-request-submitted', resetChoices);
+  };
+}
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
@@ -452,7 +768,7 @@ function wirePayrollProductTabs(root: HTMLElement) {
   indicator.className ||= 'MuiTabs-indicator mui-ttwr4n';
   ctaButton.style.cursor = 'pointer';
 
-  let activeLink = PAYROLL_PRODUCT_TABS['Deel Payroll'].ctaLink;
+  let activeLink = PAYROLL_PRODUCT_TABS.India.ctaLink;
 
   const activateTab = (tab: HTMLButtonElement) => {
     const normalizedLabel = (tab.textContent ?? '').trim().replace(/\s+/g, ' ') as
@@ -765,7 +1081,7 @@ export default function PayrollSolutionsPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = PAYROLL_SOLUTIONS_PAGE_TITLE;
+    document.title = 'Dechub-Bridge Payroll | India, USA, UAE';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -817,6 +1133,8 @@ export default function PayrollSolutionsPage() {
       return;
     }
 
+    applyDechubPayrollContent(root);
+
     const handleAnchorClick = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) {
@@ -853,6 +1171,7 @@ export default function PayrollSolutionsPage() {
       navigateWithinApp(url.toString());
     };
 
+    const cleanupPayrollHeroChoices = wirePayrollHeroChoices(root);
     const cleanupPayrollTabs = wirePayrollProductTabs(root);
     const cleanupCustomerStoriesSlider = wireCustomerStoriesSlider(root);
     const cleanupPayrollFaqs = wirePayrollFaqs(root);
@@ -862,6 +1181,7 @@ export default function PayrollSolutionsPage() {
 
     return () => {
       root.removeEventListener('click', handleAnchorClick);
+      cleanupPayrollHeroChoices();
       cleanupPayrollTabs();
       cleanupCustomerStoriesSlider();
       cleanupPayrollFaqs();
@@ -872,7 +1192,9 @@ export default function PayrollSolutionsPage() {
   useEffect(() => {
     const root = rootRef.current;
     const heading = Array.from(root?.querySelectorAll('h2') ?? []).find(
-      (node) => node.textContent?.trim() === 'A product fit for every need',
+      (node) =>
+        node.textContent?.trim() === 'A product fit for every need' ||
+        node.textContent?.trim() === 'Payroll support for every stage of growth',
     );
     const section = heading?.closest<HTMLElement>('div[class*="bg-surface-primary"]');
 
@@ -909,7 +1231,9 @@ export default function PayrollSolutionsPage() {
     const generatedKeyFigures = Array.from(root?.querySelectorAll<HTMLElement>('div.key-figures-wrapper') ?? []).find(
       (section) =>
         section.querySelector('h3')?.textContent?.trim() ===
-        'Deel makes growing remote and international teams effortless',
+          'Deel makes growing remote and international teams effortless' ||
+        section.querySelector('h3')?.textContent?.trim() ===
+          'Dechub-Bridge makes growing remote and international teams effortless',
     );
 
     if (!generatedKeyFigures?.parentElement) {

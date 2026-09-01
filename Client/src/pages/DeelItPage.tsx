@@ -3,7 +3,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_IT_HTML_CLASSES,
   DEEL_IT_INLINE_STYLES,
-  DEEL_IT_PAGE_TITLE,
   DEEL_IT_STYLESHEET_HREFS,
   DeelItContent,
 } from './deelIt/generatedPageData';
@@ -63,6 +62,12 @@ const IT_LAYOUT_FIXES = `
   .deel-it-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] { display: flex !important; flex-direction: column !important; gap: 12px !important; }
   .deel-it-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] > div { display: flex !important; gap: 12px !important; }
   .deel-it-page [data-ab-page="true"] > .w-full > section:first-child [role="group"] + div { margin-top: 24px !important; }
+  .deel-it-page [role="checkbox"][aria-checked="true"] { background: rgba(149, 113, 255, 0.24) !important; border-color: rgba(202, 182, 255, 0.88) !important; }
+  .deel-it-page .it-hero-option-check { position: relative; flex: 0 0 auto; }
+  .deel-it-page [role="checkbox"][aria-checked="true"] > .it-hero-option-check::after {
+    content: ''; position: absolute; width: 7px; height: 4px; border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff; transform: rotate(-45deg); top: 4px; left: 3px;
+  }
 
   .deel-it-page .swiper-slider-comparison-slider {
     overflow-x: auto !important;
@@ -167,27 +172,164 @@ const IT_TEAM_TAB_LABELS = ['IT Leaders', 'HR & People Teams', 'Global Workforce
 
 const IT_TEAM_TABS: Record<
   (typeof IT_TEAM_TAB_LABELS)[number],
-  { title: string; description: string; imageSrc: string }
+  { title: string; description: string; ctaLabel: string; ctaLink: string; imageSrc: string }
 > = {
   'IT Leaders': {
     title: 'Run IT from one global system',
     description:
       'Manage devices, access, security, and support from a single platform. Standardize policies, automate workflows, and maintain full visibility across regions without adding tools or headcount.',
+    ctaLabel: 'Explore IT workflows',
+    ctaLink: '/solutions/it/',
     imageSrc: '/solutions/it/assets/images/it_leaders_2x_14a63eb9f2-872ee3f1ba.webp',
   },
   'HR & People Teams': {
     title: 'Onboard employees without IT bottlenecks',
     description:
       'Ensure every new hire gets the right device and app access on or before day one. HR events automatically trigger IT actions for onboarding, role changes, and offboarding without tickets or manual coordination.',
+    ctaLabel: 'Explore onboarding support',
+    ctaLink: '/solutions/it/',
     imageSrc: '/solutions/it/assets/images/hr_people_teams_2x_51de3ed95a-c45ff39bb5.webp',
   },
   'Global Workforces': {
     title: 'Deliver consistent IT where you hire',
     description:
       'Ship, manage, support, and recover devices globally with the same standards for security, access, and support in every country. Employees get a reliable experience, regardless of location or time zone.',
+    ctaLabel: 'Explore global IT support',
+    ctaLink: '/solutions/it/',
     imageSrc: '/solutions/it/assets/images/global_workforces_2x_921fc6cccd-9d80b9767d.webp',
   },
 };
+
+const DECHUB_BRIDGE_IT_COPY: Record<string, string> = {
+  'Run automated global IT operations from just one platform': 'Manage IT operations from one connected platform',
+  'What would you like to do with Deel IT?': 'What can Dechub-Bridge IT help you manage?',
+  'Built for every team that runs global IT': 'Built for teams managing IT operations',
+  'WHO IT’S FOR': 'WHO DECHUB-BRIDGE IT IS FOR',
+  'See what customers are saying': 'Built for teams that need clearer IT operations',
+  'How Turing expedites payments for 6,000+ global workers with Deel':
+    'How a growing team keeps IT operations organized',
+};
+
+const DECHUB_BRIDGE_IT_FAQS = [
+  ['What does Dechub-Bridge IT help manage?', 'Dechub-Bridge IT helps teams organize equipment, access, support requests, and IT workflows in one place.'],
+  ['Can HR and IT work from the same workflow?', 'Yes. Teams can coordinate onboarding, employee changes, device needs, and access requirements without disconnected processes.'],
+  ['Does Dechub-Bridge IT support distributed teams?', 'Yes. It is designed to keep IT operations organized for teams working across locations.'],
+  ['Can we standardize IT processes?', 'Yes. Use clear workflows and consistent information to support repeatable IT processes as your team grows.'],
+];
+
+function applyDechubBridgeItContent(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>('h1, h2, h3, h5, p, button, [role="tab"]').forEach((element) => {
+    const replacement = DECHUB_BRIDGE_IT_COPY[element.textContent?.trim() ?? ''];
+    if (replacement) element.textContent = replacement;
+  });
+
+  const heroChoiceLabels: Record<string, string> = {
+    'Order equipment globally': 'Manage global equipment',
+    'Manage IT budgets': 'Track IT spending',
+    'Track devices worldwide': 'Track company devices',
+    'Support employee choice': 'Support employee needs',
+    'Integrate with onboarding': 'Connect IT and onboarding',
+  };
+  root.querySelectorAll<HTMLButtonElement>('[role="checkbox"]').forEach((button) => {
+    const replacement = heroChoiceLabels[button.getAttribute('aria-label') ?? ''];
+    if (!replacement) return;
+
+    button.setAttribute('aria-label', replacement);
+    const labelNode = Array.from(button.querySelectorAll('span')).find((span) => span.textContent?.trim());
+    if (labelNode) labelNode.textContent = replacement;
+  });
+
+  root.querySelectorAll<HTMLElement>('.MuiAccordion-root').forEach((accordion, index) => {
+    const content = DECHUB_BRIDGE_IT_FAQS[index];
+    if (!content) return;
+
+    const question = accordion.querySelector<HTMLElement>('h3');
+    const answer = accordion.querySelector<HTMLElement>('.MuiAccordionDetails-root');
+    if (question) question.textContent = content[0];
+    if (answer) answer.textContent = content[1];
+  });
+
+  root.querySelectorAll<HTMLElement>('a, button').forEach((element) => {
+    if (element.textContent?.trim() === 'Read more') {
+      element.closest('a, button')?.remove();
+    }
+  });
+
+  const story = Array.from(root.querySelectorAll<HTMLElement>('h3')).find(
+    (heading) => heading.textContent?.trim() === 'How a growing team keeps IT operations organized',
+  );
+  const storyLogo = story?.closest<HTMLElement>('.MuiCardContent-root')?.querySelector<HTMLImageElement>('img');
+  if (storyLogo) {
+    storyLogo.src = '/dechub-assets/trusted-logos/tanishq_logo.png';
+    storyLogo.removeAttribute('srcset');
+    storyLogo.alt = 'Tanishq';
+    storyLogo.style.filter = 'brightness(0)';
+  }
+
+  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let textNode = textWalker.nextNode();
+  while (textNode) {
+    if (textNode.nodeValue) {
+      textNode.nodeValue = textNode.nodeValue
+        .replace(/Deel/g, 'Dechub-Bridge')
+        .replace(/\bDechub\b(?!-Bridge)/g, 'Dechub-Bridge');
+    }
+    textNode = textWalker.nextNode();
+  }
+}
+
+function wireItHeroChoices(root: HTMLElement) {
+  const hero = Array.from(root.querySelectorAll<HTMLElement>('section')).find(
+    (section) => Boolean(section.querySelector('h1') && section.querySelector('[role="checkbox"]')),
+  );
+  if (!hero) return () => undefined;
+
+  const choices = Array.from(hero.querySelectorAll<HTMLButtonElement>('[role="checkbox"]'));
+  const demoButton = Array.from(hero.querySelectorAll<HTMLButtonElement>('button')).find(
+    (button) => button.textContent?.trim() === 'Book a demo',
+  );
+  const selectedChoices = new Set(
+    choices.filter((button) => button.getAttribute('aria-checked') === 'true').map(
+      (button) => button.getAttribute('aria-label') ?? '',
+    ),
+  );
+
+  const syncRequestedServices = () => {
+    demoButton?.setAttribute('data-demo-trigger', 'true');
+    demoButton?.setAttribute('data-requested-services', JSON.stringify(Array.from(selectedChoices).filter(Boolean)));
+  };
+  const resetChoices = () => {
+    selectedChoices.clear();
+    choices.forEach((button) => button.setAttribute('aria-checked', 'false'));
+    syncRequestedServices();
+  };
+  const listeners = choices.map((button) => {
+    let indicator = button.querySelector<HTMLElement>('span[aria-hidden="true"]');
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.setAttribute('aria-hidden', 'true');
+      button.prepend(indicator);
+    }
+    indicator.classList.add('it-hero-option-check');
+    const label = button.getAttribute('aria-label') ?? button.textContent?.trim() ?? '';
+    const handleClick = () => {
+      const selected = !selectedChoices.has(label);
+      button.setAttribute('aria-checked', String(selected));
+      if (selected) selectedChoices.add(label);
+      else selectedChoices.delete(label);
+      syncRequestedServices();
+    };
+    button.addEventListener('click', handleClick);
+    return () => button.removeEventListener('click', handleClick);
+  });
+
+  syncRequestedServices();
+  window.addEventListener('dechub:talent-request-submitted', resetChoices);
+  return () => {
+    listeners.forEach((removeListener) => removeListener());
+    window.removeEventListener('dechub:talent-request-submitted', resetChoices);
+  };
+}
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
@@ -355,6 +497,12 @@ function wireItAudienceTabs(root: HTMLElement) {
   const sectionContent = tabList.closest('.MuiTabs-root')?.nextElementSibling as HTMLElement | null;
   const titleNode = sectionContent?.querySelector<HTMLElement>('h5');
   const descriptionNode = sectionContent?.querySelector<HTMLElement>('p');
+  const ctaAnchor = sectionContent?.querySelector<HTMLAnchorElement>('a[href]');
+  const ctaButton =
+    ctaAnchor?.querySelector<HTMLButtonElement>('button') ??
+    Array.from(sectionContent?.querySelectorAll<HTMLButtonElement>('button') ?? []).find(
+      (button) => button.textContent?.trim() === 'Book a demo',
+    );
   const imageNode = sectionContent?.querySelector<HTMLImageElement>('img');
   const indicator =
     tabList.querySelector<HTMLElement>('.MuiTabs-indicator') ?? document.createElement('span');
@@ -382,6 +530,14 @@ function wireItAudienceTabs(root: HTMLElement) {
 
     titleNode.textContent = nextContent.title;
     descriptionNode.textContent = nextContent.description;
+    if (ctaAnchor && ctaButton) {
+      ctaAnchor.href = nextContent.ctaLink;
+      ctaAnchor.setAttribute('data-demo-trigger', 'true');
+      ctaButton.textContent = nextContent.ctaLabel;
+    } else if (ctaButton) {
+      ctaButton.setAttribute('data-demo-trigger', 'true');
+      ctaButton.textContent = nextContent.ctaLabel;
+    }
     imageNode.src = nextContent.imageSrc;
     imageNode.setAttribute('srcset', nextContent.imageSrc);
 
@@ -559,7 +715,7 @@ export default function DeelItPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = DEEL_IT_PAGE_TITLE;
+    document.title = 'Dechub-Bridge IT | IT Operations Platform';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -627,7 +783,12 @@ export default function DeelItPage() {
 
   useEffect(() => {
     const root = rootRef.current;
-    const generatedKeyFigures = root?.querySelector<HTMLElement>('div.key-figures-wrapper');
+    const generatedKeyFigures = Array.from(root?.querySelectorAll<HTMLElement>('.key-figures-wrapper') ?? []).find(
+      (section) => {
+        const values = section.textContent ?? '';
+        return values.includes('150+') && values.includes('40,000');
+      },
+    );
 
     if (!generatedKeyFigures?.parentElement) {
       return undefined;
@@ -645,22 +806,66 @@ export default function DeelItPage() {
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = rootRef.current;
-    const heading = Array.from(root?.querySelectorAll('h2') ?? []).find(
-      (node) => node.textContent?.trim() === 'Built for every team that runs global IT',
-    );
-    const section = heading?.closest<HTMLElement>('.bg-surface-dark');
-    const frame = section?.parentElement;
+    const tabList = Array.from(root?.querySelectorAll<HTMLElement>('[role="tablist"]') ?? []).find((list) => {
+      const labels = Array.from(list.querySelectorAll<HTMLElement>('[role="tab"]')).map((tab) =>
+        tab.textContent?.trim(),
+      );
+      return IT_TEAM_TAB_LABELS.every((label) => labels.includes(label));
+    });
+    const section = tabList?.closest<HTMLElement>('.bg-surface-dark');
+    const frame = section?.parentElement as HTMLElement | null;
+    if (!section || !frame) return undefined;
 
-    if (!section || !frame) {
-      return undefined;
-    }
-
-    section.classList.add('deel-it-audience-section');
     frame.classList.add('deel-it-audience-frame');
+    section.classList.add('deel-it-audience-section');
 
+    const content = section.firstElementChild as HTMLElement | null;
+    const headingContainer = content?.firstElementChild as HTMLElement | null;
+    const panel = section.querySelector<HTMLElement>('.MuiTabs-root + div > div');
+    const elements = [frame, section, content, headingContainer, panel].filter(
+      (element): element is HTMLElement => element instanceof HTMLElement,
+    );
+    const originalStyles = new Map(elements.map((element) => [element, element.getAttribute('style')]));
+
+    const applyDesktopLayout = () => {
+      if (window.innerWidth < 1050 || !content || !headingContainer || !panel) {
+        elements.forEach((element) => {
+          const originalStyle = originalStyles.get(element);
+          if (originalStyle === null) element.removeAttribute('style');
+          else element.setAttribute('style', originalStyle);
+        });
+        return;
+      }
+
+      frame.style.setProperty('width', '100%', 'important');
+      frame.style.setProperty('padding', '12px', 'important');
+      section.style.setProperty('width', '100%', 'important');
+      section.style.setProperty('max-width', 'none', 'important');
+      section.style.setProperty('margin-inline', '0', 'important');
+      section.style.setProperty('padding', '64px clamp(24px, 6vw, 112px)', 'important');
+      content.style.setProperty('width', '100%', 'important');
+      content.style.setProperty('max-width', '1312px', 'important');
+      content.style.setProperty('margin-inline', 'auto', 'important');
+      headingContainer.style.setProperty('width', '100%', 'important');
+      headingContainer.style.setProperty('max-width', '667px', 'important');
+      headingContainer.style.setProperty('margin-inline', 'auto', 'important');
+      headingContainer.style.setProperty('text-align', 'center', 'important');
+      panel.style.setProperty('display', 'grid', 'important');
+      panel.style.setProperty('grid-template-columns', 'minmax(0, 1fr) minmax(0, 1fr)', 'important');
+      panel.style.setProperty('gap', '48px', 'important');
+    };
+
+    applyDesktopLayout();
+    window.addEventListener('resize', applyDesktopLayout);
     return () => {
+      window.removeEventListener('resize', applyDesktopLayout);
+      elements.forEach((element) => {
+        const originalStyle = originalStyles.get(element);
+        if (originalStyle === null) element.removeAttribute('style');
+        else element.setAttribute('style', originalStyle);
+      });
       section.classList.remove('deel-it-audience-section');
       frame.classList.remove('deel-it-audience-frame');
     };
@@ -671,6 +876,8 @@ export default function DeelItPage() {
     if (!root) {
       return;
     }
+
+    applyDechubBridgeItContent(root);
 
     root.querySelectorAll('header, footer').forEach((element) => {
       element.remove();
@@ -684,6 +891,14 @@ export default function DeelItPage() {
 
       const anchor = target.closest('a[href]');
       if (!(anchor instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      if (
+        anchor.getAttribute('data-demo-trigger') === 'true' ||
+        anchor.textContent?.trim().toLowerCase() === 'book a demo' ||
+        anchor.getAttribute('href')?.includes('book-a-demo')
+      ) {
         return;
       }
 
@@ -724,6 +939,7 @@ export default function DeelItPage() {
     const cleanupExploreMoreSlider = wireSlider(root, 'nav-explore-more', 'explore-more');
     const cleanupComparisonSlider = wireSlider(root, 'nav-comparison-slider', 'comparison-slider');
     const cleanupG2ReviewsSlider = wireSlider(root, 'nav-g2-reviews-681', 'g2-reviews-681');
+    const cleanupItHeroChoices = wireItHeroChoices(root);
     const cleanupTabs = wireTabs(root);
     const cleanupItAudienceTabs = wireItAudienceTabs(root);
     const cleanupAccordions = wireAccordions(root);
@@ -736,6 +952,7 @@ export default function DeelItPage() {
       cleanupExploreMoreSlider();
       cleanupComparisonSlider();
       cleanupG2ReviewsSlider();
+      cleanupItHeroChoices();
       cleanupTabs();
       cleanupItAudienceTabs();
       cleanupAccordions();

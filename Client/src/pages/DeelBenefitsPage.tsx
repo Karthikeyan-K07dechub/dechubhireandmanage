@@ -3,7 +3,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_BENEFITS_HTML_CLASSES,
   DEEL_BENEFITS_INLINE_STYLES,
-  DEEL_BENEFITS_PAGE_TITLE,
   DEEL_BENEFITS_STYLESHEET_HREFS,
   DeelBenefitsContent,
 } from './deelBenefits/generatedPageData';
@@ -87,6 +86,80 @@ const BENEFITS_LAYOUT_FIXES = `
     .deel-benefits-page .mui-3lz68q > .mui-pjjft1 { grid-column: auto !important; padding-right: 0 !important; }
   }
 `;
+
+const DECHUB_BRIDGE_BENEFITS_COPY: Record<string, string> = {
+  '35K+': '2K+',
+  '134': '15',
+  'Improve your benefits in 100+ countries': 'Make employee benefits easier to manage',
+  'What would you like to do with Deel Benefits?': 'What can Dechub-Bridge Benefits help you manage?',
+  'See what customers are saying': 'Built for teams that need clearer benefits operations',
+  'How Turing expedites payments for 6,000+ global workers with Deel':
+    'How a growing team keeps employee benefits organized',
+};
+
+const DECHUB_BRIDGE_BENEFITS_FAQS = [
+  ['What can Dechub-Bridge Benefits help manage?', 'Dechub-Bridge helps teams keep benefits information, enrollment workflows, and employee records organized in one place.'],
+  ['Can benefits workflows work with payroll?', 'Yes. Benefits information can be coordinated with the wider employee and payroll workflow.'],
+  ['Is it suitable for growing teams?', 'Yes. Start with the benefits workflows your team needs and keep them organized as your workforce grows.'],
+  ['Can employees access their benefits information?', 'Employees can use clear, organized workflows to understand and manage the information available to them.'],
+];
+
+function applyDechubBridgeBenefitsContent(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>('h1, h2, h3, h5, p, button, [role="tab"]').forEach((element) => {
+    const replacement = DECHUB_BRIDGE_BENEFITS_COPY[element.textContent?.trim() ?? ''];
+    if (replacement) element.textContent = replacement;
+  });
+
+  const heroChoiceLabels: Record<string, string> = {
+    'Offer benefits in 100+ countries': 'Manage employee benefits',
+    'Consolidate vendors': 'Keep benefits organized',
+    'Sync to payroll': 'Connect benefits and payroll',
+    'Meet local requirements': 'Manage benefits requirements',
+    'Let employees self-enroll': 'Support employee enrollment',
+  };
+  root.querySelectorAll<HTMLButtonElement>('[role="checkbox"]').forEach((button) => {
+    const replacement = heroChoiceLabels[button.getAttribute('aria-label') ?? ''];
+    if (!replacement) return;
+    button.setAttribute('aria-label', replacement);
+    const labelNode = Array.from(button.querySelectorAll('span')).find((span) => span.textContent?.trim());
+    if (labelNode) labelNode.textContent = replacement;
+  });
+
+  root.querySelectorAll<HTMLElement>('.MuiAccordion-root').forEach((accordion, index) => {
+    const content = DECHUB_BRIDGE_BENEFITS_FAQS[index];
+    if (!content) return;
+    const question = accordion.querySelector<HTMLElement>('h3');
+    const answer = accordion.querySelector<HTMLElement>('.MuiAccordionDetails-root');
+    if (question) question.textContent = content[0];
+    if (answer) answer.textContent = content[1];
+  });
+
+  root.querySelectorAll<HTMLElement>('a, button').forEach((element) => {
+    if (element.textContent?.trim() === 'Read more') element.closest('a, button')?.remove();
+  });
+
+  const story = Array.from(root.querySelectorAll<HTMLElement>('h3')).find(
+    (heading) => heading.textContent?.trim() === 'How a growing team keeps employee benefits organized',
+  );
+  const storyLogo = story?.closest<HTMLElement>('.MuiCardContent-root')?.querySelector<HTMLImageElement>('img');
+  if (storyLogo) {
+    storyLogo.src = '/dechub-assets/trusted-logos/tanishq_logo.png';
+    storyLogo.removeAttribute('srcset');
+    storyLogo.alt = 'Tanishq';
+    storyLogo.style.filter = 'brightness(0)';
+  }
+
+  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let textNode = textWalker.nextNode();
+  while (textNode) {
+    if (textNode.nodeValue) {
+      textNode.nodeValue = textNode.nodeValue
+        .replace(/Deel/g, 'Dechub-Bridge')
+        .replace(/\bDechub\b(?!-Bridge)/g, 'Dechub-Bridge');
+    }
+    textNode = textWalker.nextNode();
+  }
+}
 
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '') || '/';
@@ -394,7 +467,25 @@ function wireAccordions(root: HTMLElement) {
 }
 
 function wireCheckboxButtons(root: HTMLElement) {
-  const checkboxes = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="checkbox"]'));
+  const hero = Array.from(root.querySelectorAll<HTMLElement>('section')).find(
+    (section) => Boolean(section.querySelector('h1') && section.querySelector('[role="checkbox"]')),
+  );
+  if (!hero) return () => undefined;
+
+  const checkboxes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[role="checkbox"]'));
+  const demoButton = Array.from(hero.querySelectorAll<HTMLButtonElement>('button')).find(
+    (button) => button.textContent?.trim() === 'Book a demo',
+  );
+  const selectedChoices = new Set(
+    checkboxes.filter((button) => button.getAttribute('aria-checked') === 'true').map(
+      (button) => button.getAttribute('aria-label') ?? '',
+    ),
+  );
+
+  const syncRequestedServices = () => {
+    demoButton?.setAttribute('data-demo-trigger', 'true');
+    demoButton?.setAttribute('data-requested-services', JSON.stringify(Array.from(selectedChoices).filter(Boolean)));
+  };
 
   const setChecked = (button: HTMLButtonElement, checked: boolean) => {
     button.setAttribute('aria-checked', checked ? 'true' : 'false');
@@ -415,6 +506,10 @@ function wireCheckboxButtons(root: HTMLElement) {
     const handleClick = () => {
       const nextChecked = button.getAttribute('aria-checked') !== 'true';
       setChecked(button, nextChecked);
+      const label = button.getAttribute('aria-label') ?? button.textContent?.trim() ?? '';
+      if (nextChecked) selectedChoices.add(label);
+      else selectedChoices.delete(label);
+      syncRequestedServices();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -433,8 +528,17 @@ function wireCheckboxButtons(root: HTMLElement) {
     };
   });
 
+  const resetChoices = () => {
+    selectedChoices.clear();
+    checkboxes.forEach((button) => setChecked(button, false));
+    syncRequestedServices();
+  };
+
+  syncRequestedServices();
+  window.addEventListener('dechub:talent-request-submitted', resetChoices);
   return () => {
     cleanupFns.forEach((cleanup) => cleanup());
+    window.removeEventListener('dechub:talent-request-submitted', resetChoices);
   };
 }
 
@@ -452,7 +556,7 @@ export default function DeelBenefitsPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = DEEL_BENEFITS_PAGE_TITLE;
+    document.title = 'Dechub-Bridge Benefits | Benefits Operations Platform';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -520,7 +624,12 @@ export default function DeelBenefitsPage() {
 
   useEffect(() => {
     const root = rootRef.current;
-    const generatedKeyFigures = root?.querySelector<HTMLElement>('div.key-figures-wrapper');
+    const generatedKeyFigures = Array.from(root?.querySelectorAll<HTMLElement>('.key-figures-wrapper') ?? []).find(
+      (section) => {
+        const values = section.textContent ?? '';
+        return values.includes('150+') && values.includes('40,000');
+      },
+    );
 
     if (!generatedKeyFigures?.parentElement) {
       return undefined;
@@ -544,6 +653,8 @@ export default function DeelBenefitsPage() {
       return;
     }
 
+    applyDechubBridgeBenefitsContent(root);
+
     root.querySelectorAll('header, footer').forEach((element) => {
       element.remove();
     });
@@ -556,6 +667,14 @@ export default function DeelBenefitsPage() {
 
       const anchor = target.closest('a[href]');
       if (!(anchor instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      if (
+        anchor.getAttribute('data-demo-trigger') === 'true' ||
+        anchor.textContent?.trim().toLowerCase() === 'book a demo' ||
+        anchor.getAttribute('href')?.includes('book-a-demo')
+      ) {
         return;
       }
 

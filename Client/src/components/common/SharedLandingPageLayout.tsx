@@ -182,6 +182,10 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
           setRequestedServices([]);
         }}
         requestedServices={requestedServices}
+        onSuccess={() => {
+          setRequestedServices([]);
+          window.dispatchEvent(new Event('dechub:talent-request-submitted'));
+        }}
       />
     </div>
   );
