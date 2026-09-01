@@ -42,10 +42,14 @@ transporter.verify().then(() => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function baseTemplate(body: string): string {
-  const headerLogoMarkup = bridgeLogoPath
+type EmailBrandingOptions = {
+  includeLogo?: boolean;
+};
+
+function baseTemplate(body: string, { includeLogo = true }: EmailBrandingOptions = {}): string {
+  const headerLogoMarkup = includeLogo && bridgeLogoPath
     ? `<img src="cid:${bridgeLogoCid}" alt="Bridge" class="logo-image" />`
-    : `<span class="logo-word">Bridge</span>`;
+    : `<span class="logo-word">Dechub-Bridge</span>`;
 
   return `
 <!DOCTYPE html>
@@ -85,6 +89,7 @@ async function send(
   to: string,
   subject: string,
   html: string,
+  { includeLogo = true }: EmailBrandingOptions = {},
 ): Promise<void> {
   try {
     await transporter.sendMail({
@@ -94,7 +99,7 @@ async function send(
       to,
       subject,
       html,
-      attachments: bridgeLogoPath
+      attachments: includeLogo && bridgeLogoPath
         ? [{
             filename: 'bridge-logo-email.png',
             path: bridgeLogoPath,
@@ -187,7 +192,6 @@ type TalentRequestAdminNotificationInput = {
   contactEmail: string;
   phoneNumber?: string;
   projectType: string;
-  budget: string;
   projectDescription: string;
   requestedServices: string[];
   dbSaveSucceeded: boolean;
@@ -219,16 +223,16 @@ export async function sendTalentRequestAdminNotificationEmail(
     <p><strong>Contact email:</strong> ${input.contactEmail}</p>
     <p><strong>Phone number:</strong> ${input.phoneNumber || 'Not provided'}</p>
     <p><strong>Project type:</strong> ${input.projectType}</p>
-    <p><strong>Budget:</strong> ${input.budget}</p>
     <p><strong>Requested services:</strong></p>
     ${requestedServicesMarkup}
     <p><strong>Project description:</strong></p>
     <p>${input.projectDescription.replace(/\n/g, '<br />')}</p>
-  `);
+  `, { includeLogo: false });
 
   await send(
     to,
     `New Book a demo request - ${input.companyName}`,
     html,
+    { includeLogo: false },
   );
 }

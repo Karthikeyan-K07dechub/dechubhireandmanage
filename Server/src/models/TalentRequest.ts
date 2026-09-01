@@ -33,7 +33,6 @@ export interface ITalentRequest extends Document {
   phoneNumber: string;
   email: string;
   projectType: string;
-  budget: string;
   projectDescription: string;
   requestedServices: string[];
   status: TalentRequestStatus;
@@ -79,7 +78,6 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     email: { type: String, required: true, trim: true },
 
     projectType: { type: String, required: true, trim: true },
-    budget: { type: String, required: true, trim: true },
     projectDescription: { type: String, required: true, trim: true },
     requestedServices: { type: [String], default: [] },
 

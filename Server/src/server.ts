@@ -3,8 +3,22 @@ import { connectDB } from './config/db';
 import { env } from './config/env';
 import { logger } from './utils/logger';
 import type { Server } from 'node:http';
+import dns from 'node:dns';
+
+function configureDns(): void {
+  const servers = env.DNS_SERVERS
+    .split(',')
+    .map((server) => server.trim())
+    .filter(Boolean);
+
+  if (servers.length === 0) return;
+
+  dns.setServers(servers);
+  logger.info(`Using configured DNS resolvers: ${servers.join(', ')}`);
+}
 
 async function bootstrap(): Promise<void> {
+  configureDns();
   await connectDB();
 
   let server: Server;

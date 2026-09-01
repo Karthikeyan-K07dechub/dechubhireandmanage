@@ -17,7 +17,6 @@ interface LandingTalentRequestFormValues {
   companyName: string;
   companyWebsite: string;
   projectType: string;
-  budget: string;
   projectDescription: string;
   contactName: string;
   contactEmail: string;
@@ -35,16 +34,6 @@ const PROJECT_TYPE_OPTIONS = [
   'Ongoing support',
 ];
 
-const BUDGET_OPTIONS = [
-  '$500 - $1,500',
-  '$1,500 - $3,000',
-  '$3,000 - $5,000',
-  '$5,000 - $10,000',
-  '$10,000+',
-];
-
-const MIN_PROJECT_DESCRIPTION = 150;
-
 export default function LandingTalentRequestModal({
   isOpen,
   onClose,
@@ -59,7 +48,6 @@ export default function LandingTalentRequestModal({
     register,
     reset,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<LandingTalentRequestFormValues>({
     mode: 'onChange',
@@ -67,7 +55,6 @@ export default function LandingTalentRequestModal({
       companyName: '',
       companyWebsite: '',
       projectType: '',
-      budget: '',
       projectDescription: '',
       contactName: '',
       contactEmail: '',
@@ -162,9 +149,6 @@ export default function LandingTalentRequestModal({
     };
   }, [isOpen, reset]);
 
-  const description = watch('projectDescription') ?? '';
-  const charactersLeft = Math.max(0, MIN_PROJECT_DESCRIPTION - description.trim().length);
-
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError('');
 
@@ -191,7 +175,6 @@ export default function LandingTalentRequestModal({
         companyName: values.companyName.trim(),
         companyWebsite: values.companyWebsite.trim(),
         projectType: values.projectType,
-        budget: values.budget,
         projectDescription: values.projectDescription.trim(),
         contactName: values.contactName.trim(),
         contactEmail: values.contactEmail.trim(),
@@ -361,31 +344,14 @@ export default function LandingTalentRequestModal({
                 </label>
 
                 <label className="ltrm-field">
-                  <span>Choose budget *</span>
-                  <select
-                    {...register('budget', {
-                      required: 'Budget is required.',
-                    })}
-                  >
-                    <option value="">Please Select</option>
-                    {BUDGET_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.budget ? <small>{errors.budget.message}</small> : null}
+                  <span>Phone number</span>
+                  <input
+                    type="tel"
+                    placeholder="+1 555 123 4567"
+                    {...register('phoneNumber')}
+                  />
                 </label>
               </div>
-
-              <label className="ltrm-field ltrm-field-full">
-                <span>Phone number</span>
-                <input
-                  type="tel"
-                  placeholder="+1 555 123 4567"
-                  {...register('phoneNumber')}
-                />
-              </label>
 
               <label className="ltrm-field ltrm-field-full">
                 <span>Tell us about your project *</span>
@@ -393,18 +359,9 @@ export default function LandingTalentRequestModal({
                   placeholder="Describe the role, skills, team context, expected deliverables, timeline, and anything else that will help us shortlist the right candidate."
                   {...register('projectDescription', {
                     required: 'Project description is required.',
-                    validate: (value) =>
-                      value.trim().length >= MIN_PROJECT_DESCRIPTION
-                        ? true
-                        : `Please enter at least ${MIN_PROJECT_DESCRIPTION} characters.`,
                   })}
                 />
                 {errors.projectDescription ? <small>{errors.projectDescription.message}</small> : null}
-                <p className={`ltrm-counter ${charactersLeft > 0 ? 'ltrm-counter-error' : ''}`}>
-                  {charactersLeft > 0
-                    ? `Please enter at least ${MIN_PROJECT_DESCRIPTION} characters, ${charactersLeft} characters left.`
-                    : `${description.trim().length} characters entered.`}
-                </p>
               </label>
 
               {submitError ? <div className="ltrm-message">{submitError}</div> : null}

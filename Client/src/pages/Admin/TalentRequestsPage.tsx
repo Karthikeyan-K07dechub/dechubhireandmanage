@@ -110,7 +110,6 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
                   <th>Request</th>
                   <th>Talent</th>
                   <th>Company</th>
-                  <th>Budget</th>
                   <th>Submitted</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -142,7 +141,6 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
                         <span>{it.contactFirstName || 'Company contact'}</span>
                       </div>
                     </td>
-                    <td>{it.budget}</td>
                     <td>{formatDate(it.createdAt)}</td>
                     <td>
                       <span className={`atr-status-pill ${statusTone[it.status] || 'new'}`}>

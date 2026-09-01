@@ -6,6 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   PORT:                  z.string().default('4000'),
   NODE_ENV:              z.enum(['development', 'production', 'test']).default('development'),
+  DNS_SERVERS:           z.string().default(''),
   PAYMENT_PROVIDER:      z.enum(['dummy', 'stripe']).default('dummy'),
   CLIENT_URL:            z.string().url(),
   MONGODB_URI:           z.string().min(1),

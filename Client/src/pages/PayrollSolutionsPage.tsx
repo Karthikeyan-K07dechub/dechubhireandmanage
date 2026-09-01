@@ -119,9 +119,15 @@ const PAYROLL_HERO_LAYOUT_FIXES = `
 
   .payroll-product-needs-section > div {
     width: 100%;
-    max-width: 1704px;
-    margin-inline: auto;
+    max-width: none;
+    margin-inline: 0;
     padding: 64px clamp(24px, 6vw, 112px) !important;
+  }
+
+  .payroll-product-needs-section > div > div {
+    width: 100% !important;
+    max-width: 1312px !important;
+    margin-inline: auto !important;
   }
 
   .payroll-product-needs-section .MuiTabs-scroller {
@@ -270,14 +276,27 @@ const PAYROLL_HERO_LAYOUT_FIXES = `
     }
 
     .payroll-solutions-page > .w-full > section:first-child > div > div:first-child {
-      padding-top: var(--spacing-xxxl) !important;
-      padding-right: var(--spacing-md) !important;
-      padding-bottom: var(--spacing-xl) !important;
-      padding-left: var(--spacing-big) !important;
+      display: flex !important;
+      padding: 64px !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child > div > div:first-child > div:first-child {
+      width: 100% !important;
+      max-width: 450px !important;
+      margin: auto !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
     }
 
     .payroll-solutions-page > .w-full > section:first-child h1 {
-      margin-bottom: 64px !important;
+      margin-bottom: 48px !important;
+      text-align: center !important;
+    }
+
+    .payroll-solutions-page > .w-full > section:first-child h1 + div,
+    .payroll-solutions-page > .w-full > section:first-child h1 + div > p {
+      text-align: center !important;
     }
 
     .payroll-solutions-page > .w-full > section:first-child [role="checkbox"] {

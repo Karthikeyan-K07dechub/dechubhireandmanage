@@ -1135,10 +1135,6 @@ export default function TalentRequestDetailPage({
                     <span>Project type</span>
                     <strong>{request.projectType || 'Not provided'}</strong>
                   </div>
-                  <div>
-                    <span>Budget</span>
-                    <strong>{request.budget}</strong>
-                  </div>
                 </div>
                 <div className="atd-body-label">Project description</div>
                 <p className="atd-body-copy">

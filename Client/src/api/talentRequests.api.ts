@@ -17,7 +17,6 @@ export interface PublicTalentRequestPayload {
   companyName: string;
   companyWebsite: string;
   projectType: string;
-  budget: string;
   projectDescription: string;
   contactName?: string;
   contactEmail?: string;
@@ -45,7 +44,6 @@ export interface CompanyTalentRequestItem {
   companyName: string;
   companyWebsite?: string;
   projectType: string;
-  budget: string;
   projectDescription: string;
   status:
     | 'pending_review'

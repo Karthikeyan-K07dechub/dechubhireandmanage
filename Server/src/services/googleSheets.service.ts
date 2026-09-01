@@ -9,7 +9,6 @@ type TalentRequestSheetPayload = {
   workEmail: string;
   phoneNumber: string;
   projectType: string;
-  budget: string;
   projectDescription: string;
   requestedServices: string[];
   dbSaveStatus: 'saved' | 'failed';

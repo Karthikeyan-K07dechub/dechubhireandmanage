@@ -291,8 +291,7 @@ const marketplaceTalentRequestSchema = z.object({
   companyName: z.string().trim().min(1).max(120),
   companyWebsite: z.string().trim().url().max(300),
   projectType: z.string().trim().min(1).max(100),
-  budget: z.string().trim().min(1).max(100),
-  projectDescription: z.string().trim().min(150).max(3000),
+  projectDescription: z.string().trim().min(1).max(3000),
   contactName: z.string().trim().min(2).max(120).optional(),
   contactEmail: z.string().trim().email().max(200).optional(),
   phoneNumber: z.string().trim().max(40).optional(),
@@ -636,7 +635,6 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
     const companyName = data.companyName.trim();
     const companyWebsite = data.companyWebsite.trim();
     const projectType = data.projectType.trim();
-    const budget = data.budget.trim();
     const projectDescription = data.projectDescription.trim();
 
     const buildAdminNotificationPayload = (request: InstanceType<typeof TalentRequest> | null, dbSaveSucceeded: boolean) => ({
@@ -648,7 +646,6 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       contactEmail,
       phoneNumber: contactPhone,
       projectType,
-      budget,
       projectDescription,
       requestedServices,
       dbSaveSucceeded,
@@ -662,7 +659,6 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       workEmail: contactEmail,
       phoneNumber: contactPhone,
       projectType,
-      budget,
       projectDescription,
       requestedServices,
       dbSaveStatus,
@@ -683,7 +679,6 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
         phoneNumber: contactPhone,
         email: contactEmail,
         projectType,
-        budget,
         projectDescription,
         requestedServices,
       });

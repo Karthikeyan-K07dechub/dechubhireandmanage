@@ -72,7 +72,7 @@ export default function LandingPageDeel({
   };
 
   useEffect(() => {
-    document.title = 'Deel | Global Payroll, Compliance, HR Solutions | HRIS';
+    document.title = 'Dechub | Payroll, Compliance, HR Solutions | HRIS';
   }, []);
 
   useEffect(() => {
