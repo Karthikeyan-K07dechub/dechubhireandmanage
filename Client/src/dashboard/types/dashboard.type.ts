@@ -9,6 +9,7 @@ export type PayFrequency  = 'monthly' | 'biweekly' | 'hourly';
 export type DashboardPage =
   | 'home'
   | 'marketplace'
+  | 'projects'
   | 'workers'
   | 'hiring'
   | 'contracts'
@@ -20,16 +21,10 @@ export type DashboardPage =
 // ─── Dechub service IDs ───────────────────────────────────────────────────────
 
 export type DechubService =
-  | 'contract_generation'
-  | 'e_signature'
-  | 'invoice_management'
-  | 'payment_processing'
-  | 'kyc_verification'
-  | 'document_storage'
-  | 'completion_certificate'
-  | 'compliance_advisory'
   | 'hrms'
-  | 'asset_management';
+  | 'payroll'
+  | 'contracts_compliance'
+  | 'it_management';
 
 export interface ServiceConfig {
   id:           DechubService;
@@ -163,13 +158,10 @@ export const INITIAL_ADD_WORKER: AddWorkerFormData = {
   country:    '',
   department: '',
   selectedServices: [
-    'contract_generation',
-    'e_signature',
-    'document_storage',
-    'invoice_management',
-    'payment_processing',
-    'kyc_verification',
-    'completion_certificate',
+    'hrms',
+    'payroll',
+    'contracts_compliance',
+    'it_management',
   ],
   payRate:          '',
   payCurrency:      'USD',
@@ -184,98 +176,39 @@ export const INITIAL_ADD_WORKER: AddWorkerFormData = {
 
 export const DECHUB_SERVICES: ServiceConfig[] = [
   {
-    id:        'contract_generation',
-    name:      'Contract Generation',
-    desc:      'Auto-generate a PDF contractor agreement from our legally compliant templates',
+    id:        'hrms',
+    name:      'HRMS',
+    desc:      'Manage employee records, leave requests, attendance, and everyday HR workflows.',
+    icon:      '👥',
+    required:  false,
+    defaultOn: true,
+    tier:      'recommended',
+  },
+  {
+    id:        'payroll',
+    name:      'Payroll',
+    desc:      'Run payroll, generate payslips, and manage payroll-related compliance in one place.',
+    icon:      '💳',
+    required:  false,
+    defaultOn: true,
+    tier:      'recommended',
+  },
+  {
+    id:        'contracts_compliance',
+    name:      'Contracts & Compliance',
+    desc:      'Create and store worker contracts, manage required documents, and maintain compliance records.',
     icon:      '📄',
-    required:  true,
+    required:  false,
     defaultOn: true,
-    tier:      'core',
+    tier:      'recommended',
   },
   {
-    id:        'e_signature',
-    name:      'E-Signature (DocuSign)',
-    desc:      'Send the contract for digital signature to both you and the worker via DocuSign',
-    icon:      '✍️',
-    required:  true,
+    id:        'it_management',
+    name:      'IT Management',
+    desc:      'Manage employee devices, system access, and IT support from a central workspace.',
+    icon:      '💻',
+    required:  false,
     defaultOn: true,
-    tier:      'core',
-  },
-  {
-    id:        'document_storage',
-    name:      'Document Storage',
-    desc:      'AES-256 encrypted cloud storage for all contracts, invoices, and receipts',
-    icon:      '☁️',
-    required:  true,
-    defaultOn: true,
-    tier:      'core',
-  },
-  {
-    id:          'invoice_management',
-    name:        'Invoice Management',
-    desc:        'Worker submits monthly invoices; you review and approve with one click',
-    icon:        '🧾',
-    required:    false,
-    defaultOn:   true,
-    tier:        'recommended',
-  },
-  {
-    id:          'payment_processing',
-    name:        'Payment Processing (Wise)',
-    desc:        'Automated USD payouts via Wise API immediately after invoice approval',
-    icon:        '💸',
-    required:    false,
-    defaultOn:   true,
-    tier:        'recommended',
-  },
-  {
-    id:          'kyc_verification',
-    name:        'KYC Verification',
-    desc:        'Verify worker identity via Stripe Identity ($1.50/check) before first payment',
-    icon:        '🪪',
-    required:    false,
-    defaultOn:   true,
-    tier:        'recommended',
-    priceLabel:  '$1.50 / verification',
-  },
-  {
-    id:          'completion_certificate',
-    name:        'Completion Certificate',
-    desc:        'Auto-generate a professional PDF certificate when the contract ends',
-    icon:        '🏆',
-    required:    false,
-    defaultOn:   true,
-    tier:        'recommended',
-  },
-  {
-    id:          'compliance_advisory',
-    name:        'Compliance & Tax Forms',
-    desc:        'W-9 / W-8BEN form guidance, compliance calendar, and tax filing reminders',
-    icon:        '⚖️',
-    required:    false,
-    defaultOn:   false,
-    tier:        'optional',
-    priceLabel:  '+$5 / month',
-  },
-  {
-    id:          'hrms',
-    name:        'HRMS',
-    desc:        'Leave management, attendance tracking, and performance reviews',
-    icon:        '📅',
-    required:    false,
-    defaultOn:   false,
-    tier:        'optional',
-    priceLabel:  '+$5 / month',
-    comingSoon:  true,
-  },
-  {
-    id:          'asset_management',
-    name:        'Asset Management',
-    desc:        'Track and manage company equipment assigned to this worker',
-    icon:        '💻',
-    required:    false,
-    defaultOn:   false,
-    tier:        'optional',
-    comingSoon:  true,
+    tier:      'recommended',
   },
 ];

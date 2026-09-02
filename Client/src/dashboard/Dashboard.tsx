@@ -6,6 +6,7 @@ import type { DashboardPage } from './types/dashboard.type';
 import DashboardHome from './pages/DashboardHome';
 import WorkersPage from './pages/WorkersPage';
 import { ContractsPage, InvoicesPage } from './pages/ContractInvoicePage';
+import ProjectsPage from './pages/ProjectsPage';
 import { tokenStore } from '../api/client';
 import { getMyCompany } from '../api/company.api';
 import TalentMarketplacePage from '../pages/TalentMarketplacePage';
@@ -33,8 +34,11 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'settings', icon: '⚙️', label: 'Settings' },
 ];
 
+NAV_ITEMS.splice(1, 0, { id: 'projects', icon: 'P', label: 'Projects' });
+
 const PAGE_TITLES: Record<DashboardPage, string> = {
   home: 'Dashboard',
+  projects: 'Projects',
   marketplace: 'Marketplace',
   workers: 'Workers',
   hiring: 'Hiring',
@@ -54,6 +58,7 @@ function getDashboardPageFromQuery(initialPage: DashboardPage, hireRequestId: st
   const tab = new URLSearchParams(window.location.search).get('tab')?.trim() ?? '';
 
   if (tab === 'marketplace') return 'hiring';
+  if (tab === 'projects') return 'projects';
   if (tab === 'contracts') return 'contracts';
   if (tab === 'workers') return 'workers';
   if (tab === 'hiring') return 'hiring';
@@ -588,7 +593,7 @@ export default function Dashboard({
     : PAGE_TITLES[page];
 
   const workspaceItems = NAV_ITEMS.filter((item) =>
-    ['home', 'workers', 'hiring', 'contracts', 'payroll'].includes(item.id),
+    ['home', 'projects', 'workers', 'hiring', 'contracts', 'payroll'].includes(item.id),
   );
   const operationsItems = NAV_ITEMS.filter((item) => ['invoices', 'documents', 'settings'].includes(item.id));
 
@@ -783,6 +788,7 @@ export default function Dashboard({
           )}
 
           {page === 'home' && <DashboardHome onNavigate={(nextPage) => setPage(nextPage as DashboardPage)} />}
+          {page === 'projects' && <ProjectsPage />}
           {page === 'workers' && <WorkersPage initialHireRequestId={initialHireRequestId} />}
           {page === 'hiring' && (
             <HiringPage

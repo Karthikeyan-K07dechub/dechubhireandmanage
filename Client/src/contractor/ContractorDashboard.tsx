@@ -20,6 +20,7 @@ import {
   uploadContractorProfileImage,
 } from './api/contractor.api';
 import { imageBackground, resolveImageUrl } from '../utils/imageUrl';
+import ProjectTasksPage from './ProjectTasksPage';
 
 interface ContractorDashboardProps {
   previewProfile?: ContractorProfile | null;
@@ -32,6 +33,7 @@ function getContractorPageFromQuery(initialPage: ContractorPage): ContractorPage
   const tab = new URLSearchParams(window.location.search).get('tab')?.trim() ?? '';
 
   if (tab === 'contract') return 'contract';
+  if (tab === 'projects') return 'projects';
   if (tab === 'invoices') return 'invoices';
   if (tab === 'profile') return 'profile';
   if (tab === 'notifications') return 'notifications';
@@ -1987,6 +1989,7 @@ export default function ContractorDashboard({
   const unreadNotificationCount = notifications.filter((item) => !item.readAt).length;
   const nav: { id: ContractorPage; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
+    { id: 'projects', label: 'Projects' },
     { id: 'invoices', label: 'Invoices' },
     { id: 'contract', label: 'Contract' },
     { id: 'profile', label: 'Profile' },
@@ -2043,6 +2046,8 @@ export default function ContractorDashboard({
           onNavigate={setPage}
         />
       )}
+
+      {page === 'projects' && <ProjectTasksPage />}
 
       {page === 'invoices' && (
         <InvoicesPage

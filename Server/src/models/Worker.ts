@@ -4,16 +4,10 @@ export type WorkerStatus  = 'invited' | 'kyc_pending' | 'active' | 'inactive' | 
 export type WorkerTrack   = 'track_1_india' | 'track_2_us';
 export type WorkerType    = 'contractor' | 'full_time_employee';
 export type DechubService =
-  | 'contract_generation'
-  | 'e_signature'
-  | 'invoice_management'
-  | 'payment_processing'
-  | 'kyc_verification'
-  | 'document_storage'
-  | 'completion_certificate'
-  | 'compliance_advisory'
   | 'hrms'
-  | 'asset_management';
+  | 'payroll'
+  | 'contracts_compliance'
+  | 'it_management';
 
 export interface IWorker extends Document {
   _id:              mongoose.Types.ObjectId;

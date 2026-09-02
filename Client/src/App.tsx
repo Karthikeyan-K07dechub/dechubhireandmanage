@@ -26,6 +26,7 @@ import DeelIntegrationsPage from './pages/DeelIntegrationsPage';
 import DeelOpenApiPage from './pages/DeelOpenApiPage';
 import TalentRequestsPage from './pages/Admin/TalentRequestsPage';
 import TalentRequestDetailPage from './pages/Admin/TalentRequestDetailPage';
+import AdminProjectBuilderPage from './pages/Admin/AdminProjectBuilderPage';
 import AdminLoginPage from './pages/Admin/AdminLoginPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import LoginPage from './pages/LoginPage';
@@ -83,6 +84,7 @@ type AppPage =
   | 'admin-login'
   | 'admin-talent-requests'
   | 'admin-talent-request-detail'
+  | 'admin-project-builder'
   | 'notifications';
 
 type AuthMode = 'login' | 'signup';
@@ -274,6 +276,10 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
     return { page: 'admin-talent-requests', mode: 'login' };
   }
 
+  if (/^\/admin\/talent-requests\/[^/]+\/project$/.test(normalizedPath)) {
+    return { page: 'admin-project-builder', mode: 'login' };
+  }
+
   if (/^\/admin\/talent-requests\/[^/]+$/.test(normalizedPath)) {
     return { page: 'admin-talent-request-detail', mode: 'login' };
   }
@@ -308,7 +314,7 @@ function getMarketplaceProfileIdFromUrl(): string {
 
 function getAdminRequestIdFromUrl(): string {
   const normalizedPath = window.location.pathname.replace(/\/+$/, '') || '/';
-  const match = normalizedPath.match(/^\/admin\/talent-requests\/([^/]+)$/);
+  const match = normalizedPath.match(/^\/admin\/talent-requests\/([^/]+)(?:\/project)?$/);
   return match ? decodeURIComponent(match[1]).trim() : '';
 }
 
@@ -432,7 +438,7 @@ export default function App() {
   }, [page]);
 
   useEffect(() => {
-    if ((page === 'admin-talent-requests' || page === 'admin-talent-request-detail') && !adminTokenStore.getAccess()) {
+    if ((page === 'admin-talent-requests' || page === 'admin-talent-request-detail' || page === 'admin-project-builder') && !adminTokenStore.getAccess()) {
       setPage('admin-login');
     }
   }, [page]);
@@ -443,7 +449,7 @@ export default function App() {
     const hasCompanyToken = tokenStore.getAccess();
 
     // Define page access rules by role
-    const adminPages = new Set(['admin-login', 'admin-talent-requests', 'admin-talent-request-detail']);
+    const adminPages = new Set(['admin-login', 'admin-talent-requests', 'admin-talent-request-detail', 'admin-project-builder']);
     // Pages that require an ACTIVE company login session (NOT the login page itself)
     const companyOnlyPages = new Set(['company-onboarding', 'marketplace-requests', 'marketplace-consultation', 'marketplace-payment', 'notifications']);
 
@@ -454,7 +460,7 @@ export default function App() {
     }
 
     // Rule 2: Accessing admin-talent-requests without admin token → go to admin login
-    if (!hasAdminToken && (page === 'admin-talent-requests' || page === 'admin-talent-request-detail')) {
+    if (!hasAdminToken && (page === 'admin-talent-requests' || page === 'admin-talent-request-detail' || page === 'admin-project-builder')) {
       setPage('admin-login');
       return;
     }
@@ -640,6 +646,9 @@ export default function App() {
         break;
       case 'admin-talent-request-detail':
         targetPath = `/admin/talent-requests/${encodeURIComponent(selectedAdminRequestId)}`;
+        break;
+      case 'admin-project-builder':
+        targetPath = `/admin/talent-requests/${encodeURIComponent(selectedAdminRequestId)}/project`;
         break;
       case 'marketplace-consultation':
         targetPath = `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}/consultation`;
@@ -1084,8 +1093,13 @@ export default function App() {
       <TalentRequestDetailPage
         requestId={selectedAdminRequestId}
         onBack={() => setPage('admin-talent-requests')}
+        onBuildProject={() => setPage('admin-project-builder')}
       />
     );
+  }
+
+  if (page === 'admin-project-builder') {
+    return <AdminProjectBuilderPage requestId={selectedAdminRequestId} onBack={() => setPage('admin-talent-request-detail')} />;
   }
 
   if (page === 'marketplace-consultation') {

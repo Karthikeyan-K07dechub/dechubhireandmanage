@@ -17,6 +17,15 @@ import {
   claimShortlistedTalentRequest,
   switchShortlistedTalentRequestProfile,
 } from '../controllers/companyTalentRequests.controller';
+import {
+  acceptProjectContract,
+  createProjectTask,
+  listCompanyNotifications,
+  listCompanyProjects,
+  listCompanyProjectTasks,
+  markCompanyNotificationRead,
+  submitProjectPayment,
+} from '../controllers/projects.controller';
 import { requireAuth } from '../middleware/auth.middleware';
 import { kybUpload } from '../middleware/upload.middleware';
 
@@ -33,6 +42,13 @@ router.get  ('/kyb/status',     getKybStatus);
 router.post ('/billing/setup-intent', createSetupIntent);
 router.post ('/billing',        saveBilling);            // Step 5
 router.post ('/preferences',    savePreferences);        // Step 6
+router.get  ('/projects', listCompanyProjects);
+router.post ('/projects/:id/accept-contract', acceptProjectContract);
+router.get  ('/projects/:id/tasks', listCompanyProjectTasks);
+router.post ('/projects/:id/tasks', createProjectTask);
+router.post ('/projects/:id/payment-submission', submitProjectPayment);
+router.get  ('/notifications', listCompanyNotifications);
+router.post ('/notifications/:id/read', markCompanyNotificationRead);
 router.get  ('/talent-requests', listCompanyTalentRequests);
 router.get  ('/talent-requests/:id', getCompanyTalentRequest);
 router.post ('/talent-requests/:id/accept-suggestion', acceptSuggestedTalent);

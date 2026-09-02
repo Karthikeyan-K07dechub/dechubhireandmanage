@@ -5,6 +5,7 @@ import { google } from 'googleapis';
 import { CompanyAuth } from '../models/CompanyAuth';
 import { Worker } from '../models/Worker';
 import { Company } from '../models/Company';
+import { TalentRequest } from '../models/TalentRequest';
 import {
   signAccessToken,
   signRefreshToken,
@@ -106,6 +107,14 @@ async function ensureCompanyForUser(user: InstanceType<typeof CompanyAuth>): Pro
   }
 }
 
+async function linkBookDemoRequestsToCompany(email: string, companyId: unknown): Promise<void> {
+  if (!companyId) return;
+  await TalentRequest.updateMany(
+    { companyId: null, email: email.trim().toLowerCase() },
+    { $set: { companyId } },
+  );
+}
+
 // ─── Controllers ─────────────────────────────────────────────────────────────
 
 const registerSchema = z.object({
@@ -163,6 +172,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
     const company = await Company.create({ ownerId: user._id });
     user.companyId = company._id;
     await user.save();
+    await linkBookDemoRequestsToCompany(user.email, company._id);
 
     const { accessToken, refreshToken } = buildTokenPair(user);
     const refreshHash = await hashToken(refreshToken);
@@ -242,6 +252,9 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const user = await CompanyAuth.findOne({ email: normalizedEmail });
     if (!user || user.provider !== 'local') throw Errors.InvalidCredentials();
     if (!await user.comparePassword(password))    throw Errors.InvalidCredentials();
+
+    await ensureCompanyForUser(user);
+    await linkBookDemoRequestsToCompany(user.email, user.companyId);
 
     user.lastLoginAt = new Date();
     const { accessToken, refreshToken } = buildTokenPair(user);
@@ -337,6 +350,7 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
     }
 
     await ensureCompanyForUser(user);
+    await linkBookDemoRequestsToCompany(user.email, user.companyId);
 
     user.lastLoginAt = new Date();
     const { accessToken, refreshToken } = buildTokenPair(user);

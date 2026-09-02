@@ -1,12 +1,18 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { AddWorkerFormData, DechubService, ServiceConfig } from '../types/dashboard.type';
 import { INITIAL_ADD_WORKER, DECHUB_SERVICES } from '../types/dashboard.type';
 import { inviteWorker } from '../api/dashboard.api';
 
 // ─── Step labels ──────────────────────────────────────────────────────────────
 
-const STEPS = ['Worker type', 'Details', 'Services', 'Contract', 'Review'];
+const SHOW_WORKER_TYPE_STEP = false;
+const ALL_STEPS = ['Worker type', 'Details', 'Services', 'Contract', 'Review'];
+const STEPS = SHOW_WORKER_TYPE_STEP ? ALL_STEPS : ALL_STEPS.slice(1);
+const DETAILS_STEP = SHOW_WORKER_TYPE_STEP ? 1 : 0;
+const SERVICES_STEP = DETAILS_STEP + 1;
+const CONTRACT_STEP = DETAILS_STEP + 2;
+const REVIEW_STEP = DETAILS_STEP + 3;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -33,18 +39,12 @@ function StepBar({ current }: { current: number }) {
 
 // ─── Step 1: Worker type ──────────────────────────────────────────────────────
 
-function Step1Type({ data, onChange, locked }: {
+function Step1Type({ data, onChange }: {
   data: AddWorkerFormData;
   onChange: (k: keyof AddWorkerFormData, v: string) => void;
-  locked?: boolean;
 }) {
   return (
     <div>
-      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.6 }}>
-        Choose the type of worker you want to add to Dechub.
-        This determines the contract template, compliance rules, and payment flow.
-      </p>
-
       <div style={{ marginBottom: 24 }}>
         <div className="db-form-group" style={{ marginBottom: 8 }}>
           <label className="db-label" style={{ marginBottom: 10 }}>Worker Type</label>
@@ -53,7 +53,6 @@ function Step1Type({ data, onChange, locked }: {
           <button
             type="button"
             className={`db-type-card ${data.workerType === 'contractor' ? 'selected' : ''}`}
-            disabled={locked}
             onClick={() => onChange('workerType', 'contractor')}
           >
             {data.workerType === 'contractor' && (
@@ -69,7 +68,6 @@ function Step1Type({ data, onChange, locked }: {
           <button
             type="button"
             className={`db-type-card ${data.workerType === 'full_time_employee' ? 'selected' : ''}`}
-            disabled={locked}
             onClick={() => onChange('workerType', 'full_time_employee')}
           >
             {data.workerType === 'full_time_employee' && (
@@ -93,7 +91,6 @@ function Step1Type({ data, onChange, locked }: {
           <button
             type="button"
             className={`db-type-card ${data.track === 'track_2_us' ? 'selected' : ''}`}
-            disabled={locked}
             onClick={() => onChange('track', 'track_2_us')}
           >
             {data.track === 'track_2_us' && (
@@ -109,7 +106,6 @@ function Step1Type({ data, onChange, locked }: {
           <button
             type="button"
             className={`db-type-card ${data.track === 'track_1_india' ? 'selected' : ''}`}
-            disabled={locked}
             onClick={() => onChange('track', 'track_1_india')}
           >
             {data.track === 'track_1_india' && (
@@ -267,13 +263,6 @@ function Step3Services({ data, onToggle }: {
 }) {
   const selected = data.selectedServices;
 
-  const optionalAddons = selected.filter((s) => {
-    const cfg = DECHUB_SERVICES.find((x) => x.id === s);
-    return cfg?.tier === 'optional' && cfg?.priceLabel;
-  });
-
-  const monthlyCost = 49 + optionalAddons.length * 5;
-
   const renderService = (cfg: ServiceConfig) => {
     const isOn = selected.includes(cfg.id);
 
@@ -323,36 +312,17 @@ function Step3Services({ data, onToggle }: {
     );
   };
 
-  const core        = DECHUB_SERVICES.filter((s) => s.tier === 'core');
-  const recommended = DECHUB_SERVICES.filter((s) => s.tier === 'recommended');
-  const optional    = DECHUB_SERVICES.filter((s) => s.tier === 'optional');
+  const available = DECHUB_SERVICES.filter((service) => !service.comingSoon);
 
   return (
     <div>
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 1.6 }}>
-        Choose which Dechub services to activate for{' '}
+        Choose which Dechub-Bridge services to activate for{' '}
         <strong>{data.firstName || 'this worker'}</strong>.
-        Core services are always included. You can toggle recommended and optional services.
       </p>
 
-      <p className="db-service-section-label">Always included (Core)</p>
-      {core.map(renderService)}
-
-      <p className="db-service-section-label">Recommended</p>
-      {recommended.map(renderService)}
-
-      <p className="db-service-section-label">Optional add-ons</p>
-      {optional.map(renderService)}
-
-      <div className="db-cost-summary">
-        <div>
-          <div className="db-cost-label">Estimated monthly cost for this worker</div>
-          <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
-            Base $49 + {optionalAddons.length} optional add-on{optionalAddons.length !== 1 ? 's' : ''}
-          </div>
-        </div>
-        <div className="db-cost-value">${monthlyCost}<span style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>/mo</span></div>
-      </div>
+      <p className="db-service-section-label">Available services</p>
+      {available.map(renderService)}
     </div>
   );
 }
@@ -364,12 +334,12 @@ function Step4Contract({ data, onChange, errors }: {
   onChange: (k: keyof AddWorkerFormData, v: string) => void;
   errors: Record<string, string>;
 }) {
-  const currencies = ['USD', 'GBP', 'EUR', 'CAD', 'AUD'];
+  const currencies = ['USD', 'INR', 'AED'];
 
   return (
     <div>
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.6 }}>
-        Set the contract terms. Dechub will auto-generate the PDF agreement
+        Set the contract terms. Dechub-Bridge will auto-generate the PDF agreement
         from these details and send it for e-signature via DocuSign.
       </p>
 
@@ -409,7 +379,6 @@ function Step4Contract({ data, onChange, errors }: {
         >
           <option value="monthly">Monthly (last day of month)</option>
           <option value="biweekly">Bi-weekly (every 2 weeks)</option>
-          <option value="hourly">Hourly (based on invoice)</option>
         </select>
       </div>
 
@@ -570,12 +539,12 @@ function Step5Review({ data }: { data: AddWorkerFormData }) {
 function validateStep(step: number, data: AddWorkerFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (step === 0) {
+  if (SHOW_WORKER_TYPE_STEP && step === 0) {
     if (!data.workerType) errors.workerType = 'Select a worker type';
     if (!data.track)      errors.track      = 'Select a track';
   }
 
-  if (step === 1) {
+  if (step === DETAILS_STEP) {
     if (!data.firstName.trim()) errors.firstName = 'Required';
     if (!data.lastName.trim())  errors.lastName  = 'Required';
     if (!data.email.trim())     errors.email     = 'Required';
@@ -584,7 +553,7 @@ function validateStep(step: number, data: AddWorkerFormData): Record<string, str
     if (!data.country)          errors.country   = 'Select a country';
   }
 
-  if (step === 3) {
+  if (step === CONTRACT_STEP) {
     if (!data.payRate || Number(data.payRate) <= 0) errors.payRate = 'Enter a valid pay rate';
     if (!data.startDate) errors.startDate = 'Required';
     if (!data.scopeOfWork.trim()) errors.scopeOfWork = 'Describe the scope of work';
@@ -614,16 +583,24 @@ export default function AddWorkerModal({
   const [loading,  setLoading]  = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const hasLockedTalent = Boolean(talentRequestId);
+  const initializedRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const requestKey = talentRequestId || 'manual-worker';
+    if (initializedRequestRef.current === requestKey) return;
+
     const seed = initialData ?? INITIAL_ADD_WORKER;
     setData({
       ...seed,
+      // Keep valid values while the worker-type screen is hidden.
+      workerType: seed.workerType || 'contractor',
+      track: seed.track || 'track_2_us',
       country: normalizeCountryValue(seed.country, seed.track),
     });
     setStep(0);
     setErrors({});
     setApiError(null);
+    initializedRequestRef.current = requestKey;
   }, [initialData, talentRequestId]);
 
   const handleChange = useCallback(<K extends keyof AddWorkerFormData>(
@@ -725,19 +702,19 @@ export default function AddWorkerModal({
 
         {/* Body */}
         <div className="db-modal-body">
-          {step === 0 && (
-            <Step1Type data={data} onChange={handleStringChange} locked={hasLockedTalent} />
+          {SHOW_WORKER_TYPE_STEP && step === 0 && (
+            <Step1Type data={data} onChange={handleStringChange} />
           )}
-          {step === 1 && (
+          {step === DETAILS_STEP && (
             <Step2Details data={data} onChange={handleStringChange} errors={errors} locked={hasLockedTalent} />
           )}
-          {step === 2 && (
+          {step === SERVICES_STEP && (
             <Step3Services data={data} onToggle={toggleService} />
           )}
-          {step === 3 && (
+          {step === CONTRACT_STEP && (
             <Step4Contract data={data} onChange={handleStringChange} errors={errors} />
           )}
-          {step === 4 && (
+          {step === REVIEW_STEP && (
             <Step5Review data={data} />
           )}
 

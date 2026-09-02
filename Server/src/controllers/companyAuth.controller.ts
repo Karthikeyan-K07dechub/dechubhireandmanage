@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { CompanyAuth } from '../models/CompanyAuth';
 import { Worker } from '../models/Worker';
 import { Company } from '../models/Company';
+import { TalentRequest } from '../models/TalentRequest';
 import {
   signAccessToken,
   signRefreshToken,
@@ -28,6 +29,17 @@ function isWorkEmail(email: string): boolean {
 
 function generateOtp(): string {
   return crypto.randomInt(100000, 999999).toString();
+}
+
+// A Book a Demo lead is created before the client has an account. Link only
+// unassigned leads for this exact email once the client account exists.
+async function linkBookDemoRequestsToCompany(email: string, companyId: unknown): Promise<void> {
+  if (!companyId) return;
+
+  await TalentRequest.updateMany(
+    { companyId: null, email: email.trim().toLowerCase() },
+    { $set: { companyId } },
+  );
 }
 
 function buildTokenPair(account: InstanceType<typeof CompanyAuth>): {
@@ -119,6 +131,7 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
     const { accessToken, refreshToken } = buildTokenPair(account);
     account.refreshTokenHash = await hashToken(refreshToken);
     await account.save();
+    await linkBookDemoRequestsToCompany(account.email, company._id);
 
     logger.info(`Company account registered: ${account.email}`);
     created(res, {
@@ -146,6 +159,9 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const account = await CompanyAuth.findOne({ email: normalizedEmail });
     if (!account || account.provider !== 'local') throw Errors.InvalidCredentials();
     if (!await account.comparePassword(password)) throw Errors.InvalidCredentials();
+
+    // Repair links for accounts created before this automatic matching existed.
+    await linkBookDemoRequestsToCompany(account.email, account.companyId);
 
     account.lastLoginAt = new Date();
     const { accessToken, refreshToken } = buildTokenPair(account);

@@ -12,6 +12,7 @@ import {
   sendTalentRequestShortlist,
   listMarketplaceCandidatesForAdmin,
 } from '../controllers/admin.controller';
+import { createProject, listAdminProjects, sendProjectContract, verifyProjectPayment } from '../controllers/projects.controller';
 
 const router = Router();
 
@@ -22,6 +23,10 @@ router.use(requireAuth, requireDechubAdmin);
 
 router.get('/talent-requests', listTalentRequests);
 router.get('/marketplace-candidates', listMarketplaceCandidatesForAdmin);
+router.get('/projects', listAdminProjects);
+router.post('/projects', createProject);
+router.post('/projects/:id/send-contract', sendProjectContract);
+router.post('/projects/:id/verify-payment', verifyProjectPayment);
 router.get('/talent-requests/unread-count', unreadCount);
 router.get('/talent-requests/:id', getTalentRequest);
 router.post('/talent-requests/:id/mark-as-read', markAsRead);

@@ -14,6 +14,7 @@ import './admin-talent-request-detail.css';
 interface TalentRequestDetailPageProps {
   requestId: string;
   onBack: () => void;
+  onBuildProject: () => void;
 }
 
 const statusTone: Record<string, string> = {
@@ -43,6 +44,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function TalentRequestDetailPage({
   requestId,
   onBack,
+  onBuildProject,
 }: TalentRequestDetailPageProps) {
   type ShortlistPreviewProfile = {
     workerId: string;
@@ -390,6 +392,17 @@ export default function TalentRequestDetailPage({
 
       <header className="atd-header">
         <button className="atd-back" onClick={onBack}>Back to requests</button>
+        {!loading && request ? (
+          <button
+            className="atd-back"
+            onClick={onBuildProject}
+            disabled={!request.companyId}
+            title={request.companyId ? 'Build the delivery team and project contract.' : 'The client must sign up with this request email first.'}
+            style={!request.companyId ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          >
+            {request.companyId ? 'Build delivery project' : 'Build delivery project - client signup required'}
+          </button>
+        ) : null}
         {!loading && request ? (
           <div
             className="atd-header-meta"

@@ -600,14 +600,23 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
     let contactEmail = data.contactEmail?.trim().toLowerCase() ?? '';
     let contactPhone = data.phoneNumber?.trim() ?? '';
 
+    let usedSignedInCompany = false;
     if (req.user) {
-      const { account, company } = await getCompanyForUser(req.user.sub);
-      companyId = company._id;
-      contactFirstName = account.firstName?.trim() || 'Company';
-      contactLastName = account.lastName?.trim() || 'Admin';
-      contactEmail = account.email?.trim().toLowerCase() || contactEmail;
-      contactPhone = account.phone?.trim() || contactPhone;
-    } else {
+      try {
+        const { account, company } = await getCompanyForUser(req.user.sub);
+        companyId = company._id;
+        contactFirstName = account.firstName?.trim() || 'Company';
+        contactLastName = account.lastName?.trim() || 'Admin';
+        contactEmail = account.email?.trim().toLowerCase() || contactEmail;
+        contactPhone = account.phone?.trim() || contactPhone;
+        usedSignedInCompany = true;
+      } catch (error) {
+        // A stale browser token must not prevent a public Book a Demo submission.
+        logger.warn('Book a Demo request continued without company session', error);
+      }
+    }
+
+    if (!usedSignedInCompany) {
       const normalizedName = data.contactName?.trim() ?? '';
       const nameParts = normalizedName.split(/\s+/).filter(Boolean);
       contactFirstName = nameParts[0] ?? 'Company';
