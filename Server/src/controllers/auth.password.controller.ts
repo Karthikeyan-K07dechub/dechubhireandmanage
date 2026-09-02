@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { z } from 'zod';
-import nodemailer from 'nodemailer';
 import { CompanyAuth } from '../models/CompanyAuth';
 import { Worker } from '../models/Worker';
 import { ok, AppError, Errors } from '../utils/response';
@@ -15,13 +14,7 @@ import {
 } from '../utils/jwt';
 import { logger } from '../utils/logger';
 import { env } from '../config/env';
-
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: Number(env.SMTP_PORT),
-  secure: Number(env.SMTP_PORT) === 465,
-  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-});
+import { sendEmail } from '../utils/email';
 
 type ResettableAccount = {
   firstName: string;
@@ -72,12 +65,7 @@ p{font-size:14px;color:#475569;line-height:1.7;margin:0 0 16px}
 </html>`.trim();
 
   try {
-    await transporter.sendMail({
-      from: env.EMAIL_FROM,
-      to: email,
-      subject: 'Reset your Dechub password',
-      html,
-    });
+    await sendEmail(email, 'Reset your Dechub password', html, { includeLogo: false });
   } catch (emailErr) {
     logger.warn(`Failed to send password reset email to ${email}`, emailErr);
   }

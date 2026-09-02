@@ -19,11 +19,12 @@ const envSchema = z.object({
   GOOGLE_CALLBACK_URL:   z.string().url(),
   STRIPE_SECRET_KEY:     z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
-  SMTP_HOST:             z.string().min(1),
+  SMTP_HOST:             z.string().default(''),
   SMTP_PORT:             z.string().default('587'),
-  SMTP_USER:             z.string().min(1),
-  SMTP_PASS:             z.string().min(1),
+  SMTP_USER:             z.string().default(''),
+  SMTP_PASS:             z.string().default(''),
   EMAIL_FROM:            z.string().min(1),
+  RESEND_API_KEY:        z.string().default(''),
   UPLOAD_DIR:            z.string().default('uploads'),
   MAX_FILE_SIZE_MB:      z.string().default('10'),
   DOCUSIGN_INTEGRATION_KEY: z.string().default(''),
@@ -35,7 +36,10 @@ const envSchema = z.object({
   DECHUB_ADMIN_PASSWORD:    z.string().default(''), // admin login password for hidden admin portal
   GOOGLE_SHEETS_ENABLED:    z.string().default('false'),
   GOOGLE_SHEETS_WEBHOOK_URL:z.string().default(''),
-});
+}).refine(
+  (value) => Boolean(value.RESEND_API_KEY) || Boolean(value.SMTP_HOST && value.SMTP_USER && value.SMTP_PASS),
+  { message: 'Configure RESEND_API_KEY or all SMTP credentials.', path: ['RESEND_API_KEY'] },
+);
 
 const parsed = envSchema.safeParse(process.env);
 

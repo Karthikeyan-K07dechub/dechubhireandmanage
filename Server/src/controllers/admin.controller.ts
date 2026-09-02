@@ -6,7 +6,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/
 import { TalentRequest, type ITalentRequest, type TalentRequestStatus } from '../models/TalentRequest';
 import { Worker } from '../models/Worker';
 import { ok, Errors, AppError } from '../utils/response';
-import nodemailer from 'nodemailer';
+import { sendEmail } from '../utils/email';
 
 const ADMIN_AVAILABILITY_LABELS: Record<string, string> = {
   available_now: 'Available now',
@@ -261,13 +261,6 @@ async function serializeTalentRequest(item: ITalentRequest) {
   };
 }
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: Number(env.SMTP_PORT),
-  secure: Number(env.SMTP_PORT) === 465,
-  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-});
-
 async function sendTalentRequestUpdateEmail(
   item: ITalentRequest,
   options: {
@@ -327,12 +320,12 @@ body { font-family: 'DM Sans', Arial, sans-serif; background: #f8fafc; color: #0
 </html>`.trim();
 
   try {
-    await transporter.sendMail({
-      from: env.EMAIL_FROM,
-      to: item.email.trim().toLowerCase(),
-      subject: `Dechub candidate profile for ${item.companyName}`,
+    await sendEmail(
+      item.email.trim().toLowerCase(),
+      `Dechub candidate profile for ${item.companyName}`,
       html,
-    });
+      { includeLogo: false },
+    );
   } catch (err) {
     // Email issues should not block admin review actions.
   }
@@ -404,12 +397,12 @@ body { font-family: 'DM Sans', Arial, sans-serif; background: #f8fafc; color: #0
 </html>`.trim();
 
   try {
-    await transporter.sendMail({
-      from: env.EMAIL_FROM,
-      to: item.email.trim().toLowerCase(),
-      subject: `Shortlisted Dechub candidates for ${item.companyName}`,
+    await sendEmail(
+      item.email.trim().toLowerCase(),
+      `Shortlisted Dechub candidates for ${item.companyName}`,
       html,
-    });
+      { includeLogo: false },
+    );
   } catch (err) {
     throw new AppError('We could not send the shortlist email right now. Please try again.', 500, 'EMAIL_SEND_FAILED');
   }

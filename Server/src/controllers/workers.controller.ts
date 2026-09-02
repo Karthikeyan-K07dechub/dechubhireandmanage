@@ -9,9 +9,8 @@ import { MarketplaceOrderDraft } from '../models/MarketplaceOrderDraft';
 import { TalentRequest } from '../models/TalentRequest';
 import { ok, created, Errors, AppError } from '../utils/response';
 import { logger } from '../utils/logger';
-import { sendTalentRequestAdminNotificationEmail } from '../utils/email';
+import { sendEmail, sendTalentRequestAdminNotificationEmail } from '../utils/email';
 import { queueBookDemoSubmissionToGoogleSheets } from '../services/googleSheets.service';
-import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 
 const MARKETPLACE_AVAILABILITY_LABELS = {
@@ -178,13 +177,6 @@ function copyReusableContractorData(
 
 // ─── Email transporter ────────────────────────────────────────────────────────
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: Number(env.SMTP_PORT),
-  secure: Number(env.SMTP_PORT) === 465,
-  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-});
-
 async function sendWorkerInvite(
   toEmail: string,
   workerName: string,
@@ -235,12 +227,7 @@ p { font-size: 15px; color: #475569; line-height: 1.65; margin: 0 0 16px; }
 </html>`.trim();
 
   try {
-    await transporter.sendMail({
-      from:    env.EMAIL_FROM,
-      to:      toEmail,
-      subject: `You're invited to join ${companyName} on Dechub`,
-      html,
-    });
+    await sendEmail(toEmail, `You're invited to join ${companyName} on Dechub`, html, { includeLogo: false });
   } catch (err) {
     logger.warn(`Worker invite email failed for ${toEmail}`, err);
     // Don't throw — worker record is created; email failure is non-fatal

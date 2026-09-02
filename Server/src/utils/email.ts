@@ -4,15 +4,14 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from './logger';
 
-const transporter = nodemailer.createTransport({
-  host:   env.SMTP_HOST,
-  port:   Number(env.SMTP_PORT),
-  secure: Number(env.SMTP_PORT) === 465,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-});
+const transporter = env.RESEND_API_KEY
+  ? null
+  : nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: Number(env.SMTP_PORT),
+      secure: Number(env.SMTP_PORT) === 465,
+      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+    });
 
 function resolveBridgeLogoPath(): string | null {
   const candidates = [
@@ -33,7 +32,8 @@ function resolveBridgeLogoPath(): string | null {
 const bridgeLogoPath = resolveBridgeLogoPath();
 const bridgeLogoCid = 'bridge-logo-email@dechub.in';
 
-// Verify connection on startup
+// Verify SMTP only when Resend is not configured.
+if (transporter) {
 transporter.verify().then(() => {
   logger.info('✅  SMTP transporter ready');
 }).catch((err) => {
@@ -42,12 +42,14 @@ transporter.verify().then(() => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+}
+
 type EmailBrandingOptions = {
   includeLogo?: boolean;
 };
 
 function baseTemplate(body: string, { includeLogo = true }: EmailBrandingOptions = {}): string {
-  const headerLogoMarkup = includeLogo && bridgeLogoPath
+  const headerLogoMarkup = includeLogo && bridgeLogoPath && !env.RESEND_API_KEY
     ? `<img src="cid:${bridgeLogoCid}" alt="Bridge" class="logo-image" />`
     : `<span class="logo-word">Dechub-Bridge</span>`;
 
@@ -85,29 +87,44 @@ function baseTemplate(body: string, { includeLogo = true }: EmailBrandingOptions
 </html>`.trim();
 }
 
-async function send(
+export async function sendEmail(
   to: string,
   subject: string,
   html: string,
   { includeLogo = true }: EmailBrandingOptions = {},
 ): Promise<void> {
   try {
-    await transporter.sendMail({
-      from: env.EMAIL_FROM.includes('<')
-        ? env.EMAIL_FROM
-        : `Dechub-Bridge <${env.EMAIL_FROM}>`,
-      to,
-      subject,
-      html,
-      attachments: includeLogo && bridgeLogoPath
-        ? [{
-            filename: 'bridge-logo-email.png',
-            path: bridgeLogoPath,
-            cid: bridgeLogoCid,
-            contentDisposition: 'inline',
-          }]
-        : [],
-    });
+    const from = env.EMAIL_FROM.includes('<')
+      ? env.EMAIL_FROM
+      : `Dechub-Bridge <${env.EMAIL_FROM}>`;
+    if (env.RESEND_API_KEY) {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from, to, subject, html }),
+      });
+      if (!response.ok) {
+        throw new Error(`Resend rejected email: ${await response.text()}`);
+      }
+    } else if (transporter) {
+      await transporter.sendMail({
+        from,
+        to,
+        subject,
+        html,
+        attachments: includeLogo && bridgeLogoPath
+          ? [{
+              filename: 'bridge-logo-email.png',
+              path: bridgeLogoPath,
+              cid: bridgeLogoCid,
+              contentDisposition: 'inline',
+            }]
+          : [],
+      });
+    }
     logger.debug(`Email sent: "${subject}" → ${to}`);
   } catch (err) {
     logger.error(`Email failed: "${subject}" → ${to}`, err);
@@ -129,7 +146,7 @@ export async function sendVerificationEmail(
     <div class="otp">${otp}</div>
     <p class="muted">This code expires in 15 minutes. If you didn't sign up, ignore this email.</p>
   `);
-  await send(to, 'Verify your Dechub account', html);
+  await sendEmail(to, 'Verify your Dechub account', html);
 }
 
 export async function sendWelcomeEmail(
@@ -149,7 +166,7 @@ export async function sendWelcomeEmail(
     <a href="${env.CLIENT_URL}/dashboard" class="btn">Go to Dashboard →</a>
     <p class="muted">Questions? Reply to this email and we'll help you out.</p>
   `);
-  await send(to, 'Welcome to Dechub — you\'re all set!', html);
+  await sendEmail(to, 'Welcome to Dechub — you\'re all set!', html);
 }
 
 export async function sendPasswordResetEmail(
@@ -164,7 +181,7 @@ export async function sendPasswordResetEmail(
     <a href="${resetUrl}" class="btn">Reset Password</a>
     <p class="muted">If you didn't request this, you can safely ignore this email.</p>
   `);
-  await send(to, 'Reset your Dechub password', html);
+  await sendEmail(to, 'Reset your Dechub password', html);
 }
 
 export async function sendContractActivatedEmail(
@@ -180,7 +197,7 @@ export async function sendContractActivatedEmail(
     <a href="${env.CLIENT_URL}/contractor/dashboard?tab=contract" class="btn">Open Dashboard</a>
     <p class="muted">You’ll also see this update inside your Dechub account notifications.</p>
   `);
-  await send(to, `Your ${companyName} contract is active`, html);
+  await sendEmail(to, `Your ${companyName} contract is active`, html);
 }
 
 type TalentRequestAdminNotificationInput = {
@@ -229,7 +246,7 @@ export async function sendTalentRequestAdminNotificationEmail(
     <p>${input.projectDescription.replace(/\n/g, '<br />')}</p>
   `, { includeLogo: false });
 
-  await send(
+  await sendEmail(
     to,
     `New Book a demo request - ${input.companyName}`,
     html,
