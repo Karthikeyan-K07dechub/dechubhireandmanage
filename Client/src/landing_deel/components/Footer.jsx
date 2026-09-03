@@ -1,31 +1,54 @@
-import React from "react";
+import React, { useState } from "react";
+import { api, normalizeError, unwrapApiData } from "../../api/client";
 
 function Footer() {
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+
+  const subscribe = async (event) => {
+    event.preventDefault();
+    if (!newsletterEmail.trim() || newsletterSubmitting) return;
+
+    setNewsletterSubmitting(true);
+    setNewsletterMessage("");
+    try {
+      const response = await api.post("/public/newsletter/subscribe", { email: newsletterEmail.trim() });
+      const result = unwrapApiData(response.data);
+      setNewsletterMessage(result.message);
+      setNewsletterEmail("");
+    } catch (error) {
+      setNewsletterMessage(normalizeError(error).message);
+    } finally {
+      setNewsletterSubmitting(false);
+    }
+  };
+
   return (
     <footer className="mui-1aarjlu">
       <div className="MuiBox-root mui-qyulqu">
         <div className="MuiBox-root mui-8qgzw2">
           <div className="MuiBox-root mui-1lajklc">
-            <a href="/about/" className="mui-i1l04d">
+            <div className="mui-i1l04d">
               <p className="mui-1711c28">
                 About us
               </p>
-            </a>
-            <a href="/leadership-team/" className="mui-i1l04d">
+            </div>
+            <div className="mui-i1l04d">
               <p className="mui-1711c28">
                 Leadership team
               </p>
-            </a>
-            <a href="/careers/" className="mui-i1l04d">
+            </div>
+            <div className="mui-i1l04d">
               <p className="mui-1711c28">
                 Careers
               </p>
-            </a>
-            <a href="/pricing/" className="mui-i1l04d">
+            </div>
+            <div className="mui-i1l04d">
               <p className="mui-1711c28">
                 Pricing
               </p>
-            </a>
+            </div>
           </div>
         </div>
         <div className="MuiBox-root mui-1l1lj2r">
@@ -83,7 +106,7 @@ function Footer() {
               </div>
             </div>
           </div>
-          <div className="MuiBox-root mui-m6lfuo">
+          <div className="MuiBox-root mui-m6lfuo" inert="">
             <div className="MuiBox-root mui-19ei76p">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-grid8g">
                 Dechub-Bridge Platform
@@ -133,7 +156,7 @@ function Footer() {
               </div>
             </div>
           </div>
-          <div className="MuiBox-root mui-m6lfuo">
+          <div className="MuiBox-root mui-m6lfuo" inert="">
             <div className="MuiBox-root mui-19ei76p">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-grid8g">
                 Why Dechub-Bridge?
@@ -182,7 +205,7 @@ function Footer() {
               </div>
             </div>
           </div>
-          <div className="MuiBox-root mui-m6lfuo">
+          <div className="MuiBox-root mui-m6lfuo" inert="">
             <div className="MuiBox-root mui-19ei76p">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-grid8g">
                 Resources
@@ -246,7 +269,7 @@ function Footer() {
               </div>
             </div>
           </div>
-          <div className="MuiBox-root mui-fbunk5">
+          <div className="MuiBox-root mui-fbunk5" inert="">
             <div className="MuiBox-root mui-19ei76p">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-grid8g">
                 Customers
@@ -298,7 +321,7 @@ function Footer() {
                 <img alt="Dechub-Bridge Logo" loading="lazy" width="122" height="42" decoding="async" className="mui-ducv57 deel-footer-logo" sizes="100vw" srcSet="/deel-assets/images/website-media.deel.com/logo.png 640w" src="/deel-assets/images/website-media.deel.com/logo.png" />
               </div>
             </a>
-            <div className="MuiBox-root mui-wsfch7">
+            <div className="MuiBox-root mui-wsfch7" inert="">
               <a href="https://twitter.com/deel" target="_blank" rel="noopener" className="mui-j04pfz">
                 <img alt="twitterFilled-icon" loading="lazy" width="32" height="32" decoding="async" style={{ color: "transparent" }} sizes="32px" srcSet="/deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 16w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 32w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 48w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 64w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 96w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 128w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 256w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 384w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 640w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 640w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 750w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 768w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 828w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1024w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1080w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1200w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1280w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1920w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1920w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 2048w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 3840w" src="/deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg" />
               </a>
@@ -317,16 +340,17 @@ function Footer() {
             Get the latest insights on today's world of work delivered straight to your inbox.
           </h3>
           <div className="MuiBox-root mui-1f2o10c">
-            <div className="MuiBox-root mui-e5d8iv">
-              <button type="button" className="mui-z5ov0c" aria-label="Email subscribe">
+            <form className="MuiBox-root mui-e5d8iv" onSubmit={subscribe}>
+              <button type="submit" className="mui-z5ov0c" aria-label="Subscribe by email" disabled={newsletterSubmitting}>
                 <div className="cta-icon mui-1e5u1e9">
                   <svg className="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium mui-vubbuv" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="ArrowForwardIcon">
                     <path d="m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
                   </svg>
                 </div>
               </button>
-              <input type="text" placeholder="What's your e-mail?" id="subscribe-email" aria-label="Email subscribe" className="mui-9t3ayb" />
-            </div>
+              <input type="email" placeholder="What's your e-mail?" id="subscribe-email" aria-label="Email subscribe" className="mui-9t3ayb" value={newsletterEmail} onChange={(event) => setNewsletterEmail(event.target.value)} required disabled={newsletterSubmitting} />
+            </form>
+            {newsletterMessage ? <p role="status" style={{ color: "#ffffff", fontSize: "12px", margin: "10px 0 0" }}>{newsletterMessage}</p> : null}
             <div className="MuiBox-root mui-3x5ym2" />
           </div>
         </div>
@@ -334,7 +358,7 @@ function Footer() {
           <p className="MuiTypography-root MuiTypography-body1 mui-3en2lf">
             © Copyright 2026. All Rights Reserved. 
           </p>
-          <div className="MuiBox-root mui-1lajklc">
+          <div className="MuiBox-root mui-1lajklc" inert="">
             <a href="/legal/disclaimer/" className="mui-foocol">
               <p className="mui-1711c28">
                 Disclaimer

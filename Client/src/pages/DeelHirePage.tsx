@@ -3,13 +3,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_HIRE_HTML_CLASSES,
   DEEL_HIRE_INLINE_STYLES,
-  DEEL_HIRE_PAGE_TITLE,
   DEEL_HIRE_STYLESHEET_HREFS,
   DeelHireContent,
 } from './deelHire/generatedPageData';
 import SharedLandingPageLayout from '../components/common/SharedLandingPageLayout';
 import Section02 from '../landing_deel/components/Section02.jsx';
 import Section07 from '../landing_deel/components/Section07.jsx';
+import { applySolutionPageContent } from './solutionPageContent';
 
 const STYLE_DATA_ATTR = 'data-deel-hire-style';
 const LINK_DATA_ATTR = 'data-deel-hire-stylesheet';
@@ -276,7 +276,7 @@ export default function DeelHirePage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = DEEL_HIRE_PAGE_TITLE;
+    document.title = 'Dechub-Bridge Hire | Project Team Delivery';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -320,6 +320,15 @@ export default function DeelHirePage() {
       document.documentElement.className = previousHtmlClassName;
       document.body.className = previousBodyClassName;
     };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (root) {
+      return applySolutionPageContent(root, 'hire');
+    }
+
+    return undefined;
   }, []);
 
   useEffect(() => {
@@ -404,7 +413,15 @@ export default function DeelHirePage() {
         return;
       }
 
+      if (anchor.getAttribute('data-demo-trigger') === 'true') {
+        return;
+      }
+
       const rawHref = anchor.getAttribute('href')?.trim() ?? '';
+      if (rawHref.includes('book-a-demo')) {
+        return;
+      }
+
       if (!rawHref || rawHref === '#' || rawHref === '#!') {
         event.preventDefault();
         return;

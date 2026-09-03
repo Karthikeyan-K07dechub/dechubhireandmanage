@@ -15,6 +15,7 @@ import contractorRoutes from './routes/contractor.routes';
 import adminRoutes from './routes/admin.routes';
 import debugRoutes from './routes/debug.routes';
 import contractsRoutes from './routes/contracts.routes';
+import publicRoutes from './routes/public.routes';
 
 
 const app = express();
@@ -75,6 +76,7 @@ app.use('/api/contracts', contractsRoutes);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/public', publicRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

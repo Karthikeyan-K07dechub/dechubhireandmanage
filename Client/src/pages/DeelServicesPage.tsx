@@ -3,11 +3,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_SERVICES_HTML_CLASSES,
   DEEL_SERVICES_INLINE_STYLES,
-  DEEL_SERVICES_PAGE_TITLE,
   DEEL_SERVICES_STYLESHEET_HREFS,
   DeelServicesContent,
 } from './deelServices/generatedPageData';
 import SharedLandingPageLayout from '../components/common/SharedLandingPageLayout';
+import { applySolutionPageContent } from './solutionPageContent';
 import Section02 from '../landing_deel/components/Section02.jsx';
 import Section07 from '../landing_deel/components/Section07.jsx';
 
@@ -606,7 +606,7 @@ export default function DeelServicesPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = DEEL_SERVICES_PAGE_TITLE;
+    document.title = 'Dechub-Bridge Services | Managed Project Delivery';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -650,6 +650,15 @@ export default function DeelServicesPage() {
       document.documentElement.className = previousHtmlClassName;
       document.body.className = previousBodyClassName;
     };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (root) {
+      return applySolutionPageContent(root, 'services');
+    }
+
+    return undefined;
   }, []);
 
   useEffect(() => {

@@ -3,11 +3,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_EMBEDDED_HTML_CLASSES,
   DEEL_EMBEDDED_INLINE_STYLES,
-  DEEL_EMBEDDED_PAGE_TITLE,
   DEEL_EMBEDDED_STYLESHEET_HREFS,
   DeelEmbeddedContent,
 } from './deelEmbedded/generatedPageData';
 import SharedLandingPageLayout from '../components/common/SharedLandingPageLayout';
+import { applySolutionPageContent } from './solutionPageContent';
 import Section02 from '../landing_deel/components/Section02.jsx';
 import Section07 from '../landing_deel/components/Section07.jsx';
 
@@ -443,7 +443,7 @@ export default function DeelEmbeddedPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = DEEL_EMBEDDED_PAGE_TITLE;
+    document.title = 'Dechub-Bridge Embedded | Connected Delivery Workspace';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -487,6 +487,15 @@ export default function DeelEmbeddedPage() {
       document.documentElement.className = previousHtmlClassName;
       document.body.className = previousBodyClassName;
     };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (root) {
+      return applySolutionPageContent(root, 'embedded');
+    }
+
+    return undefined;
   }, []);
 
   useEffect(() => {

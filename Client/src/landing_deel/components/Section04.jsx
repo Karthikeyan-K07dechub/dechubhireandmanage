@@ -2,6 +2,18 @@ import React, { useState } from "react";
 
 const workflows = [
   {
+    key: "hire",
+    label: "Dechub-Bridge Hire",
+    icon: "/deel-assets/images/website-media.deel.com/hire_705b89bb9c-54a21706.svg",
+    accent: "#e6f7e0",
+    iconAccent: "#c2eeb5",
+    steps: [
+      { title: "Today", text: "Create compliant contracts for new hires in minutes" },
+      { title: "Hours later", text: "Review local employment costs and hiring requirements" },
+      { title: "Tomorrow", text: "Onboard global talent without legal or payroll delays" },
+    ],
+  },
+  {
     key: "payroll",
     label: "Dechub-Bridge Payroll",
     icon: "/deel-assets/images/website-media.deel.com/payroll_92b9e25547-ef97117a.svg",
@@ -37,22 +49,10 @@ const workflows = [
       { title: "Tomorrow", text: "Keep every device tracked, secured, and supported globally" },
     ],
   },
-  {
-    key: "hire",
-    label: "Dechub-Bridge Hire",
-    icon: "/deel-assets/images/website-media.deel.com/hire_705b89bb9c-54a21706.svg",
-    accent: "#e6f7e0",
-    iconAccent: "#c2eeb5",
-    steps: [
-      { title: "Today", text: "Create compliant contracts for new hires in minutes" },
-      { title: "Hours later", text: "Review local employment costs and hiring requirements" },
-      { title: "Tomorrow", text: "Onboard global talent without legal or payroll delays" },
-    ],
-  },
 ];
 
 function Section04() {
-  const [activeKey, setActiveKey] = useState("payroll");
+  const [activeKey, setActiveKey] = useState("hire");
   const active = workflows.find((workflow) => workflow.key === activeKey) ?? workflows[0];
 
   return (

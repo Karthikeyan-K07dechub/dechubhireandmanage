@@ -606,7 +606,7 @@ export default function Dashboard({
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          <span className="db-logo-text">Dechub</span>
+          <span className="db-logo-text">Dechub-Bridge</span>
         </div>
 
         <div className="db-company-switcher">

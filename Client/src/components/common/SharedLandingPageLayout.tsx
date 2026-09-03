@@ -70,6 +70,20 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
   }, []);
 
   useEffect(() => {
+    const handleDemoRequest = (event: Event) => {
+      const customEvent = event as CustomEvent<{ services?: unknown }>;
+      openTalentRequestModal(
+        Array.isArray(customEvent.detail?.services)
+          ? customEvent.detail.services.filter((item): item is string => typeof item === 'string')
+          : [],
+      );
+    };
+
+    window.addEventListener('dechub:open-talent-request-modal', handleDemoRequest);
+    return () => window.removeEventListener('dechub:open-talent-request-modal', handleDemoRequest);
+  }, []);
+
+  useEffect(() => {
     const root = rootRef.current;
     if (!root) {
       return;

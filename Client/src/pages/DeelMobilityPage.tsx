@@ -3,11 +3,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEEL_MOBILITY_HTML_CLASSES,
   DEEL_MOBILITY_INLINE_STYLES,
-  DEEL_MOBILITY_PAGE_TITLE,
   DEEL_MOBILITY_STYLESHEET_HREFS,
   DeelMobilityContent,
 } from './deelMobility/generatedPageData';
 import SharedLandingPageLayout from '../components/common/SharedLandingPageLayout';
+import { applySolutionPageContent } from './solutionPageContent';
 import Section02 from '../landing_deel/components/Section02.jsx';
 import Section07 from '../landing_deel/components/Section07.jsx';
 
@@ -812,7 +812,7 @@ export default function DeelMobilityPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = DEEL_MOBILITY_PAGE_TITLE;
+    document.title = 'Dechub-Bridge Mobility | Project Delivery Tracking';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -856,6 +856,15 @@ export default function DeelMobilityPage() {
       document.documentElement.className = previousHtmlClassName;
       document.body.className = previousBodyClassName;
     };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (root) {
+      return applySolutionPageContent(root, 'mobility');
+    }
+
+    return undefined;
   }, []);
 
   useEffect(() => {

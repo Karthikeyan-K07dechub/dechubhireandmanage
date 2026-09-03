@@ -10,7 +10,7 @@ const PRIMARY_ACTIONS = [
 ];
 
 const SECONDARY_ACTIONS = [
-  "Secure\nvisas",
+  "Manage\nprojects",
   "Manage\nHR & people",
   "Ship\nequipment",
 ];
