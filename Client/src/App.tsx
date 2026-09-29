@@ -842,10 +842,6 @@ export default function App() {
   if (page === 'landing' || page === 'landing-react' || page === 'landing-react-new') {
     return (
       <LandingPage
-        onLogin={() => {
-          setCompanyDestination('marketplace');
-          setPage('company-dashboard-auth');
-        }}
         onGetStarted={() => setPage('role-select')}
         onMarketplace={() => setPage('marketplace')}
         onMarketplaceSearch={(query) => {

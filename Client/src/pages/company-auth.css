@@ -46,28 +46,17 @@
 .cap-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.4px;
+  width: fit-content;
+  margin-bottom: 20px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: #ffffff;
 }
 
-.cap-logo-mark {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #06b6d4, #2563eb);
-}
-
-.cap-logo-mark svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: #ffffff;
-  stroke-width: 2;
-  stroke-linecap: round;
+.cap-brand-logo {
+  display: block;
+  width: 132px;
+  height: auto;
 }
 
 .cap-side-content {

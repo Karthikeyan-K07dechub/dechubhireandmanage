@@ -15,7 +15,6 @@ import Section08 from '../landing_deel/components/Section08.jsx';
 import Footer from '../landing_deel/components/Footer.jsx';
 
 interface LandingPageDeelProps {
-  onLogin: () => void;
   onGetStarted: () => void;
   onMarketplace: () => void;
   onMarketplaceSearch: (query: string) => void;
@@ -57,7 +56,6 @@ function navigateToInternalPath(href: string): void {
 }
 
 export default function LandingPageDeel({
-  onLogin,
   onGetStarted,
   onMarketplace,
 }: LandingPageDeelProps) {
@@ -136,7 +134,7 @@ export default function LandingPageDeel({
 
       if (label === 'log in' || href.includes('login')) {
         event.preventDefault();
-        onLogin();
+        navigateToInternalPath('/company/login');
         return;
       }
 
@@ -223,7 +221,7 @@ export default function LandingPageDeel({
 
     root.addEventListener('click', handleClick);
     return () => root.removeEventListener('click', handleClick);
-  }, [onGetStarted, onLogin, onMarketplace]);
+  }, [onGetStarted, onMarketplace]);
 
   return (
     <div ref={rootRef} className="deel-clone-root">

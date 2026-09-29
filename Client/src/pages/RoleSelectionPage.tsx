@@ -6,16 +6,6 @@ interface RoleSelectionPageProps {
   onFreelancer: () => void;
 }
 
-function LogoMark() {
-  return (
-    <div className="rsp-logo-mark">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    </div>
-  );
-}
-
 export default function RoleSelectionPage({
   onBack,
   onCompany,
@@ -25,10 +15,7 @@ export default function RoleSelectionPage({
     <div className="rsp-root">
       <div className="rsp-shell">
         <div className="rsp-header">
-          <div className="rsp-brand">
-            <LogoMark />
-            <span>Dechub</span>
-          </div>
+          <img className="rsp-brand-logo" src="/dechub-assets/email/bridge-logo-email.png" alt="Dechub-Bridge" />
           <button className="rsp-back" onClick={onBack}>
             Back to landing
           </button>

@@ -17,16 +17,6 @@ interface CompanyAuthPageProps {
   onGoogleStart?: () => void;
 }
 
-function LogoMark() {
-  return (
-    <div className="cap-logo-mark">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    </div>
-  );
-}
-
 const FREE_EMAIL_DOMAINS = new Set([
   'gmail.com',
   'yahoo.com',
@@ -289,12 +279,10 @@ export default function CompanyAuthPage({
       <div className="cap-bg-orb cap-bg-orb-b" />
       <div className="cap-shell">
         <aside className="cap-side">
-          <div className="cap-brand">
-            <LogoMark />
-            <span>Dechub</span>
-          </div>
-
           <div className="cap-side-content">
+            <div className="cap-brand">
+              <img className="cap-brand-logo" src="/dechub-assets/email/bridge-logo-email.png" alt="Dechub-Bridge" />
+            </div>
             <div className="cap-badge">Company access</div>
             <h1>Hire faster with one simple company portal.</h1>
             <p>
