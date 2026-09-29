@@ -54,7 +54,7 @@ const PAGE_CONTENT: Record<'hire' | 'mobility' | 'embedded' | 'services', Soluti
 };
 
 function replaceText(text: string, replacements: ReadonlyArray<readonly [string, string]>) {
-  return replacements.reduce((updatedText, [from, to]) => updatedText.replaceAll(from, to), text);
+  return replacements.reduce((updatedText, [from, to]) => updatedText.split(from).join(to), text);
 }
 
 function normalizeLabel(value: string | null | undefined) {
