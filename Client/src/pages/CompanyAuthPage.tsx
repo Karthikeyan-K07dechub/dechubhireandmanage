@@ -165,6 +165,16 @@ export default function CompanyAuthPage({
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('oauth_error') !== 'account_not_found') {
+      return;
+    }
+
+    setError('No account was found with this Google email. Please create an account first.');
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
+
+  useEffect(() => {
     if (!isSignupMode) {
       return;
     }
@@ -341,7 +351,7 @@ export default function CompanyAuthPage({
             <button
               type="button"
               className="cap-google"
-              onClick={onGoogleStart ?? redirectToGoogle}
+              onClick={onGoogleStart ?? (() => redirectToGoogle(mode))}
               disabled={loading}
             >
               <span className="cap-google-icon" aria-hidden="true">

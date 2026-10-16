@@ -493,6 +493,11 @@ export default function Dashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const [signupStep, setSignupStep] = useState<number | null>(null);
   const [setupBannerLoading, setSetupBannerLoading] = useState(true);
+  const [oauthNotice] = useState(() => {
+    const notice = sessionStorage.getItem('dechub_oauth_notice');
+    sessionStorage.removeItem('dechub_oauth_notice');
+    return notice;
+  });
 
   useEffect(() => {
     const nextPage = getDashboardPageFromQuery(initialPage, initialHireRequestId);
@@ -757,6 +762,12 @@ export default function Dashboard({
         </header>
 
         <main>
+          {oauthNotice && (
+            <div className="db-oauth-notice" role="status">
+              {oauthNotice}
+            </div>
+          )}
+
           {!setupBannerLoading && isSetupIncomplete && (
             <section className="db-setup-banner" aria-label="Complete company setup">
               <div className="db-setup-banner__content">

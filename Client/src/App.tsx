@@ -386,7 +386,9 @@ function setCompanyDestination(destination: CompanyDestination): void {
 
 function getCompanyDestination(): CompanyDestination {
   const raw = sessionStorage.getItem(COMPANY_DESTINATION_KEY);
-  const dest = raw === 'dashboard' || raw === 'marketplace-profile' ? raw : 'marketplace';
+  // A direct company sign-up should enter the main workspace. Marketplace remains
+  // the destination only when the user intentionally started there.
+  const dest = raw === 'marketplace' || raw === 'marketplace-profile' ? raw : 'dashboard';
   console.log('[getCompanyDestination] Retrieved:', dest);
   return dest;
 }
@@ -487,6 +489,10 @@ export default function App() {
     }
 
     setUserName(getUserNameFromToken());
+
+    if (result.accountStatus === 'existing') {
+      sessionStorage.setItem('dechub_oauth_notice', 'Welcome back. Your existing account has been signed in.');
+    }
 
     const destination = getCompanyDestination();
 

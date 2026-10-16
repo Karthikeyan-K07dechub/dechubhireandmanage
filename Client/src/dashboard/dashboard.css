@@ -9,6 +9,17 @@
   overflow-x: hidden;
 }
 
+.db-oauth-notice {
+  margin: 24px 32px 0;
+  padding: 13px 16px;
+  border: 1px solid #cfc4ff;
+  border-radius: 10px;
+  background: #f4f1ff;
+  color: #4224b8;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* ── Sidebar ───────────────────────────────────────────────────────────────── */
 
 .db-sidebar {

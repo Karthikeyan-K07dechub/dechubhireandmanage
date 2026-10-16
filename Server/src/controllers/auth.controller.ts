@@ -305,17 +305,26 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
 
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 
-export function googleAuthRedirect(_req: Request, res: Response): void {
+type GoogleAuthIntent = 'login' | 'signup';
+
+function getGoogleAuthIntent(value: unknown): GoogleAuthIntent {
+  return value === 'login' ? 'login' : 'signup';
+}
+
+export function googleAuthRedirect(req: Request, res: Response): void {
+  const intent = getGoogleAuthIntent(req.query.intent);
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope:       ['openid', 'email', 'profile'],
     prompt:      'select_account',
+    state:       intent,
   });
   res.redirect(url);
 }
 
 export async function googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const intent = getGoogleAuthIntent(req.query.state);
     const code = req.query.code as string;
     if (!code) throw new AppError('Missing OAuth code', 400, 'OAUTH_ERROR');
 
@@ -331,6 +340,12 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
 
     // Find or create user
     let user = await CompanyAuth.findOne({ $or: [{ googleId: data.id }, { email: data.email }] });
+    const isExistingAccount = Boolean(user);
+
+    if (!user && intent === 'login') {
+      res.redirect(`${env.CLIENT_URL}/company/login?oauth_error=account_not_found`);
+      return;
+    }
 
     if (!user) {
       user = await CompanyAuth.create({
@@ -362,6 +377,7 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
       access_token:  accessToken,
       refresh_token: refreshToken,
       signup_step:   user.signupStep.toString(),
+      account_status: isExistingAccount ? 'existing' : 'new',
       accessToken,
       refreshToken,
       signupStep: user.signupStep.toString(),

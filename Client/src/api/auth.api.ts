@@ -133,21 +133,25 @@ export async function checkEmailAvailability(email: string): Promise<boolean> {
   }
 }
 
-export function redirectToGoogle(): void {
+export function redirectToGoogle(intent: 'login' | 'signup' = 'signup'): void {
   const base = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
-  window.location.href = `${base}/api/auth/google`;
+  window.location.href = `${base}/api/auth/google?intent=${intent}`;
 }
 
-export function handleGoogleCallback(): { signupStep: number } | null {
+export function handleGoogleCallback(): { signupStep: number; accountStatus: 'existing' | 'new' } | null {
   const params = new URLSearchParams(window.location.search);
   const access = params.get('access_token');
   const refresh = params.get('refresh_token');
   const step = params.get('signup_step');
+  const accountStatus = params.get('account_status');
 
   if (!access || !refresh) return null;
 
   tokenStore.set(access, refresh);
   window.history.replaceState({}, '', window.location.pathname);
 
-  return { signupStep: Number(step ?? 1) };
+  return {
+    signupStep: Number(step ?? 1),
+    accountStatus: accountStatus === 'existing' ? 'existing' : 'new',
+  };
 }

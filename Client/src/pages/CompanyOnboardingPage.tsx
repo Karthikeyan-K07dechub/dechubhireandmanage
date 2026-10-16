@@ -473,7 +473,7 @@ export default function CompanyOnboardingPage({
     validateEmail,
     googleSignup: () => {
       sessionStorage.setItem(COMPANY_DESTINATION_KEY, 'dashboard');
-      redirectToGoogle();
+      redirectToGoogle('signup');
     },
     goToLogin: onBack,
     goToDashboard: onComplete,
