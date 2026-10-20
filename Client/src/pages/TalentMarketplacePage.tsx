@@ -54,6 +54,45 @@ function getMarketplaceCardSkills(skills: string[]) {
   return { visibleSkills, remainingCount };
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'BT';
+}
+
+function MarketplaceBanner({ imageUrl, name }: { imageUrl?: string; name: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const src = imageUrl ? resolveImageUrl(imageUrl) : '';
+
+  if (!src || imageFailed) {
+    return <img className="tmp-card-banner" src="/dechub-assets/marketplace/talent-banner-fallback.svg" alt="Bridge talent profile" />;
+  }
+
+  return (
+    <img
+      className="tmp-card-banner"
+      src={src}
+      alt={`${name} banner`}
+      onError={() => setImageFailed(true)}
+    />
+  );
+}
+
+function MarketplaceAvatar({ imageUrl, name }: { imageUrl?: string; name: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const src = imageUrl ? resolveImageUrl(imageUrl) : '';
+
+  if (!src || imageFailed) {
+    return <div className="tmp-head-avatar-fallback" aria-label={`${name} initials`}>{getInitials(name)}</div>;
+  }
+
+  return <img className="tmp-head-avatar" src={src} alt={name} onError={() => setImageFailed(true)} />;
+}
+
 function isCompletedMarketplaceProfile(profile: MarketplaceTalentProfile): boolean {
   const normalizedRole = profile.role.trim().toLowerCase();
   const normalizedBlurb = profile.blurb.trim();
@@ -254,26 +293,14 @@ export default function TalentMarketplacePage({
                   }
                 }}
               >
-                <div className="tmp-card-media" style={{ background: talent.bannerImageUrl ? 'transparent' : '#f8fafc' }}>
-                  {talent.bannerImageUrl ? (
-                    <img
-                      className="tmp-card-banner"
-                      src={resolveImageUrl(talent.bannerImageUrl)}
-                      alt={`${talent.name} banner`}
-                    />
-                  ) : (
-                    <div className="tmp-card-banner tmp-card-banner-fallback" aria-hidden="true" />
-                  )}
+                <div className="tmp-card-media">
+                  <MarketplaceBanner imageUrl={talent.bannerImageUrl} name={talent.name} />
                 </div>
 
                 <div className="tmp-card-content">
                   <div className="tmp-card-head">
                     <div className="tmp-card-identity">
-                      {talent.profilePhotoUrl ? (
-                        <img className="tmp-head-avatar" src={resolveImageUrl(talent.profilePhotoUrl)} alt={talent.name} />
-                      ) : (
-                        <div className="tmp-head-avatar-fallback">{(talent.name || '').split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase()}</div>
-                      )}
+                      <MarketplaceAvatar imageUrl={talent.profilePhotoUrl} name={talent.name} />
 
                       <div className="tmp-card-title-group">
                         <h2 title={talent.name}>{talent.name}</h2>
