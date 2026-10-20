@@ -8,7 +8,7 @@ import {
   type MarketplaceTalentProfileDetail,
 } from '../api/marketplace.api';
 import type { ApiError } from '../api/client';
-import { imageBackground, resolveImageUrl } from '../utils/imageUrl';
+import { resolveImageUrl } from '../utils/imageUrl';
 import UserMenu from '../components/common/UserMenu';
 
 interface MarketplaceTalentProfilePageProps {
@@ -56,6 +56,45 @@ function getInitials(profile: MarketplaceTalentProfileDetail): string {
     .join('')
     .slice(0, 2)
     .toUpperCase();
+}
+
+function MarketplaceProfileBanner({ imageUrl, name }: { imageUrl?: string; name: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const src = imageUrl ? resolveImageUrl(imageUrl) : '';
+
+  return (
+    <div className="mpp-hero-banner">
+      <img
+        src={!src || imageFailed ? '/dechub-assets/marketplace/talent-banner-fallback.svg' : src}
+        alt={!src || imageFailed ? 'Bridge talent profile' : `${name} banner`}
+        onError={() => setImageFailed(true)}
+      />
+    </div>
+  );
+}
+
+function MarketplaceProfileAvatar({ imageUrl, profile }: { imageUrl?: string; profile: MarketplaceTalentProfileDetail }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const src = imageUrl ? resolveImageUrl(imageUrl) : '';
+
+  if (!src || imageFailed) {
+    return <>{getInitials(profile)}</>;
+  }
+
+  return <img src={src} alt={profile.name} onError={() => setImageFailed(true)} />;
+}
+
+function PortfolioImage({ imageUrl, title }: { imageUrl: string; title: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const src = imageUrl ? resolveImageUrl(imageUrl) : '';
+
+  return (
+    <img
+      src={!src || imageFailed ? '/dechub-assets/marketplace/talent-banner-fallback.svg' : src}
+      alt={!src || imageFailed ? 'Bridge talent portfolio placeholder' : title}
+      onError={() => setImageFailed(true)}
+    />
+  );
 }
 
 function FaqList({ items }: { items: MarketplaceFaqItem[] }) {
@@ -223,14 +262,10 @@ export default function MarketplaceTalentProfilePage({
           <div className="mpp-layout">
             <section className="mpp-main">
               <div className="mpp-hero-card">
-                {profile.bannerImageUrl ? (
-                  <div className="mpp-hero-banner" style={{ backgroundImage: imageBackground(profile.bannerImageUrl) }} />
-                ) : null}
+                <MarketplaceProfileBanner imageUrl={profile.bannerImageUrl} name={profile.name} />
                 <div className="mpp-hero-head">
                   <div className="mpp-avatar">
-                    {profile.profilePhotoUrl ? (
-                      <img src={resolveImageUrl(profile.profilePhotoUrl)} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: "50%" }} />
-                    ) : getInitials(profile)}
+                    <MarketplaceProfileAvatar imageUrl={profile.profilePhotoUrl} profile={profile} />
                   </div>
                   <div>
                     {/* <div className="mpp-title">{profile.role}</div> */}
@@ -282,7 +317,7 @@ export default function MarketplaceTalentProfilePage({
                   <div className="mpp-portfolio-list">
                     {profile.portfolioProjects.map((project) => (
                       <article key={`${project.title}-${project.imageUrl}`} className="mpp-portfolio-card">
-                        <img src={resolveImageUrl(project.imageUrl)} alt={project.title} />
+                        <PortfolioImage imageUrl={project.imageUrl} title={project.title} />
                         <div>
                           <h3>{project.title}</h3>
                           <p>{project.description}</p>
