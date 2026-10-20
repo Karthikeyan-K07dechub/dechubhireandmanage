@@ -90,8 +90,8 @@ function PortfolioImage({ imageUrl, title }: { imageUrl: string; title: string }
 
   return (
     <img
-      src={!src || imageFailed ? '/dechub-assets/marketplace/talent-banner-fallback.svg' : src}
-      alt={!src || imageFailed ? 'Bridge talent portfolio placeholder' : title}
+      src={!src || imageFailed ? '/dechub-assets/marketplace/portfolio-fallback.svg' : src}
+      alt={!src || imageFailed ? 'Project preview placeholder' : title}
       onError={() => setImageFailed(true)}
     />
   );
