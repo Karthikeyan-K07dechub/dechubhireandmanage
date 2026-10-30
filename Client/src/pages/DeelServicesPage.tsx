@@ -111,7 +111,7 @@ const SERVICES_TABS: Record<
       'Entity setup, foreign employer registration, and ongoing entity management are handled across countries, with filings, deadlines, and local requirements managed on your behalf.',
     ctaLabel: 'Explore Corporate Services',
     ctaLink: '/solutions/services/corporate-services/',
-    imageSrc: '/solutions/services/assets/images/Map_73890c8164-dc7a55b32a.png',
+    imageSrc: '/solutions/services/assets/images/services-corporate-map.png',
   },
   'Equity and Tokens': {
     title: 'Support equity compliantly across borders',
@@ -119,7 +119,7 @@ const SERVICES_TABS: Record<
       'Protect your team from tax risks with expert support for local obligations, ensuring vesting and exercise events are processed with precision.',
     ctaLabel: 'Explore Equity & Token Services',
     ctaLink: '/solutions/services/equity/',
-    imageSrc: '/solutions/services/assets/images/Group_2147257378_b7076b3849-50cbc1f516.png',
+    imageSrc: '/solutions/services/assets/images/services-equity-profiles.png',
   },
   'Privacy Services': {
     title: 'Navigate privacy requirements confidently',
@@ -127,7 +127,7 @@ const SERVICES_TABS: Record<
       'Privacy consulting helps interpret data protection requirements, assess risk, and guide compliance decisions as regulations evolve across regions.',
     ctaLabel: 'Explore Privacy Consulting',
     ctaLink: '/solutions/services/privacy/',
-    imageSrc: '/solutions/services/assets/images/Group_2147257346_579c25583e-609d81118c.png',
+    imageSrc: '/solutions/services/assets/images/services-privacy-compliance.png',
   },
   'Human Resource Services': {
     title: 'Handle complex people matters with expert support',
@@ -143,7 +143,7 @@ const SERVICES_TABS: Record<
       'Global background checks are completed to verify identity and credentials before workers onboard.',
     ctaLabel: 'Explore Verifications',
     ctaLink: '/solutions/services/verifications/',
-    imageSrc: '/solutions/services/assets/images/Group_2147257450_9ca64fb8c8-383b649822.png',
+    imageSrc: '/solutions/services/assets/images/services-background-alert.png',
   },
 };
 
@@ -809,6 +809,13 @@ export default function DeelServicesPage() {
   return (
     <SharedLandingPageLayout>
       <div ref={rootRef} className="deel-services-page" data-page="deel-services-react">
+        <style>{`
+          .deel-services-page img[src$="/services-interview-workflow.png"],
+          .deel-services-page img[src$="/services-country-selector.png"] {
+            transform: scale(0.88);
+            transform-origin: center;
+          }
+        `}</style>
         <DeelServicesContent />
         {landingLogoStripTarget ? createPortal(<Section02 />, landingLogoStripTarget) : null}
         {landingKeyFiguresTarget ? createPortal(<Section07 />, landingKeyFiguresTarget) : null}

@@ -459,9 +459,48 @@ function Header() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [closingDropdown, setClosingDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [navVisible, setNavVisible] = useState(true);
+  const [headerHeight, setHeaderHeight] = useState(88);
+  const headerRef = useRef(null);
   const navRef = useRef(null);
   const closeDropdownTimeoutRef = useRef(null);
   const isDesktopViewport = () => window.innerWidth >= 1200;
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const observer = new ResizeObserver(() => setHeaderHeight(header.offsetHeight));
+    observer.observe(header);
+    setHeaderHeight(header.offsetHeight);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    let previousY = Math.max(0, window.scrollY);
+    let upwardDistance = 0;
+    let downwardDistance = 0;
+    const handleScroll = () => {
+      const y = Math.max(0, window.scrollY);
+      const delta = y - previousY;
+      previousY = y;
+      if (y <= headerHeight || activeDropdown || mobileMenuOpen || headerRef.current?.contains(document.activeElement)) {
+        setNavVisible(true);
+        upwardDistance = downwardDistance = 0;
+        return;
+      }
+      if (delta < 0) {
+        upwardDistance -= delta;
+        downwardDistance = 0;
+        if (upwardDistance >= 6) setNavVisible(true);
+      } else if (delta > 0) {
+        downwardDistance += delta;
+        upwardDistance = 0;
+        if (downwardDistance >= 16) setNavVisible(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [headerHeight, activeDropdown, mobileMenuOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -572,7 +611,8 @@ function Header() {
   };
 
   return (
-    <header className="sticky top-[-1px] z-500 w-full">
+    <div style={{ height: headerHeight }}>
+    <header ref={headerRef} className="deel-scroll-header w-full" onFocusCapture={() => setNavVisible(true)} style={{ transform: navVisible || activeDropdown || mobileMenuOpen ? 'translateY(0)' : 'translateY(-100%)' }}>
       <div className="banner-wrapper-opt" />
       <nav className="mui-8qiahu" ref={navRef}>
         <div className="MuiBox-root mui-n9ndkr">
@@ -943,7 +983,7 @@ function Header() {
             </div>
           </div>
 
-          <div className="items-center gap-2 flex justify-end">
+          <div className="deel-navbar-actions items-center gap-2 flex justify-end">
             <div className="MuiBox-root mui-fy11xf">
               <a href="/company/login" title="Log in" target="_self" aria-label="Log in" className="mui-15k05j0">
                 <button type="button" className="hidden-phone mui-ti8o1k">
@@ -1003,6 +1043,7 @@ function Header() {
         ) : null}
       </nav>
     </header>
+    </div>
   );
 }
 

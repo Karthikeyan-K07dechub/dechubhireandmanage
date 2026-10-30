@@ -198,7 +198,143 @@
   margin-top: 6px;
 }
 
+/* Project requests use the client dashboard's navy and teal palette. */
+.ltrm-dashboard {
+  font-family: 'DM Sans', sans-serif;
+  color: #0f172a;
+  background: rgba(10, 22, 40, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.ltrm-dashboard .ltrm-card {
+  width: min(760px, 100%);
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+}
+
+.ltrm-dashboard .ltrm-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f1f4f9;
+  color: #64748b;
+  font-size: 22px;
+}
+
+.ltrm-dashboard .ltrm-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.ltrm-dashboard .ltrm-header,
+.ltrm-dashboard .ltrm-success {
+  padding-right: 32px;
+}
+
+.ltrm-dashboard .ltrm-header h2,
+.ltrm-dashboard .ltrm-success h2 {
+  margin: 12px 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+}
+
+.ltrm-dashboard .ltrm-kicker {
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #e6faf5;
+  color: #047857;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.ltrm-dashboard .ltrm-header p,
+.ltrm-dashboard .ltrm-success p {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ltrm-dashboard .ltrm-form {
+  margin-top: 24px;
+}
+
+.ltrm-dashboard .ltrm-field span {
+  margin-bottom: 6px;
+  color: #374151;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ltrm-dashboard .ltrm-field input,
+.ltrm-dashboard .ltrm-field select,
+.ltrm-dashboard .ltrm-field textarea {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+}
+
+.ltrm-dashboard .ltrm-field textarea {
+  min-height: 140px;
+}
+
+.ltrm-dashboard .ltrm-field input:focus,
+.ltrm-dashboard .ltrm-field select:focus,
+.ltrm-dashboard .ltrm-field textarea:focus {
+  border-color: #00c9a7;
+  box-shadow: 0 0 0 3px rgba(0, 201, 167, 0.1);
+}
+
+.ltrm-dashboard .ltrm-actions {
+  padding-top: 20px;
+  border-top: 1px solid #f1f4f9;
+  margin-top: 24px;
+}
+
+.ltrm-dashboard .ltrm-primary,
+.ltrm-dashboard .ltrm-secondary {
+  min-height: 38px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.ltrm-dashboard .ltrm-primary {
+  background: #0a1628;
+}
+
+.ltrm-dashboard .ltrm-primary:hover:not(:disabled) {
+  background: #162d54;
+}
+
+.ltrm-dashboard .ltrm-secondary {
+  border: 1.5px solid #e2e8f0;
+  color: #475569;
+}
+
+.ltrm-dashboard .ltrm-secondary:hover {
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.ltrm-dashboard button:focus-visible {
+  outline: 2px solid #00c9a7;
+  outline-offset: 3px;
+}
+
 @media (max-width: 760px) {
+  .ltrm-dashboard .ltrm-card {
+    padding: 24px 18px;
+  }
   .ltrm-overlay {
     padding: 14px;
   }

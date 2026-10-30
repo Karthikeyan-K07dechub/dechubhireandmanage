@@ -728,6 +728,13 @@ export default function DeelVsCompetitorsPage() {
   return (
     <SharedLandingPageLayout>
       <div ref={rootRef} data-page="deel-vs-competitors-react" style={{ overflowAnchor: 'none' }}>
+        {/* Temporarily hide these complete sections so the next content moves up. */}
+        <style>{`
+          [data-page="deel-vs-competitors-react"] .mui-1frfdrn:has(#explore-more),
+          [data-page="deel-vs-competitors-react"] .mui-md1i8n:has(#testimonials-slider-832) {
+            display: none !important;
+          }
+        `}</style>
         <DeelVsCompetitorsContent />
       </div>
     </SharedLandingPageLayout>

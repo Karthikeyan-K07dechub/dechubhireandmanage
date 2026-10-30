@@ -6,6 +6,32 @@ function Footer() {
   const [newsletterMessage, setNewsletterMessage] = useState("");
   const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
 
+  const showCustomer = (event, customer) => {
+    event.preventDefault();
+    if (window.location.pathname.replace(/\/+$/, '') === '/pricing') {
+      window.location.assign(`/?customer=${encodeURIComponent(customer)}&from=pricing#deel-testimonials`);
+      return;
+    }
+    const carousel = document.querySelector('.swiper-slider-comparison-slider');
+    const customerGrid = document.querySelector('.solution-case-study-section');
+    const stories = carousel || customerGrid;
+    if (stories) {
+      const logo = Array.from(stories.querySelectorAll('img')).find(
+        (image) => image.alt.toLowerCase() === customer.toLowerCase(),
+      );
+      const card = logo?.closest('.swiper-slide, .solution-case-study-section__card');
+      (card || stories).scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      return;
+    }
+    const testimonials = document.getElementById('deel-testimonials');
+    if (testimonials) {
+      window.dispatchEvent(new CustomEvent('dechub:show-customer', { detail: customer }));
+      testimonials.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    window.location.assign(`/?customer=${encodeURIComponent(customer)}#deel-testimonials`);
+  };
+
   const subscribe = async (event) => {
     event.preventDefault();
     if (!newsletterEmail.trim() || newsletterSubmitting) return;
@@ -45,9 +71,9 @@ function Footer() {
               </p>
             </div>
             <div className="mui-i1l04d">
-              <p className="mui-1711c28">
-                Pricing
-              </p>
+              <a href="/pricing" style={{ color: 'inherit', cursor: 'pointer' }}>
+                <p className="mui-1711c28">Pricing</p>
+              </a>
             </div>
           </div>
         </div>
@@ -269,47 +295,17 @@ function Footer() {
               </div>
             </div>
           </div>
-          <div className="MuiBox-root mui-fbunk5" inert="">
+          <div className="MuiBox-root mui-fbunk5">
             <div className="MuiBox-root mui-19ei76p">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-grid8g">
                 Customers
               </h3>
               <div className="MuiBox-root mui-1f1std7">
-                <a href="/case-studies/revolut/" className="mui-8141xw">
-                  <p className="mui-1711c28">
-                    Revolut
-                  </p>
-                </a>
-                <a href="/case-studies/bcg/" className="mui-8141xw">
-                  <p className="mui-1711c28">
-                    BCG
-                  </p>
-                </a>
-                <a href="/case-studies/fico/" className="mui-8141xw">
-                  <p className="mui-1711c28">
-                    FICO
-                  </p>
-                </a>
-                <a href="/case-studies/puma-south-africa/" className="mui-8141xw">
-                  <p className="mui-1711c28">
-                    Puma
-                  </p>
-                </a>
-                <a href="/case-studies/outreach/" className="mui-8141xw">
-                  <p className="mui-1711c28">
-                    Outreach
-                  </p>
-                </a>
-                <a href="/case-studies/zipco/" className="mui-8141xw">
-                  <p className="mui-1711c28">
-                    Zip Co
-                  </p>
-                </a>
-                <a href="/case-studies/directional-pizza/" className="mui-8141xw">
-                  <p className="mui-1711c28">
-                    Directional Pizza
-                  </p>
-                </a>
+                {['Tanishq', 'Titan', 'Mia', 'Fastrack', 'Wildcraft'].map((customer) => (
+                  <a key={customer} className="mui-8141xw" href="#deel-testimonials" onClick={(event) => showCustomer(event, customer)} style={{ cursor: 'pointer' }}>
+                    <p className="mui-1711c28">{customer}</p>
+                  </a>
+                ))}
               </div>
             </div>
           </div>
@@ -321,18 +317,24 @@ function Footer() {
                 <img alt="Dechub-Bridge Logo" loading="lazy" width="122" height="42" decoding="async" className="mui-ducv57 deel-footer-logo" sizes="100vw" srcSet="/deel-assets/images/website-media.deel.com/logo.png 640w" src="/deel-assets/images/website-media.deel.com/logo.png" />
               </div>
             </a>
-            <div className="MuiBox-root mui-wsfch7" inert="">
-              <a href="https://twitter.com/deel" target="_blank" rel="noopener" className="mui-j04pfz">
-                <img alt="twitterFilled-icon" loading="lazy" width="32" height="32" decoding="async" style={{ color: "transparent" }} sizes="32px" srcSet="/deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 16w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 32w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 48w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 64w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 96w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 128w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 256w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 384w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 640w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 640w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 750w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 768w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 828w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1024w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1080w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1200w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1280w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1920w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1920w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 2048w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 3840w" src="/deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg" />
+            <div className="MuiBox-root mui-wsfch7" style={{ flexWrap: 'wrap' }}>
+              <a href="https://www.instagram.com/dechub.in/" target="_blank" rel="noopener noreferrer" className="mui-j04pfz">
+                <img alt="instagramFilled-icon" loading="lazy" width="32" height="32" decoding="async" style={{ color: "transparent" }} sizes="32px" srcSet="/deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 16w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 32w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 48w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 64w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 96w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 128w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 256w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 384w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 640w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 640w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 750w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 768w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 828w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1024w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1080w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1200w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1280w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1920w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1920w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 2048w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 3840w" src="/deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg" />
               </a>
-              <a href="https://linkedin.com/company/deel" target="_blank" rel="noopener" className="mui-j04pfz">
+              <a href="https://www.linkedin.com/in/prasanna-anas-13a6b27a/" target="_blank" rel="noopener noreferrer" className="mui-j04pfz">
                 <img alt="linkedinFilled-icon" loading="lazy" width="32" height="32" decoding="async" style={{ color: "transparent" }} sizes="32px" srcSet="/deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 16w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 32w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 48w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 64w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 96w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 128w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 256w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 384w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 640w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 640w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 750w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 768w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 828w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 1024w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 1080w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 1200w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 1280w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 1920w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 1920w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 2048w, /deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg 3840w" src="/deel-assets/images/website-media.deel.com/footer-icon-linkedin.8b69a409-09f4c78a.svg" />
               </a>
-              <a href="https://facebook.com/getdeel" target="_blank" rel="noopener" className="mui-j04pfz">
+              <a href="https://x.com/dechub_india" target="_blank" rel="noopener noreferrer" className="mui-j04pfz">
+                <img alt="twitterFilled-icon" loading="lazy" width="32" height="32" decoding="async" style={{ color: "transparent" }} sizes="32px" srcSet="/deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 16w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 32w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 48w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 64w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 96w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 128w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 256w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 384w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 640w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 640w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 750w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 768w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 828w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1024w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1080w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1200w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1280w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1920w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 1920w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 2048w, /deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg 3840w" src="/deel-assets/images/website-media.deel.com/twitter-filled.8731c38f-835507a4.svg" />
+              </a>
+              <a href="https://www.facebook.com/p/Dechub-61559034835570/" target="_blank" rel="noopener noreferrer" className="mui-j04pfz">
                 <img alt="facebookFilled-icon" loading="lazy" width="32" height="32" decoding="async" style={{ color: "transparent" }} sizes="32px" srcSet="/deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 16w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 32w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 48w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 64w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 96w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 128w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 256w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 384w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 640w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 640w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 750w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 768w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 828w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 1024w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 1080w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 1200w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 1280w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 1920w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 1920w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 2048w, /deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg 3840w" src="/deel-assets/images/website-media.deel.com/facebook-filled.9dee679d-9ca1e92c.svg" />
               </a>
-              <a href="https://instagram.com/getdeel" target="_blank" rel="noopener" className="mui-j04pfz">
-                <img alt="instagramFilled-icon" loading="lazy" width="32" height="32" decoding="async" style={{ color: "transparent" }} sizes="32px" srcSet="/deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 16w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 32w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 48w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 64w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 96w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 128w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 256w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 384w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 640w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 640w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 750w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 768w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 828w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1024w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1080w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1200w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1280w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1920w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 1920w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 2048w, /deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg 3840w" src="/deel-assets/images/website-media.deel.com/instagram-filled.a70f7d56-9722e377.svg" />
+              <a href="https://www.behance.net/dechub" target="_blank" rel="noopener noreferrer" className="mui-j04pfz" title="Behance" aria-label="Behance">
+                <svg width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="Behance">
+                  <circle cx="16" cy="16" r="16" fill="#424242" />
+                  <text x="5" y="22" fill="#fff" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="17" letterSpacing="-1">Bē</text>
+                </svg>
               </a>
             </div>
           </div>

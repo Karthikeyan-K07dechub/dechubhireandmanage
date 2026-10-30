@@ -1,0 +1,17 @@
+.company-onboarding > .app {
+  max-width: none;
+  margin: 0;
+}
+
+.company-onboarding > .app > .left {
+  flex: 0 0 420px;
+}
+
+.company-onboarding > .app > .right {
+  min-width: 0;
+}
+
+.company-onboarding .right > .card,
+.company-onboarding .right > .progress-wrap {
+  max-width: 620px;
+}

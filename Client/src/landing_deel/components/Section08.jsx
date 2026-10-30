@@ -46,11 +46,6 @@ function Section08() {
           <div className="MuiBox-root mui-1si5xjn">
             <div className="MuiBox-root mui-1m67saq">
               <h3 className="MuiTypography-root MuiTypography-h3 mui-1f5a0jj">Excellent global payroll</h3>
-              <a href="https://www.g2.com/sellers/deel" className="underline mui-15k05j0" target="_blank" rel="noopener">
-                <p className="MuiTypography-root MuiTypography-body1 mui-1o8lr4j">
-                  <span className="bold notranslate mui-1gzsonn">4.8/5</span> based on <span className="notranslate mui-1gzsonn">100+</span> reviews
-                </p>
-              </a>
             </div>
           </div>
 

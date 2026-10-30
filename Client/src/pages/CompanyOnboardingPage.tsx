@@ -21,6 +21,7 @@ import Step6Preferences from '../components/steps/Step6Preferences';
 import { initialData, initialDocs, stepConfig } from '../constants/signup';
 import type { AppHandlers, AppState, Step } from '../types/signup';
 import { validateEmail, validateStep } from '../utils/validators';
+import './company-onboarding.css';
 
 interface CompanyOnboardingPageProps {
   initialStep?: Step;
@@ -520,7 +521,7 @@ export default function CompanyOnboardingPage({
   const progress = stepConfig[state.currentStep as Exclude<Step, 7>];
 
   return (
-    <div className="app-shell">
+    <div className="app-shell company-onboarding">
       <div className="app">
         <aside className="left">
           <div className="logo">
@@ -581,7 +582,7 @@ export default function CompanyOnboardingPage({
           {state.serverError ? (
             <div style={{
               width: '100%',
-              maxWidth: 540,
+              maxWidth: 620,
               marginBottom: 16,
               padding: '12px 16px',
               borderRadius: 12,

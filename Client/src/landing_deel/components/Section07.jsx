@@ -46,7 +46,7 @@ function Section07() {
           ))}
         </div>
         <div className="MuiBox-root mui-74zl7b">
-          <a href="/book-a-demo/" className="mui-gcrq9f inline-flex items-center justify-center">
+          <a href="/book-a-demo/" data-demo-trigger="true" className="mui-gcrq9f inline-flex items-center justify-center">
             Book a demo
           </a>
         </div>

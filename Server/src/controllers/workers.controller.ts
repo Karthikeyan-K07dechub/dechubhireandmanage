@@ -605,10 +605,11 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       try {
         const { account, company } = await getCompanyForUser(req.user.sub);
         companyId = company._id;
-        contactFirstName = account.firstName?.trim() || 'Company';
-        contactLastName = account.lastName?.trim() || 'Admin';
-        contactEmail = account.email?.trim().toLowerCase() || contactEmail;
-        contactPhone = account.phone?.trim() || contactPhone;
+        const submittedName = data.contactName?.trim().split(/\s+/).filter(Boolean);
+        contactFirstName = submittedName?.[0] || account.firstName?.trim() || 'Company';
+        contactLastName = submittedName?.length ? submittedName.slice(1).join(' ') : account.lastName?.trim() || 'Admin';
+        contactEmail = contactEmail || account.email?.trim().toLowerCase() || '';
+        contactPhone = data.phoneNumber !== undefined ? contactPhone : account.phone?.trim() || '';
         usedSignedInCompany = true;
       } catch (error) {
         // A stale browser token must not prevent a public Book a Demo submission.

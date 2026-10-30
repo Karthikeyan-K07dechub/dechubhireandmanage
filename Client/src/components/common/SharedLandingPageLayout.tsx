@@ -5,8 +5,9 @@ import '../../landing_deel/overrides.css';
 import Header from '../../landing_deel/components/Header.jsx';
 import Footer from '../../landing_deel/components/Footer.jsx';
 import { applySolutionCaseStudyCards, NonPayrollSolutionType } from './tanishqCaseStudy';
+import { wireCustomerStoriesScrollbar } from './customerStoriesScrollbar';
 
-const BOOK_DEMO_LABELS = new Set(['book a demo', 'get started with deel']);
+const BOOK_DEMO_LABELS = new Set(['book a demo', 'get started with deel', 'get started with bridge', 'discuss your project']);
 const GET_STARTED_LABELS = new Set(['get started', 'start free']);
 const SOLUTION_CASE_STUDY_ROUTES: Record<string, NonPayrollSolutionType> = {
   '/solutions/payroll/eor': 'eor',
@@ -41,6 +42,18 @@ function normalizeLabel(value: string | null | undefined): string {
   return (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+const SOLUTION_BANNER_HEADINGS: Record<string, string> = {
+  '/solutions/payroll': 'Run payroll with confidence in India, the USA, and the UAE',
+  '/solutions/hr': 'See how Dechub-Bridge supports your people operations',
+  '/solutions/it': 'See the products that help you run IT ops anywhere',
+  '/solutions/benefits': 'See the products that help you improve global benefits',
+  '/solutions/hire': 'See the products that help you hire anywhere',
+  '/solutions/mobility': 'See the products that help you move teams anywhere',
+  '/solutions/embedded': 'See how you can start embedding today',
+  '/solutions/services': 'See the services that help you grow globally',
+  '/solutions/open-api': 'See how APIs can supercharge your stack',
+};
+
 function createSolutionFooterBanner(): HTMLElement {
   const section = document.createElement('section');
   section.className = 'solution-footer-banner';
@@ -59,7 +72,9 @@ function createSolutionFooterBanner(): HTMLElement {
 
   const title = document.createElement('h2');
   title.id = 'solution-footer-banner-title';
-  title.textContent = 'Run payroll with confidence in India, the USA, and the UAE';
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+  title.textContent = SOLUTION_BANNER_HEADINGS[pathname]
+    ?? 'Run payroll with confidence in India, the USA, and the UAE';
 
   const button = document.createElement('button');
   button.className = 'solution-footer-banner__button';
@@ -133,6 +148,19 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
   const [requestedServices, setRequestedServices] = useState<string[]>([]);
+
+  useEffect(() => {
+    const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (!SOLUTION_CASE_STUDY_ROUTES[pathname]) return;
+    let cleanup = () => {};
+    const frame = requestAnimationFrame(() => {
+      if (rootRef.current) cleanup = wireCustomerStoriesScrollbar(rootRef.current);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      cleanup();
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -240,6 +268,10 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
       const label = normalizeLabel(actionElement.textContent);
       const anchor = anchorElement ?? (actionElement.tagName === 'A' ? (actionElement as HTMLAnchorElement) : null);
       const href = anchor?.getAttribute('href')?.trim() ?? '';
+      // External links must bypass the app's internal navigation handling.
+      if (anchor && href && new URL(href, window.location.origin).origin !== window.location.origin) {
+        return;
+      }
       const normalizedHref = href ? (new URL(href, window.location.origin).pathname.replace(/\/+$/, '') || '/') : '';
 
       const isDemoTrigger =

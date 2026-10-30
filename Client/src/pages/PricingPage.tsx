@@ -1,8 +1,7 @@
-﻿import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import {
   PRICING_HTML_CLASSES,
   PRICING_INLINE_STYLES,
-  PRICING_PAGE_TITLE,
   PRICING_STYLESHEET_HREFS,
   PricingContent,
 } from './pricing/generatedPageData';
@@ -11,6 +10,34 @@ import SharedLandingPageLayout from '../components/common/SharedLandingPageLayou
 const STYLE_DATA_ATTR = 'data-pricing-style';
 const LINK_DATA_ATTR = 'data-pricing-stylesheet';
 const PRICING_PRIMARY_TABS = new Set(['hire', 'manage', 'pay', 'equip']);
+
+const DECHUB_PRICING_FAQS = [
+  ['How does Dechub-Bridge pricing work?', 'Pricing depends on the services you need, team size, and operating locations. Discuss your requirements with our team to confirm the scope and receive a tailored quote for India, the USA, or the UAE.'],
+  ['What costs should I confirm before getting started?', 'Ask for a written breakdown of platform and service fees, setup costs, payment processing, currency conversion, and any third-party charges that apply to your agreement.'],
+  ['How does Dechub-Bridge help manage a cross-border team?', 'Dechub-Bridge brings hiring requests, onboarding, contracts, workforce records, and payment coordination into a connected workflow. The services included depend on your selected plan and agreed scope.'],
+  ['What is included in employment support?', 'Our team will confirm the available employment support for your location, including onboarding, documents, payroll coordination, and responsibilities. Your proposal specifies which services are included.'],
+  ['Do I need a long-term commitment?', 'Contract length, billing frequency, minimum commitments, and cancellation terms are specified in your service agreement. Confirm these details with our team before signing up.'],
+  ['What happens if my team size changes?', 'Contact our team when adding or removing workers so we can confirm onboarding or offboarding steps and any impact on your fees. Notice periods and other obligations depend on your agreement and the worker’s location.'],
+  ['Which currencies and payment options are available?', 'Discuss INR, USD, and AED requirements with our team. Available payment methods, settlement timelines, conversion rates, and fees depend on your location and the agreed payment setup.'],
+  ['Can I see Dechub-Bridge before committing?', 'Yes. Book a demo to explore the platform, walk through your hiring and workforce needs, and discuss suitable services for India, the USA, and the UAE.'],
+] as const;
+
+function applyDechubPricingContent(root: HTMLElement): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    if (!node.parentElement?.closest('script, style') && node.nodeValue) {
+      node.nodeValue = node.nodeValue.replace(/\bDeel\b/g, 'Dechub-Bridge');
+    }
+    node = walker.nextNode();
+  }
+  root.querySelectorAll<HTMLElement>('[aria-label], img[alt]').forEach((element) => {
+    for (const attribute of ['aria-label', 'alt']) {
+      const value = element.getAttribute(attribute);
+      if (value) element.setAttribute(attribute, value.replace(/\bDeel\b/g, 'Dechub-Bridge'));
+    }
+  });
+}
 
 type PricingTabKey = 'hire' | 'manage' | 'pay' | 'equip';
 
@@ -77,7 +104,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
       {
         title: 'Scale compliantly',
         forWhom:
-          'Best for scaling teams that want Deel to own compliance and classification risk across contractors and employees.',
+          'Best for growing teams coordinating contractor and employee onboarding, documents, and workforce operations.',
         recommended: ['Contractor of Record', 'PEO', 'EOR', 'ATS & Talent'],
       },
       {
@@ -106,7 +133,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
       {
         title: 'Hire contractors',
         bestFor:
-          'Best for engaging global contractors. Manage them yourself, or use Deel as Contractor of Record to minimize risks.',
+          'Best for engaging global contractors. Manage them yourself, or use Dechub-Bridge as Contractor of Record to minimize risks.',
         prices: [
           { prefix: 'Starting at', amount: '$49', label: 'per contractor per month' },
           { amount: '$325', label: 'per contractor of record per month' },
@@ -124,13 +151,13 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
       {
         title: 'Hire full-time employees',
         bestFor:
-          "Best for employing full-time workers globally. Use EOR to hire abroad without an entity, or PEO for your US team. For a limited time, get Deel's PEO for 3 months free*.",
+          "Best for employing full-time workers globally. Use EOR to hire abroad without an entity, or PEO for your US team. Contact our team to confirm service availability and receive a tailored quote.",
         prices: [
           { prefix: 'Starting at', amount: '$125', label: 'per US PEO employee per month' },
           { amount: '$599', label: 'per EOR employee per month' },
         ],
         bullets: [
-          'EOR: Full legal employment in 130+ countries globally',
+          'Employment support based on your location and agreed service scope',
           'US PEO: Co-employment across all 50 US states with benefits included',
           'Remote, on-site, and field worker arrangements',
           'Managed payroll, tax filings, and reporting across EOR and PEO employees',
@@ -199,7 +226,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
         stripeColor: 'purple',
       },
       {
-        title: 'Full Deel HR',
+        title: 'Full Dechub-Bridge HR',
         bestFor: 'Best for teams wanting an end-to-end HR suite, from planning to offboarding.',
         featuresIntro: 'Everything in Core HR, Recruit and Develop, plus:',
         customPricingLabel: 'CUSTOM PRICING',
@@ -216,7 +243,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
         title: 'Essential',
         bestFor: 'Track visas, permits, and workforce eligibility.',
         featuresIntro: 'Centralized immigration dashboard with:',
-        groupLabel: 'Deel Mobility',
+        groupLabel: 'Dechub-Bridge Mobility',
         bullets: [
           'Eligibility tool for work permits & visas',
           'Document & expiry tracker',
@@ -242,7 +269,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
       {
         title: 'Managed',
         bestFor: 'Fully managed global immigration program.',
-        featuresIntro: 'Deel handles your immigration program end-to-end including:',
+        featuresIntro: 'Dechub-Bridge handles your immigration program end-to-end including:',
         bullets: [
           'Automated renewals',
           'Employee data corrections',
@@ -277,15 +304,15 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
         label: 'Global',
         cards: [
           {
-            title: 'Deel Payroll: Global',
+            title: 'Dechub-Bridge Payroll: Global',
             bestFor:
-              "Companies running payroll across multiple countries — with the flexibility to manage it themselves or rely on Deel's experts.",
+              "Companies running payroll across multiple countries — with the flexibility to manage it themselves or rely on Dechub-Bridge's experts.",
             prices: [
               {
                 prefix: 'Starting at',
                 amount: '$29',
                 label: 'per employee per month',
-                note: 'Managed payroll across 130+ countries',
+                note: 'Payroll support for agreed locations',
               },
               {
                 prefix: 'Run payroll yourself',
@@ -295,8 +322,8 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
               },
             ],
             bullets: [
-              'Managed payroll across 130+ countries',
-              'Dedicated Deel Payroll Manager with managed payroll',
+              'Payroll coordination across supported locations',
+              'Dedicated Dechub-Bridge Payroll Manager with managed payroll',
               'Run payroll yourself in select countries with real-time gross-to-net calculations',
               'Country-specific tax filings, statutory reporting and local compliance',
               'Multi-currency payroll with real-time reporting',
@@ -320,10 +347,10 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
           {
             title: 'Hire and pay employees globally',
             bestFor:
-              'Best for hiring full-time employees abroad without a legal entity, using Deel as EOR.',
+              'Best for hiring full-time employees abroad without a legal entity, using Dechub-Bridge as EOR.',
             prices: [{ prefix: 'Starting at', amount: '$599', label: 'per employee per month' }],
             bullets: [
-              'Full legal employment in 150+ countries — no entity needed',
+              'Employment support for your agreed locations and service scope',
               'Support for remote, on-site, and field workers',
               'Automated onboarding and compliance',
               'Benefits enrollment',
@@ -336,14 +363,14 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
           {
             title: 'Benefits Management: Global',
             groupLabel: 'Add-On',
-            bestFor: 'Best for companies on Deel Payroll wanting to manage benefits in the same system.',
+            bestFor: 'Best for companies on Dechub-Bridge Payroll wanting to manage benefits in the same system.',
             prices: [{ prefix: 'Starting at', amount: '$10', label: 'per employee per month' }],
             bullets: [
               "Payroll-synced deductions, so there's no reconciliation",
               'Employee enrollment and qualifying life events',
               'Renewal reporting and carrier integration',
-              "Plan quotes through Deel's broker network",
-              'Benefits administration in 130+ countries',
+              "Plan quotes through Dechub-Bridge's broker network",
+              'Benefits administration for supported locations',
             ],
             stripeColor: 'green',
           },
@@ -353,27 +380,27 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
         label: 'US',
         cards: [
           {
-            title: 'Deel Payroll: US',
-            bestFor: "Best for US companies needing compliant payroll—managed by you or Deel's experts.",
+            title: 'Dechub-Bridge Payroll: US',
+            bestFor: "Best for US companies needing compliant payroll—managed by you or Dechub-Bridge's experts.",
             prices: [{ prefix: 'Starting at', amount: '$29', label: 'per employee per month (self-service)' }],
             bullets: [
               'Self-serve or managed payroll across all 50 states',
               'Automated federal, state, and local tax logic',
               'W-2, W-4, and new-hire reporting handled automatically',
               'Compliance alerts, approval workflows, and error checks',
-              'Dedicated Deel Payroll Manager included with managed',
-              'Manage US and global payroll from one Deel platform',
+              'Dedicated Dechub-Bridge Payroll Manager included with managed',
+              'Manage US and global payroll from one Dechub-Bridge platform',
             ],
             stripeColor: 'green-dark',
           },
           {
             title: 'PEO',
             bestFor:
-              "Best for full-service US payroll, benefits, HR, and compliance. Requires a legal entity. For a limited time, get Deel's PEO for 3 months free*.",
+              "Best for full-service US payroll, benefits, HR, and compliance. Requires a legal entity. Contact our team to confirm service availability and receive a tailored quote.",
             prices: [{ prefix: 'Starting at', amount: '$125', label: 'per employee per month' }],
             bullets: [
-              'Payroll, tax, and health benefits managed by Deel',
-              'Ongoing Deel support from payroll, HR, and compliance experts',
+              'Payroll, tax, and health benefits managed by Dechub-Bridge',
+              'Ongoing Dechub-Bridge support from payroll, HR, and compliance experts',
               'All-in-one HR without costly overhead',
               'State registrations and compliance setup done for you',
               "Workers' compensation coverage and compliance monitoring for business protection",
@@ -383,14 +410,14 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
           {
             title: 'Benefits Management: Global',
             groupLabel: 'Add-On',
-            bestFor: 'Companies on Deel Payroll that want to manage benefits in the same system they run payroll.',
+            bestFor: 'Companies on Dechub-Bridge Payroll that want to manage benefits in the same system they run payroll.',
             prices: [{ prefix: 'Starting at', amount: '$10', label: 'per employee per month' }],
             bullets: [
               "Payroll-synced deductions, so there's no reconciliation",
               'Employee enrollment and qualifying life events',
               'Renewal reporting and carrier integration',
-              "Plan quotes through Deel's broker network",
-              'Benefits administration in 130+ countries',
+              "Plan quotes through Dechub-Bridge's broker network",
+              'Benefits administration for supported locations',
             ],
             stripeColor: 'green-dark',
           },
@@ -402,7 +429,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
     activeTabBackground: '#C4B1F9',
     activeTabTextColor: '#FFFFFF',
     footerTitle: 'Any individual item in a bundle can also be purchased standalone.',
-    footerNote: '*Managed: Fully set up, monitored, and maintained by the Deel IT team',
+    footerNote: '*Managed: Fully set up, monitored, and maintained by the Dechub-Bridge IT team',
     cards: [
       {
         title: 'Starter',
@@ -410,7 +437,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
           'Best for core IT coverage (device lifecycle, security, and endpoint protection) without the overhead.',
         prices: [{ prefix: 'Starting at', amount: '$49', label: 'per user per month' }],
         bullets: [
-          'Deel IT Platform',
+          'Dechub-Bridge IT Platform',
           'Device Lifecycle Management (DLM)* — ship, retrieve, repair, and store laptops globally',
           'Mobile Device Management (MDM)* — secure and control every device',
           'Endpoint Protection (EPP)* — automatic, always-on protection across every device',
@@ -423,7 +450,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
           'Best for core IT coverage plus live, always-on support for device and software issues.',
         prices: [{ prefix: 'Starting at', amount: '$139', label: 'per user per month' }],
         bullets: [
-          'Deel IT Platform',
+          'Dechub-Bridge IT Platform',
           'Device Lifecycle Management (DLM)* — ship, retrieve, repair, and store laptops globally',
           'Mobile Device Management (MDM)* — secure and control every device',
           'Endpoint Protection (EPP)* — automatic, always-on protection across every device',
@@ -437,7 +464,7 @@ const PRICING_TAB_CONTENT: Record<PricingTabKey, PricingTabSpec> = {
           'Best for everything in Growth, plus centralized access management across a global workforce.',
         prices: [{ prefix: 'Starting at', amount: '$149', label: 'per user per month' }],
         bullets: [
-          'Deel IT Platform',
+          'Dechub-Bridge IT Platform',
           'Device Lifecycle Management (DLM)* — ship, retrieve, repair, and store laptops globally',
           'Mobile Device Management (MDM) — secure and control every device',
           'Endpoint Protection (EPP)* — automatic, always-on protection across every device',
@@ -556,7 +583,7 @@ function wireTrustedCompaniesStrip(root: HTMLElement) {
 
 function removeKeyFiguresBottomPadding(root: HTMLElement) {
   const heading = Array.from(root.querySelectorAll<HTMLElement>('h1, h2, h3, p')).find((element) =>
-    (element.textContent ?? '').includes('Deel makes growing remote and international teams effortless'),
+    (element.textContent ?? '').includes('Dechub-Bridge makes growing remote and international teams effortless'),
   );
 
   if (!heading) {
@@ -1077,9 +1104,7 @@ function normalizePricingCardContentHeights(sectionGrid: HTMLElement) {
 }
 
 function renderSolutionFinder(accordionCard: HTMLElement, spec: PricingTabSpec) {
-  const wasExpanded =
-    accordionCard.getAttribute('data-solution-finder-expanded') === 'true' ||
-    accordionCard.querySelector<HTMLButtonElement>('button[aria-expanded]')?.getAttribute('aria-expanded') === 'true';
+  const wasExpanded = accordionCard.getAttribute('data-solution-finder-expanded') !== 'false';
 
   accordionCard.innerHTML = '';
   accordionCard.style.display = 'block';
@@ -1314,6 +1339,16 @@ function wirePricingPrimaryTabs(root: HTMLElement) {
   if (!sectionGrid || !cardStack) {
     return () => undefined;
   }
+
+  // Keep all pricing tabs and the solution finder inside the same centered shell.
+  [pricingRoot, pricingSection, cardStack, sectionGrid].forEach((container) => {
+    if (!container) return;
+    container.style.width = '100%';
+    container.style.maxWidth = '100%';
+    container.style.minWidth = '0';
+    container.style.boxSizing = 'border-box';
+    container.style.marginInline = 'auto';
+  });
 
   if (pricingEyebrow) {
     pricingEyebrow.style.marginTop = '8%';
@@ -1985,6 +2020,7 @@ export default function PricingPage() {
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    if (rootRef.current) applyDechubPricingContent(rootRef.current);
   }, []);
 
   useEffect(() => {
@@ -1992,7 +2028,7 @@ export default function PricingPage() {
     const previousHtmlClassName = document.documentElement.className;
     const previousBodyClassName = document.body.className;
 
-    document.title = PRICING_PAGE_TITLE;
+    document.title = 'Dechub-Bridge Pricing | Hiring, Payroll & Workforce Services';
 
     const mergedHtmlClasses = Array.from(
       new Set(
@@ -2103,13 +2139,33 @@ export default function PricingPage() {
         data-page="pricing-react"
         style={{
           width: '100%',
-          maxWidth: '100%',
+          maxWidth: '1704px',
+          marginInline: 'auto',
+          boxSizing: 'border-box',
           minWidth: 0,
           paddingInline: 'clamp(8px, 1.5vw, 24px)',
         }}
       >
         <PricingContent />
       </div>
+      <style>{`
+        [data-page="pricing-react"] .product-faqs { display: none !important; }
+        .dechub-pricing-faqs { width: 100%; max-width: 1312px; margin: 0 auto; padding: 64px 24px; color: #1b1b1b; }
+        .dechub-pricing-faqs h2 { margin: 0 0 32px; font-size: clamp(30px, 4vw, 44px); }
+        .dechub-pricing-faqs details { border-bottom: 1px solid #ddd; padding: 24px 0; }
+        .dechub-pricing-faqs summary { cursor: pointer; font-size: 20px; font-weight: 600; line-height: 1.5; }
+        .dechub-pricing-faqs summary:focus-visible { outline: 2px solid #6c3bd1; outline-offset: 6px; }
+        .dechub-pricing-faqs p { margin: 16px 0 0; max-width: 960px; color: #52525b; font-size: 16px; line-height: 1.7; }
+      `}</style>
+      <section className="dechub-pricing-faqs" aria-labelledby="dechub-pricing-faq-title">
+        <h2 id="dechub-pricing-faq-title">Frequently asked questions</h2>
+        {DECHUB_PRICING_FAQS.map(([question, answer]) => (
+          <details key={question}>
+            <summary>{question}</summary>
+            <p>{answer}</p>
+          </details>
+        ))}
+      </section>
     </SharedLandingPageLayout>
   );
 }

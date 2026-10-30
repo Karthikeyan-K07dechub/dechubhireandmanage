@@ -843,7 +843,10 @@ export default function Dashboard({
           )}
 
           {page === 'home' && <DashboardHome onNavigate={(nextPage) => setPage(nextPage as DashboardPage)} />}
-          {page === 'projects' && <ProjectsPage />}
+          {page === 'projects' && <ProjectsPage onRequestCreated={() => {
+            setHiringView('requests');
+            setPage('hiring');
+          }} />}
           {page === 'workers' && <WorkersPage initialHireRequestId={initialHireRequestId} />}
           {page === 'hiring' && (
             <HiringPage

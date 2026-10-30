@@ -6,7 +6,7 @@ const FASTRACK_CASE_STUDY_IMAGE = '/dechub-assets/fastrack-payroll-experience.pn
 const FASTRACK_CASE_STUDY_LOGO = '/dechub-assets/fastrack_logo.png';
 
 type SolutionType = 'payroll' | 'it' | 'hr' | 'benefits';
-type CaseStudyBrand = 'tanishq' | 'titan' | 'mia' | 'fastrack';
+type CaseStudyBrand = 'tanishq' | 'titan' | 'mia' | 'fastrack' | 'wildcraft';
 export type NonPayrollSolutionType =
   | 'it'
   | 'hr'
@@ -24,6 +24,7 @@ const BRAND_NAMES: Record<CaseStudyBrand, string> = {
   titan: 'Titan',
   mia: 'Mia',
   fastrack: 'Fastrack',
+  wildcraft: 'Wildcraft',
 };
 
 const CASE_STUDY_CARDS: Array<{
@@ -55,6 +56,12 @@ const CASE_STUDY_CARDS: Array<{
     image: FASTRACK_CASE_STUDY_IMAGE,
     imageAlt: 'Fastrack brand campaign',
     logo: FASTRACK_CASE_STUDY_LOGO,
+  },
+  {
+    brand: 'wildcraft',
+    image: '/dechub-assets/wildcraft-experience.png',
+    imageAlt: 'Wildcraft outdoor backpacks and equipment in a mountain-inspired showroom',
+    logo: '/dechub-assets/wildcraft-wordmark.svg',
   },
 ];
 
@@ -101,6 +108,10 @@ const ADDITIONAL_SOLUTION_COPY: Record<
 
 const SOLUTION_CASE_STUDY_COPY: Record<SolutionType, Record<CaseStudyBrand, { title: string; description: string }>> = {
   payroll: {
+    wildcraft: {
+      title: 'Bringing Every Retail Pay Run Together',
+      description: 'Keeping Wildcraft store and operations teams aligned with clear attendance inputs, salary reviews, and payment tracking across locations.',
+    },
     tanishq: {
       title: 'Simplifying Payroll for a Growing Retail Workforce',
       description:
@@ -123,6 +134,10 @@ const SOLUTION_CASE_STUDY_COPY: Record<SolutionType, Record<CaseStudyBrand, { ti
     },
   },
   it: {
+    wildcraft: {
+      title: 'Equipping Teams Wherever Work Takes Them',
+      description: 'Coordinating Wildcraft employee devices, store-system access, and equipment returns through a consistent IT workflow across retail and operations teams.',
+    },
     tanishq: {
       title: 'Creating a More Connected Digital Workplace',
       description:
@@ -145,6 +160,10 @@ const SOLUTION_CASE_STUDY_COPY: Record<SolutionType, Record<CaseStudyBrand, { ti
     },
   },
   hr: {
+    wildcraft: {
+      title: 'Connecting People Operations Across Locations',
+      description: 'Bringing Wildcraft employee records, new-joiner checklists, and leave coordination together for retail, warehouse, and office teams.',
+    },
     tanishq: {
       title: 'Bringing Employee Operations Together',
       description:
@@ -167,6 +186,10 @@ const SOLUTION_CASE_STUDY_COPY: Record<SolutionType, Record<CaseStudyBrand, { ti
     },
   },
   benefits: {
+    wildcraft: {
+      title: 'Making Employee Support Easier to Access',
+      description: 'Giving Wildcraft teams clearer benefits information, eligibility guidance, and enrollment steps across stores and operations locations.',
+    },
     tanishq: {
       title: 'Making Employee Benefits Easier to Navigate',
       description:
@@ -191,10 +214,10 @@ const SOLUTION_CASE_STUDY_COPY: Record<SolutionType, Record<CaseStudyBrand, { ti
 };
 
 function getSolutionCopy(
-  solution: NonPayrollSolutionType,
+  solution: NonPayrollSolutionType | 'payroll',
   brand: CaseStudyBrand,
 ): { title: string; description: string } {
-  if (solution === 'it' || solution === 'hr' || solution === 'benefits') {
+  if (solution === 'payroll' || solution === 'it' || solution === 'hr' || solution === 'benefits') {
     return SOLUTION_CASE_STUDY_COPY[solution][brand];
   }
 
@@ -210,6 +233,52 @@ function setImageSource(image: HTMLImageElement, src: string, alt: string): void
   image.alt = alt;
   image.removeAttribute('srcset');
   image.closest('picture')?.querySelectorAll('source').forEach((source) => source.remove());
+}
+
+function appendWildcraftCaseStudy(root: ParentNode, solution: SolutionType): void {
+  const carousel = root.querySelector<HTMLElement>('.swiper-slider-comparison-slider');
+  const wrapper = carousel?.querySelector<HTMLElement>('.swiper-wrapper');
+  if (!wrapper) return;
+  // Both the shared layout and page setup can prepare this carousel.
+  // Detect the actual brand image as well as our marker to keep setup idempotent.
+  const existingWildcraftSlides = Array.from(wrapper.children).filter((slide) =>
+    slide.querySelector('img[src="/dechub-assets/wildcraft-experience.png"]'),
+  );
+  if (existingWildcraftSlides.length) {
+    existingWildcraftSlides[0].setAttribute('data-wildcraft-case-study', 'true');
+    existingWildcraftSlides.slice(1).forEach((slide) => slide.remove());
+    return;
+  }
+  const template = wrapper.firstElementChild;
+  if (!template) return;
+
+  const slide = template.cloneNode(true) as HTMLElement;
+  slide.dataset.wildcraftCaseStudy = 'true';
+  // Swiper assigns slide positions again when the carousel initializes.
+  slide.removeAttribute('data-swiper-slide-index');
+  slide.classList.remove('swiper-slide-active', 'swiper-slide-next', 'swiper-slide-prev');
+  const card = slide.querySelector<HTMLElement>('.MuiCard-root');
+  const content = card?.querySelector<HTMLElement>('.MuiCardContent-root');
+  const heading = content?.querySelector<HTMLElement>('h3');
+  const logo = content?.querySelector<HTMLImageElement>('img');
+  const hero = card && Array.from(card.querySelectorAll<HTMLImageElement>('img')).find(
+    (image) => !image.closest('.MuiCardContent-root'),
+  );
+  if (!content || !heading || !logo || !hero) return;
+
+  const wildcraft = CASE_STUDY_CARDS.find((item) => item.brand === 'wildcraft')!;
+  const copy = getSolutionCopy(solution, 'wildcraft');
+  setImageSource(hero, wildcraft.image, wildcraft.imageAlt);
+  setImageSource(logo, wildcraft.logo, 'Wildcraft');
+  logo.style.filter = 'none';
+  heading.textContent = copy.title;
+  content.querySelectorAll('p').forEach((paragraph) => paragraph.remove());
+  const description = document.createElement('p');
+  description.style.cssText = 'margin: 12px 0 0; color: #5d6672; font-size: 14px; line-height: 1.6;';
+  description.textContent = copy.description;
+  heading.after(description);
+  wrapper.append(slide);
+  disableCaseStudyCardLinks(root);
 }
 
 export function applySolutionCaseStudyCards(root: ParentNode, solution: NonPayrollSolutionType): void {
@@ -234,7 +303,7 @@ export function applySolutionCaseStudyCards(root: ParentNode, solution: NonPayro
         .solution-case-study-section { padding: 64px 24px; background: #f7f5ff; }
         .solution-case-study-section__inner { max-width: 1312px; margin: 0 auto; }
         .solution-case-study-section__title { margin: 0 0 28px; color: #1b1b1b; font-size: clamp(28px, 3vw, 40px); }
-        .solution-case-study-section__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+        .solution-case-study-section__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
         .solution-case-study-section__card { overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 4px 20px #1b1b1b12; }
         .solution-case-study-section__hero { display: block; width: 100%; height: 190px; object-fit: cover; }
         .solution-case-study-section__content { padding: 20px; }
@@ -299,6 +368,10 @@ export function applySolutionCaseStudyCards(root: ParentNode, solution: NonPayro
   const slides: HTMLElement[] = [];
   for (const [index, card] of CASE_STUDY_CARDS.entries()) {
     const slide = (existingSlides[index] ?? template).cloneNode(true) as HTMLElement;
+    slide.removeAttribute('data-wildcraft-case-study');
+    if (card.brand === 'wildcraft') {
+      slide.dataset.wildcraftCaseStudy = 'true';
+    }
     const cardElement = slide.querySelector<HTMLElement>('.MuiCard-root');
     const cardContent = cardElement?.querySelector<HTMLElement>('.MuiCardContent-root');
     const heading = cardContent?.querySelector<HTMLElement>('h3');
@@ -479,6 +552,7 @@ export function updateMiaCaseStudy(root: ParentNode, solution: SolutionType): vo
 }
 
 export function updateFastrackCaseStudy(root: ParentNode, solution: SolutionType): void {
+  appendWildcraftCaseStudy(root, solution);
   const logo = root.querySelector<HTMLImageElement>('img[src*="bcglogo"]');
   const card = logo?.closest<HTMLElement>('.MuiCard-root');
   const heading = card?.querySelector<HTMLElement>('h3');

@@ -157,7 +157,12 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const normalizedEmail = email.trim().toLowerCase();
 
     const account = await CompanyAuth.findOne({ email: normalizedEmail });
-    if (!account || account.provider !== 'local') throw Errors.InvalidCredentials();
+    if (!account) {
+      throw new AppError('No account exists with this email. Please sign up first.', 401, 'USER_NOT_FOUND');
+    }
+    if (account.provider !== 'local') {
+      throw new AppError('This account uses Google sign-in. Please continue with Google.', 401, 'GOOGLE_SIGN_IN_REQUIRED');
+    }
     if (!await account.comparePassword(password)) throw Errors.InvalidCredentials();
 
     // Repair links for accounts created before this automatic matching existed.

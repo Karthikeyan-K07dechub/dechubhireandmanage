@@ -113,6 +113,10 @@ export default function LandingPageDeel({
         const label = normalizeLabel(actionElement.textContent);
       const anchor = anchorElement ?? (actionElement.tagName === 'A' ? (actionElement as HTMLAnchorElement) : null);
       const href = anchor?.getAttribute('href') ?? '';
+      // Let the browser open external links, including footer social profiles.
+      if (anchor && href && new URL(href, window.location.origin).origin !== window.location.origin) {
+        return;
+      }
       const normalizedHref = href ? (new URL(href, window.location.origin).pathname.replace(/\/+$/, '') || '/') : '';
 
       if (actionElement.id === 'navbar-logo-link' || href === '/') {
@@ -165,7 +169,7 @@ export default function LandingPageDeel({
 
       if (label === 'pricing') {
         event.preventDefault();
-        document.getElementById('deel-proof')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        navigateToInternalPath('/pricing');
         return;
       }
 

@@ -318,6 +318,7 @@ export default function CompanyAuthPage({
         <main className="cap-card-wrap">
           <div className="cap-card">
             <button className="cap-back" onClick={onBack}>
+              <span aria-hidden="true">← </span>
               {backLabel}
             </button>
 

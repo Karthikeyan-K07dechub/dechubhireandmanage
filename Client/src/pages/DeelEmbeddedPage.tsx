@@ -561,6 +561,7 @@ export default function DeelEmbeddedPage() {
     });
 
     const handleAnchorClick = (event: MouseEvent) => {
+      if (event.defaultPrevented) return;
       const target = event.target;
       if (!(target instanceof HTMLElement)) {
         return;
@@ -568,6 +569,12 @@ export default function DeelEmbeddedPage() {
 
       const anchor = target.closest('a[href]');
       if (!(anchor instanceof HTMLAnchorElement)) {
+        return;
+      }
+
+      // The shared layout opens enquiry forms for these actions.
+      if (anchor.getAttribute('data-demo-trigger') === 'true' ||
+          anchor.textContent?.trim().toLowerCase() === 'discuss your project') {
         return;
       }
 

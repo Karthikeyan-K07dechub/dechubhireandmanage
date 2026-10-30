@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const stories = [
   {
@@ -36,6 +36,42 @@ const stories = [
 function Section06() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState("next");
+  useEffect(() => {
+    const selectCustomer = (customer) => {
+      const index = stories.findIndex((story) => story.company === customer);
+      if (index >= 0) setActiveIndex(index);
+    };
+    const handleCustomer = (event) => selectCustomer(event.detail);
+    window.addEventListener('dechub:show-customer', handleCustomer);
+    const params = new URLSearchParams(window.location.search);
+    const customer = params.get('customer');
+    let frame;
+    let cancelled = false;
+    if (customer && window.location.hash === '#deel-testimonials') {
+      selectCustomer(customer);
+      if (params.get('from') === 'pricing') {
+        // Wait for the app's initial scroll reset and layout before landing here.
+        void document.fonts.ready.then(() => {
+          if (cancelled) return;
+          frame = requestAnimationFrame(() => {
+            frame = requestAnimationFrame(() => {
+              const section = document.getElementById('deel-testimonials');
+              if (!section) return;
+              const headerHeight = document.querySelector('.deel-scroll-header')?.getBoundingClientRect().height ?? 0;
+              window.scrollTo({ top: Math.max(0, section.getBoundingClientRect().top + window.scrollY - headerHeight - 16), behavior: 'instant' });
+            });
+          });
+        });
+      } else {
+        document.getElementById('deel-testimonials')?.scrollIntoView({ block: 'start' });
+      }
+    }
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      window.removeEventListener('dechub:show-customer', handleCustomer);
+    };
+  }, []);
   const activeStory = stories[activeIndex];
   const previousIndex = (activeIndex - 1 + stories.length) % stories.length;
   const nextIndex = (activeIndex + 1) % stories.length;

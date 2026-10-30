@@ -512,7 +512,7 @@ const HR_ECOSYSTEM_TABS: Record<
       'Set new hires up with the tools they need from the start. Deel HR connects to IT so equipment, access, and setup happen automatically and people are productive sooner.',
     ctaLabel: 'See how HR and IT work together',
     ctaLink: '/solutions/it/',
-    imageSrc: '/solutions/hr/assets/images/it_2x_cf1acd6cff-563c9977d8.webp',
+    imageSrc: '/solutions/hr/assets/images/hr-it-onboarding-delivery.png',
   },
   Services: {
     title: 'Access HR support when you need it',

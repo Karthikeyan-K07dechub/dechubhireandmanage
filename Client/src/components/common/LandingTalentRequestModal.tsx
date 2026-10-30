@@ -11,6 +11,7 @@ interface LandingTalentRequestModalProps {
   onClose: () => void;
   requestedServices?: string[];
   onSuccess?: () => void;
+  variant?: 'demo' | 'project';
 }
 
 interface LandingTalentRequestFormValues {
@@ -39,6 +40,7 @@ export default function LandingTalentRequestModal({
   onClose,
   requestedServices = [],
   onSuccess,
+  variant = 'demo',
 }: LandingTalentRequestModalProps) {
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -63,6 +65,31 @@ export default function LandingTalentRequestModal({
   });
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Tab') return;
+      const controls = overlayRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, select, textarea');
+      if (!controls?.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    const frame = requestAnimationFrame(() => overlayRef.current?.querySelector<HTMLButtonElement>('button')?.focus());
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [isOpen, onClose, portalHost]);
 
   useEffect(() => {
     requestedServicesRef.current = requestedServices;
@@ -239,7 +266,7 @@ export default function LandingTalentRequestModal({
   return createPortal(
     <div
       ref={overlayRef}
-      className="ltrm-overlay"
+      className={`ltrm-overlay${variant === 'project' ? ' ltrm-dashboard' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="landing-talent-request-title"
@@ -258,8 +285,8 @@ export default function LandingTalentRequestModal({
         {!isSubmitted ? (
           <>
             <div className="ltrm-header">
-              <span className="ltrm-kicker">Book a demo</span>
-              <h2 id="landing-talent-request-title">Tell us who you want to hire</h2>
+              <span className="ltrm-kicker">{variant === 'project' ? 'Create project' : 'Book a demo'}</span>
+              <h2 id="landing-talent-request-title">{variant === 'project' ? 'Tell us about your project' : 'Tell us who you want to hire'}</h2>
               <p>
                 Share your requirement and Dechub will review the brief, shortlist the right marketplace candidates,
                 and send profile links to your company email.
@@ -359,6 +386,7 @@ export default function LandingTalentRequestModal({
                   placeholder="Describe the role, skills, team context, expected deliverables, timeline, and anything else that will help us shortlist the right candidate."
                   {...register('projectDescription', {
                     required: 'Project description is required.',
+                    maxLength: { value: 3000, message: 'Use 3,000 characters or fewer.' },
                   })}
                 />
                 {errors.projectDescription ? <small>{errors.projectDescription.message}</small> : null}
@@ -379,7 +407,7 @@ export default function LandingTalentRequestModal({
         ) : (
           <div className="ltrm-success">
             <span className="ltrm-kicker">Request submitted</span>
-            <h2>Thanks, we’ve received your hiring brief.</h2>
+            <h2>{variant === 'project' ? 'Thanks, we’ve received your project request.' : 'Thanks, we’ve received your hiring brief.'}</h2>
             <p>
               Dechub admin will review your requirement, onboard the best-fit candidates, and send their marketplace
               profile links to your company email. When you open any link, you’ll land directly on that candidate’s

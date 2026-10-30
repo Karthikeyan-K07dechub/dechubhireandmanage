@@ -125,7 +125,7 @@ function Section03() {
             <a
               key={card.title}
               href={card.href}
-              className="group"
+              className="group deel-solution-card"
               style={{
                 position: "relative",
                 display: "flex",
@@ -167,6 +167,7 @@ function Section03() {
                 }}
               >
                 <div
+                  className="deel-solution-card__image-frame"
                   style={{
                     width: "100%",
                     height: "100%",
@@ -176,6 +177,7 @@ function Section03() {
                   }}
                 >
                   <img
+                    className="deel-solution-card__image"
                     src={card.image}
                     alt={card.alt}
                     loading="lazy"

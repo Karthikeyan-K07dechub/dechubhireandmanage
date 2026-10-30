@@ -192,6 +192,13 @@ api.interceptors.response.use(
 // ─── Error normalizer ─────────────────────────────────────────────────────────
 
 export function normalizeError(err: unknown): ApiError {
+  // API interceptors already normalize errors; preserve them on subsequent calls.
+  if (err && typeof err === 'object' && !axios.isAxiosError(err)) {
+    const normalized = err as Partial<ApiError>;
+    if (typeof normalized.code === 'string' && typeof normalized.message === 'string') {
+      return { code: normalized.code, message: normalized.message, fields: normalized.fields };
+    }
+  }
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as {
       code?: string;

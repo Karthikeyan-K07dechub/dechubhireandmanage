@@ -2,6 +2,21 @@
   background: #fff;
 }
 
+.deel-clone-root .deel-scroll-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 500;
+  transition: transform 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deel-clone-root .deel-scroll-header {
+    transition: none;
+  }
+}
+
 .deel-clone-app-root {
   width: 100%;
   max-width: none;
@@ -25,6 +40,48 @@
   width: 122px;
   height: auto;
   max-width: 122px !important;
+}
+
+@media (max-width: 480px) {
+  .deel-clone-root .deel-scroll-header nav {
+    padding-inline: 12px;
+  }
+
+  .deel-clone-root .deel-scroll-header .mui-n9ndkr {
+    gap: 12px;
+    justify-content: space-between;
+  }
+
+  .deel-clone-root #navbar-logo-link {
+    flex-shrink: 0;
+  }
+
+  .deel-clone-root #navbar-logo-link img {
+    width: 88px;
+    max-width: 88px !important;
+  }
+
+  .deel-clone-root .deel-navbar-actions {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .deel-clone-root .deel-navbar-actions .mui-fy11xf {
+    gap: 8px;
+  }
+
+  .deel-clone-root .deel-navbar-actions .mui-ti8o1k,
+  .deel-clone-root .deel-navbar-actions .mui-1wshw4o {
+    padding-inline: 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .deel-clone-root .deel-navbar-actions .mui-1xqo0rs {
+    width: 28px;
+    min-width: 28px;
+    padding-inline: 2px;
+  }
 }
 
 .deel-clone-root .deel-footer-logo {
@@ -1432,5 +1489,39 @@
   .deel-clone-root .deel-hero__rocket-trail {
     animation: none;
     opacity: 0;
+  }
+}
+.deel-clone-root footer a.mui-j04pfz {
+  display: inline-flex;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.deel-clone-root footer a.mui-j04pfz img {
+  cursor: inherit;
+}
+
+.deel-clone-root .deel-solution-card__image-frame {
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.deel-clone-root .deel-solution-card__image {
+  transition: transform 250ms ease;
+}
+
+@media (hover: hover) {
+  .deel-clone-root .deel-solution-card:hover .deel-solution-card__image {
+    transform: scale(1.05);
+  }
+}
+
+.deel-clone-root .deel-solution-card:focus-visible .deel-solution-card__image {
+  transform: scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deel-clone-root .deel-solution-card__image {
+    transition: none;
   }
 }
