@@ -25,7 +25,7 @@
 .db-sidebar {
   width: 240px;
   min-height: 100vh;
-  background: #0a1628;
+  background: linear-gradient(180deg, #4b2bb8 0%, #33197f 54%, #25105f 100%);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -41,40 +41,36 @@
   position: absolute;
   top: -80px; left: -80px;
   width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(0,201,167,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(220, 209, 255, 0.22) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .db-sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 24px 20px 20px;
+  justify-content: center;
+  padding: 16px 20px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
-.db-logo-mark {
-  width: 32px; height: 32px;
-  background: linear-gradient(135deg, #00c9a7, #2563eb);
-  border-radius: 9px;
-  display: grid; place-items: center;
-  flex-shrink: 0;
+.db-platform-logo {
+  width: 108px;
+  height: 34px;
+  overflow: hidden;
+  position: relative;
 }
 
-.db-logo-mark svg {
-  width: 18px; height: 18px;
-  fill: white;
-}
-
-.db-logo-text {
-  font-size: 17px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.3px;
+.db-platform-logo img {
+  width: 160px;
+  height: auto;
+  position: absolute;
+  top: -22px;
+  left: -28px;
+  filter: brightness(0) invert(1);
 }
 
 .db-company-switcher {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 10px;
   padding: 14px 20px;
@@ -84,12 +80,12 @@
   transition: background 0.15s;
 }
 
-.db-company-switcher:hover { background: rgba(255,255,255,0.06); }
+.db-company-switcher:hover { background: rgba(255,255,255,0.12); }
 
 .db-company-avatar {
   width: 30px; height: 30px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: linear-gradient(135deg, #b8a5ff, #774cf2);
   display: grid; place-items: center;
   font-size: 13px; font-weight: 700;
   color: #fff; flex-shrink: 0;
@@ -120,7 +116,7 @@
   padding: 16px 20px 6px;
   font-size: 10px;
   font-weight: 700;
-  color: rgba(255,255,255,0.25);
+  color: rgba(234,228,255,0.58);
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
@@ -142,11 +138,11 @@
 }
 
 .db-nav-item:hover {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.12);
 }
 
 .db-nav-item.active {
-  background: rgba(0,201,167,0.12);
+  background: rgba(255,255,255,0.18);
 }
 
 .db-nav-icon {
@@ -163,7 +159,7 @@
 }
 
 .db-nav-item:hover .db-nav-label { color: rgba(255,255,255,0.85); }
-.db-nav-item.active .db-nav-label { color: #00c9a7; font-weight: 600; }
+.db-nav-item.active .db-nav-label { color: #ffffff; font-weight: 700; }
 
 .db-nav-group {
   display: grid;
@@ -190,13 +186,13 @@
 }
 
 .db-nav-subitem:hover {
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.82);
+  background: rgba(255,255,255,0.1);
+  color: #ffffff;
 }
 
 .db-nav-subitem.active {
-  background: rgba(0,201,167,0.1);
-  color: #00c9a7;
+  background: rgba(210,196,255,0.2);
+  color: #e5ddff;
   font-weight: 600;
 }
 
@@ -223,7 +219,7 @@
 .db-user-avatar {
   width: 32px; height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00c9a7, #2563eb);
+  background: linear-gradient(135deg, #b8a5ff, #774cf2);
   display: grid; place-items: center;
   font-size: 13px; font-weight: 700;
   color: #fff; flex-shrink: 0;

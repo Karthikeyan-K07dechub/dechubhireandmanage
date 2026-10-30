@@ -23,3 +23,4 @@ Server/.local-mongodb/
 
 # Workspace scratch folders
 tmp_*/
+merge-recovery/

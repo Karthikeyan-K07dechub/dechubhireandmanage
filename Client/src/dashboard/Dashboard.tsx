@@ -630,12 +630,9 @@ export default function Dashboard({
       )}
       <aside className={`db-sidebar${mobileNavOpen ? ' db-sidebar-open' : ''}`}>
         <div className="db-sidebar-logo">
-          <div className="db-logo-mark">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+          <div className="db-platform-logo">
+            <img src="/dechub-assets/email/bridge-logo-email.png" alt="Bridge" />
           </div>
-          <span className="db-logo-text">Dechub-Bridge</span>
         </div>
 
         <div className="db-company-switcher">

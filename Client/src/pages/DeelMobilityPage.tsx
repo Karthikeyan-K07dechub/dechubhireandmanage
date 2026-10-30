@@ -653,6 +653,9 @@ function wireCountryDirectory(root: HTMLElement) {
   }
 
   const wrapper = trigger.closest('.mui-vyagqu');
+  if (!(wrapper instanceof HTMLElement)) {
+    return () => undefined;
+  }
   const countrySection = wrapper?.parentElement;
   if (!wrapper || !countrySection) {
     return () => undefined;

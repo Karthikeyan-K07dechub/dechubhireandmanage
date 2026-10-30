@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" role="img" aria-label="Bridge talent profile placeholder">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5c2bd9"/>
+      <stop offset="0.52" stop-color="#7d4cf2"/>
+      <stop offset="1" stop-color="#b8a5ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.15" r="0.78">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="360" fill="url(#background)"/>
+  <rect width="800" height="360" fill="url(#glow)"/>
+  <circle cx="650" cy="-40" r="230" fill="#ffffff" fill-opacity="0.09"/>
+  <circle cx="90" cy="390" r="190" fill="#20104d" fill-opacity="0.1"/>
+  <path d="M0 286C168 232 313 257 446 210C571 165 657 92 800 84V360H0Z" fill="#ffffff" fill-opacity="0.1"/>
+  <text x="48" y="74" fill="#ffffff" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="1">BRIDGE TALENT</text>
+  <text x="48" y="120" fill="#ffffff" fill-opacity="0.84" font-family="Arial, sans-serif" font-size="21">Global professionals, ready to contribute.</text>
+</svg>
