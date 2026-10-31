@@ -28,7 +28,7 @@ interface CompanyOnboardingPageProps {
   hideProgress?: boolean;
   completeAfterStep1?: boolean;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: () => void | Promise<void>;
 }
 
 const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
@@ -85,8 +85,8 @@ function mergeCompanyData(state: AppState, data: MyCompanyData): AppState {
       referralSource: typeof company.referralSource === 'string' ? company.referralSource : state.formData.referralSource,
       billCurrency: typeof company.billCurrency === 'string' ? company.billCurrency : state.formData.billCurrency,
       billingEmail: typeof company.billingEmail === 'string' ? company.billingEmail : state.formData.billingEmail,
-      payCycle: typeof company.payCycle === 'string' ? company.payCycle : state.formData.payCycle,
-      contractCurrency: typeof company.contractCurrency === 'string' ? company.contractCurrency : state.formData.contractCurrency,
+      payCycle: typeof company.payCycle === 'string' && company.payCycle.trim() ? company.payCycle : state.formData.payCycle,
+      contractCurrency: typeof company.contractCurrency === 'string' && company.contractCurrency.trim() ? company.contractCurrency : state.formData.contractCurrency,
       companyTimezone: typeof company.companyTimezone === 'string' ? company.companyTimezone : state.formData.companyTimezone,
       hrEmail: typeof company.hrEmail === 'string' ? company.hrEmail : state.formData.hrEmail,
       notif1: typeof company.notif1 === 'boolean' ? company.notif1 : state.formData.notif1,
@@ -399,6 +399,7 @@ export default function CompanyOnboardingPage({
   };
 
   const completeSignup: AppHandlers['completeSignup'] = async () => {
+    if (state.loadingAction === 'complete') return;
     const errors = validateStep(6, state.formData, state.uploadedDocs);
     if (Object.keys(errors).length > 0) {
       setState((prev) => ({ ...prev, errors }));
@@ -418,7 +419,7 @@ export default function CompanyOnboardingPage({
         notif3: state.formData.notif3,
         notif4: state.formData.notif4,
       });
-      onComplete();
+      await onComplete();
     } catch (err) {
       const apiError = err as ApiError;
       setState((prev) => ({

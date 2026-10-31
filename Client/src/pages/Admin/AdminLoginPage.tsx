@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api, adminTokenStore, tokenStore } from '../../api/client';
+import { api, adminTokenStore } from '../../api/client';
 import type { ApiError } from '../../api/client';
 import '../login.css';
 
@@ -31,8 +31,7 @@ export default function AdminLoginPage({ onLogin, onBack }: AdminLoginPageProps)
         },
       );
       const data = res.data.data;
-      // Clear company tokens and set admin tokens exclusively
-      tokenStore.clear();
+      // Admin credentials are stored separately from the company session.
       adminTokenStore.set(data.accessToken, data.refreshToken);
       onLogin();
     } catch (err: unknown) {

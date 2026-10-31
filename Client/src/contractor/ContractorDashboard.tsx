@@ -1991,7 +1991,7 @@ export default function ContractorDashboard({
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'projects', label: 'Projects' },
     { id: 'invoices', label: 'Invoices' },
-    { id: 'contract', label: 'Contract' },
+    { id: 'contract', label: 'Contracts' },
     { id: 'profile', label: 'Profile' },
     { id: 'notifications', label: unreadNotificationCount > 0 ? `Notifications (${unreadNotificationCount})` : 'Notifications' },
   ];
@@ -2047,7 +2047,7 @@ export default function ContractorDashboard({
         />
       )}
 
-      {page === 'projects' && <ProjectTasksPage />}
+      {page === 'projects' && <ProjectTasksPage readOnly={isPreviewMode} onNavigate={(tab, projectId) => { const params = new URLSearchParams(window.location.search); params.set('project', projectId); params.set('tab', tab); window.history.replaceState({}, '', window.location.pathname + '?' + params.toString()); setPage(tab); }} />}
 
       {page === 'invoices' && (
         <InvoicesPage
@@ -2057,7 +2057,7 @@ export default function ContractorDashboard({
         />
       )}
 
-      {page === 'contract' && <ContractPage profile={profile} readOnly={isPreviewMode} />}
+      {page === 'contract' && <><ProjectTasksPage contracts readOnly={isPreviewMode} onNavigate={(tab, projectId) => { const params = new URLSearchParams(window.location.search); params.set('project', projectId); params.set('tab', tab); window.history.replaceState({}, '', window.location.pathname + '?' + params.toString()); setPage(tab); }} /><ContractPage profile={profile} readOnly={isPreviewMode} /></>}
 
       {page === 'profile' && (
         <ProfilePage

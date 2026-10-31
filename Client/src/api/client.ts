@@ -107,15 +107,18 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 // ─── Response interceptor — refresh token on 401 ─────────────────────────────
 
-let isRefreshing = false;
-let pendingQueue: Array<{
+type RefreshState = { isRefreshing: boolean; pendingQueue: Array<{
   resolve: (token: string) => void;
   reject:  (err: unknown)  => void;
-}> = [];
+}> };
+const refreshStates: Record<'admin' | 'company', RefreshState> = {
+  admin: { isRefreshing: false, pendingQueue: [] },
+  company: { isRefreshing: false, pendingQueue: [] },
+};
 
-function drainQueue(token: string | null, err: unknown) {
-  pendingQueue.forEach((p) => (token ? p.resolve(token) : p.reject(err)));
-  pendingQueue = [];
+function drainQueue(state: RefreshState, token: string | null, err: unknown) {
+  state.pendingQueue.forEach((p) => (token ? p.resolve(token) : p.reject(err)));
+  state.pendingQueue = [];
 }
 
 api.interceptors.response.use(
@@ -123,6 +126,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const isAdminRoute = typeof original.url === 'string' && original.url.startsWith('/admin/');
+    const refreshState = refreshStates[isAdminRoute ? 'admin' : 'company'];
 
     if (
       error.response?.status === 401 &&
@@ -136,9 +140,9 @@ api.interceptors.response.use(
     ) {
       original._retry = true;
 
-      if (isRefreshing) {
+      if (refreshState.isRefreshing) {
         return new Promise((resolve, reject) => {
-          pendingQueue.push({
+          refreshState.pendingQueue.push({
             resolve: (token) => {
               original.headers.Authorization = `Bearer ${token}`;
               resolve(api(original));
@@ -148,7 +152,7 @@ api.interceptors.response.use(
         });
       }
 
-      isRefreshing = true;
+      refreshState.isRefreshing = true;
       
       // Use the appropriate token store based on the route
       const currentTokenStore = isAdminRoute ? adminTokenStore : tokenStore;
@@ -156,7 +160,8 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         currentTokenStore.clear();
-        isRefreshing = false;
+        refreshState.isRefreshing = false;
+        window.dispatchEvent(new Event(isAdminRoute ? 'dechub:admin-session-expired' : 'dechub:session-expired'));
         return Promise.reject(normalizeError(error));
       }
 
@@ -170,18 +175,18 @@ api.interceptors.response.use(
         );
         const { accessToken, refreshToken: newRefresh } = unwrapApiData(res.data);
         currentTokenStore.set(accessToken, newRefresh);
-        drainQueue(accessToken, null);
+        drainQueue(refreshState, accessToken, null);
         if (original.headers) {
           original.headers.Authorization = `Bearer ${accessToken}`;
         }
         return api(original);
       } catch (refreshErr) {
         currentTokenStore.clear();
-        drainQueue(null, refreshErr);
-        window.dispatchEvent(new Event('dechub:session-expired'));
+        drainQueue(refreshState, null, refreshErr);
+        window.dispatchEvent(new Event(isAdminRoute ? 'dechub:admin-session-expired' : 'dechub:session-expired'));
         return Promise.reject(normalizeError(refreshErr as AxiosError));
       } finally {
-        isRefreshing = false;
+        refreshState.isRefreshing = false;
       }
     }
 

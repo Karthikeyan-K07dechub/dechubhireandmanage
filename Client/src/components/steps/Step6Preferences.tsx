@@ -21,22 +21,29 @@ export default function Step6Preferences({ state, handlers }: { state: AppState;
           <RadioCard selected={formData.payCycle === 'biweekly'} title="Bi-weekly" text="Every 2 weeks" onClick={() => handleInputChange('payCycle', 'biweekly')} />
           <RadioCard selected={formData.payCycle === 'weekly'} title="Weekly" text="Every Friday" onClick={() => handleInputChange('payCycle', 'weekly')} />
         </div>
+        {errors.payCycle && <div className="field-error show" role="alert">{errors.payCycle}</div>}
       </div>
 
       <div className="form-row">
         <div className="form-group">
           <label>Default contract currency <span className="req">*</span></label>
           <select value={formData.contractCurrency} onChange={(e) => handleInputChange('contractCurrency', e.target.value)}>
+            <option value="">Select a currency...</option>
+            <option value="INR">INR</option>
+            <option value="AED">AED</option>
             <option value="USD">🇺🇸 USD</option>
             <option value="GBP">🇬🇧 GBP</option>
             <option value="EUR">🇪🇺 EUR</option>
             <option value="CAD">🇨🇦 CAD</option>
             <option value="AUD">🇦🇺 AUD</option>
           </select>
+          {errors.contractCurrency && <div className="field-error show" role="alert">{errors.contractCurrency}</div>}
         </div>
         <div className="form-group">
           <label>Company timezone <span className="req">*</span></label>
           <select value={formData.companyTimezone} onChange={(e) => handleInputChange('companyTimezone', e.target.value)}>
+            <option value="">Select your timezone...</option>
+            {formData.companyTimezone && !['America/New_York', 'America/Chicago', 'America/Los_Angeles', 'Europe/London', 'Europe/Berlin', 'Asia/Kolkata', 'Asia/Singapore', 'Australia/Sydney'].includes(formData.companyTimezone) && <option value={formData.companyTimezone}>{formData.companyTimezone}</option>}
             <option value="America/New_York">🇺🇸 Eastern (ET)</option>
             <option value="America/Chicago">🇺🇸 Central (CT)</option>
             <option value="America/Los_Angeles">🇺🇸 Pacific (PT)</option>
@@ -46,6 +53,7 @@ export default function Step6Preferences({ state, handlers }: { state: AppState;
             <option value="Asia/Singapore">🇸🇬 Singapore (SGT)</option>
             <option value="Australia/Sydney">🇦🇺 Sydney (AEST)</option>
           </select>
+          {errors.companyTimezone && <div className="field-error show" role="alert">{errors.companyTimezone}</div>}
         </div>
       </div>
 
@@ -69,6 +77,8 @@ export default function Step6Preferences({ state, handlers }: { state: AppState;
         </div>
       </div>
 
+      {Object.keys(errors).length > 0 && <p role="alert" style={{ color: '#b91c1c', fontSize: 13 }}>Please complete the highlighted fields above, then click Complete Setup.</p>}
+      {state.serverError && <p role="alert" style={{ color: '#b91c1c', fontSize: 13 }}>{state.serverError}</p>}
       <div className="btn-row">
         <button type="button" className="btn-secondary" onClick={() => goToStep(5)}>← Back</button>
         <ActionButton loading={loadingAction === 'complete'} onClick={completeSignup}>

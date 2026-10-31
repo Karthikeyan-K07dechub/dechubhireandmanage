@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { getMyCompany } from '../../api/company.api';
 import type { ApiError } from '../../api/client';
-import { createPublicTalentRequest } from '../../api/talentRequests.api';
+import { createCompanyProjectRequest, createPublicTalentRequest } from '../../api/talentRequests.api';
 import './landing-talent-request-modal.css';
 
 interface LandingTalentRequestModalProps {
@@ -15,6 +15,10 @@ interface LandingTalentRequestModalProps {
 }
 
 interface LandingTalentRequestFormValues {
+  projectName: string;
+  otherProjectType: string;
+  expectedStartDate: string;
+  expectedEndDate: string;
   companyName: string;
   companyWebsite: string;
   projectType: string;
@@ -50,10 +54,16 @@ export default function LandingTalentRequestModal({
     register,
     reset,
     handleSubmit,
+    getValues,
+    watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<LandingTalentRequestFormValues>({
     mode: 'onChange',
     defaultValues: {
+      projectName: '',
+      otherProjectType: '',
+      expectedStartDate: '',
+      expectedEndDate: '',
       companyName: '',
       companyWebsite: '',
       projectType: '',
@@ -198,7 +208,13 @@ export default function LandingTalentRequestModal({
     }
 
     try {
-      await createPublicTalentRequest({
+      const submitted = variant === 'project' ? await createCompanyProjectRequest({
+        projectName: values.projectName.trim(),
+        projectType: values.projectType === 'Other' ? values.otherProjectType.trim() : values.projectType,
+        projectDescription: values.projectDescription.trim(),
+        expectedStartDate: values.expectedStartDate,
+        expectedEndDate: values.expectedEndDate,
+      }) : await createPublicTalentRequest({
         companyName: values.companyName.trim(),
         companyWebsite: values.companyWebsite.trim(),
         projectType: values.projectType,
@@ -215,7 +231,12 @@ export default function LandingTalentRequestModal({
         // Ignore storage cleanup failures.
       }
 
-      onSuccess?.();
+      const datesSaved = variant !== 'project' || (
+        submitted.expectedStartDate?.slice(0, 10) === values.expectedStartDate &&
+        submitted.expectedEndDate?.slice(0, 10) === values.expectedEndDate
+      );
+      if (datesSaved) onSuccess?.();
+      else setSubmitError('Your request was sent, but the server did not confirm saving the expected dates. Do not submit it again. Restart the updated backend and ask your admin to restore the dates on this request.');
       setIsSubmitted(true);
     } catch (err) {
       const apiError = err as ApiError;
@@ -295,6 +316,12 @@ export default function LandingTalentRequestModal({
 
             <form className="ltrm-form" onSubmit={onSubmit} noValidate>
               <div className="ltrm-grid">
+                {variant === 'project' && <label className="ltrm-field">
+                  <span>Project name *</span>
+                  <input type="text" placeholder="Enter project name" {...register('projectName', { required: 'Project name is required.', maxLength: { value: 180, message: 'Use 180 characters or fewer.' }, validate: value => Boolean(value.trim()) || 'Enter a project name.' })} />
+                  {errors.projectName && <small>{errors.projectName.message}</small>}
+                </label>}
+                {variant !== 'project' && <>
                 <label className="ltrm-field">
                   <span>Company name *</span>
                   <input
@@ -353,6 +380,7 @@ export default function LandingTalentRequestModal({
                   {errors.contactEmail ? <small>{errors.contactEmail.message}</small> : null}
                 </label>
 
+                </>}
                 <label className="ltrm-field">
                   <span>Project type *</span>
                   <select
@@ -361,7 +389,7 @@ export default function LandingTalentRequestModal({
                     })}
                   >
                     <option value="">Please Select</option>
-                    {PROJECT_TYPE_OPTIONS.map((option) => (
+                    {(variant === 'project' ? [...PROJECT_TYPE_OPTIONS, 'Other'] : PROJECT_TYPE_OPTIONS).map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
@@ -370,16 +398,38 @@ export default function LandingTalentRequestModal({
                   {errors.projectType ? <small>{errors.projectType.message}</small> : null}
                 </label>
 
-                <label className="ltrm-field">
+                {variant !== 'project' && (                <label className="ltrm-field">
                   <span>Phone number</span>
                   <input
                     type="tel"
                     placeholder="+1 555 123 4567"
                     {...register('phoneNumber')}
                   />
-                </label>
+                </label>)}
               </div>
 
+              {variant === 'project' && watch('projectType') === 'Other' && <label className="ltrm-field ltrm-field-full">
+                <span>Specify project type *</span>
+                <input type="text" placeholder="Enter your project type" {...register('otherProjectType', { shouldUnregister: true, required: 'Please specify the project type.', maxLength: { value: 100, message: 'Use 100 characters or fewer.' }, validate: value => Boolean(value.trim()) || 'Enter a project type.' })} />
+                {errors.otherProjectType && <small>{errors.otherProjectType.message}</small>}
+              </label>}
+              {variant === 'project' && (
+                <div className="ltrm-grid ltrm-field-full">
+                  <label className="ltrm-field">
+                    <span>Expected start date *</span>
+                    <input type="date" {...register('expectedStartDate', { required: 'Expected start date is required.', deps: ['expectedEndDate'] })} />
+                    {errors.expectedStartDate && <small>{errors.expectedStartDate.message}</small>}
+                  </label>
+                  <label className="ltrm-field">
+                    <span>Expected end date *</span>
+                    <input type="date" min={watch('expectedStartDate') || undefined} {...register('expectedEndDate', {
+                      required: 'Expected end date is required.',
+                      validate: value => value >= getValues('expectedStartDate') || 'End date must be on or after start date.',
+                    })} />
+                    {errors.expectedEndDate && <small>{errors.expectedEndDate.message}</small>}
+                  </label>
+                </div>
+              )}
               <label className="ltrm-field ltrm-field-full">
                 <span>Tell us about your project *</span>
                 <textarea
@@ -406,6 +456,7 @@ export default function LandingTalentRequestModal({
           </>
         ) : (
           <div className="ltrm-success">
+            {submitError && <div className="ltrm-message" role="alert">{submitError}</div>}
             <span className="ltrm-kicker">Request submitted</span>
             <h2>{variant === 'project' ? 'Thanks, we’ve received your project request.' : 'Thanks, we’ve received your hiring brief.'}</h2>
             <p>

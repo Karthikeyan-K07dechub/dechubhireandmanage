@@ -1,0 +1,47 @@
+.db-notification-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(10, 22, 40, .45);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+.db-notification-dialog {
+  box-sizing: border-box;
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 48px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  color: #0a1628;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 70px #0003;
+  font-family: inherit;
+}
+.db-notification-dialog > header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.db-notification-dialog h2 { margin: 0; font-size: 22px; }
+.db-notification-dialog p { font-size: 13px; color: #526580; margin: 8px 0; }
+.db-notification-dialog > button { align-self: flex-start; flex-shrink: 0; }
+.db-notification-dialog header button { flex-shrink: 0; }
+.db-notification-list { display: grid; gap: 10px; margin-top: 16px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 6px 2px 2px; }
+.db-notification-item { display: grid; gap: 7px; text-decoration: none; color: #0a1628; border: 1px solid #e0e7ef; border-radius: 10px; padding: 14px; overflow-wrap: anywhere; }
+.db-notification-item.unread { border-left: 4px solid #6d42d8; background: #f7f4ff; }
+.db-notification-item span { font-size: 13px; line-height: 1.5; color: #526580; }
+.db-notification-item small { color: #6d42d8; }
+.db-notification-item:focus-visible { outline: 2px solid #0a1628; outline-offset: 2px; }
+@media(max-width: 600px) {
+  .db-notification-overlay { padding: 12px; }
+  .db-notification-dialog { padding: 18px; max-height: calc(100dvh - 24px); }
+}

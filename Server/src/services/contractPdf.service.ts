@@ -15,7 +15,7 @@ function escapePdfText(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
 
-function wrapText(text: string, maxChars = 88): string[] {
+export function wrapText(text: string, maxChars = 88): string[] {
   const normalized = text.replace(/\s+/g, ' ').trim();
   if (!normalized) return [''];
 
@@ -51,49 +51,33 @@ function formatDate(value: Date | null | undefined): string {
   });
 }
 
-function buildPdfBuffer(lines: string[]): Buffer {
-  const pageHeight = 792;
-  const left = 54;
-  const top = 740;
-  const lineHeight = 16;
-  const contentLines = ['BT', '/F1 11 Tf'];
-
-  lines.forEach((line, index) => {
-    const y = top - (index * lineHeight);
-    contentLines.push(`1 0 0 1 ${left} ${y} Tm (${escapePdfText(line)}) Tj`);
-  });
-
-  contentLines.push('ET');
-  const stream = contentLines.join('\n');
-
-  const objects = [
-    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj',
-    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj',
-    `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 ${pageHeight}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj`,
-    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj',
-    `5 0 obj\n<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream\nendobj`,
+export function buildPdfBuffer(lines: string[]): Buffer {
+  const pages: string[][] = [];
+  for (let i = 0; i < lines.length; i += 42) pages.push(lines.slice(i, i + 42));
+  if (!pages.length) pages.push(['']);
+  const objects: string[] = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    `<< /Type /Pages /Kids [${pages.map((_, i) => (4 + i * 2) + ' 0 R').join(' ')}] /Count ${pages.length} >>`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
   ];
-
+  pages.forEach((page, index) => {
+    const pageId = 4 + index * 2;
+    const stream = ['BT', '/F1 11 Tf', ...page.map((line, row) =>
+      ` 1 0 0 1 54 ${740 - row * 16} Tm (${escapePdfText(line)}) Tj`), 'ET'].join('\n');
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${pageId + 1} 0 R >>`);
+    objects.push(`<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream`);
+  });
   let pdf = '%PDF-1.4\n';
-  const offsets: number[] = [0];
-
-  for (const object of objects) {
-    offsets.push(Buffer.byteLength(pdf, 'utf8'));
-    pdf += `${object}\n`;
-  }
-
-  const xrefOffset = Buffer.byteLength(pdf, 'utf8');
-  pdf += `xref\n0 ${objects.length + 1}\n`;
-  pdf += '0000000000 65535 f \n';
-  for (let index = 1; index < offsets.length; index += 1) {
-    pdf += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
+  const offsets = [0];
+  objects.forEach((object, index) => { offsets.push(Buffer.byteLength(pdf, 'utf8')); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
+  const xref = Buffer.byteLength(pdf, 'utf8');
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach(offset => { pdf += String(offset).padStart(10, '0') + ' 00000 n \n'; });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return Buffer.from(pdf, 'utf8');
 }
 
-function buildContractLines(contract: IContract): string[] {
+export function buildContractLines(contract: IContract): string[] {
   const typeLabel = contract.contractType === 'full_time_employee'
     ? 'Employment Agreement'
     : 'Independent Contractor Agreement';

@@ -1,6 +1,15 @@
 import { api, ApiResponse, normalizeError, unwrapApiData } from './client';
 
 export interface TalentRequestItem {
+  clientContractApprovedAt?: string | null;
+  contractorContractApproved?: boolean;
+  contractorAcceptedCount?: number;
+  contractorTotalCount?: number;
+  clientDecisions?: Array<{ workerId: string; decision: 'accepted' | 'rejected' }>;
+  clientSelectionSubmittedAt?: string | null;
+  projectName?: string;
+  expectedStartDate?: string | null;
+  expectedEndDate?: string | null;
   _id: string;
   companyId: string | null;
   workerId: string | null;

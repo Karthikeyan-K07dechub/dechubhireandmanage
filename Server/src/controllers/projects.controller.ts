@@ -37,7 +37,7 @@ const projectSchema = z.object({
 });
 
 const taskSchema = z.object({
-  title: z.string().trim().min(3).max(240),
+  title: z.string().trim().min(1).max(240),
   description: z.string().trim().max(5000).default(''),
   assigneeWorkerIds: z.array(z.string().trim().min(1)).min(1).max(20),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
@@ -69,8 +69,8 @@ function projectActionUrl(projectId: string): string {
   return `/dashboard?tab=projects&project=${projectId}`;
 }
 
-async function notifyWorkers(project: InstanceType<typeof Project>, title: string, message: string): Promise<void> {
-  const actionUrl = `/contractor/dashboard?tab=projects&project=${project._id}`;
+async function notifyWorkers(project: InstanceType<typeof Project>, title: string, message: string, destination?: string): Promise<void> {
+  const actionUrl = destination ?? `/contractor/dashboard?tab=projects&project=${project._id}`;
   await ContractorNotification.insertMany(project.teamMembers.map((member) => ({
     workerId: member.workerId,
     type: 'general',
@@ -99,16 +99,22 @@ function serializeProject(project: InstanceType<typeof Project>) {
 async function serializeCompanyProjects(projects: Array<InstanceType<typeof Project>>) {
   const workerIds = [...new Set(projects.flatMap((project) => project.teamMembers.map((member) => member.workerId.toString())))];
   const projectIds = projects.map((project) => project._id);
-  const [workers, tasks] = await Promise.all([
-    Worker.find({ _id: { $in: workerIds } }).select('firstName lastName email status lastLoginAt'),
+  const requestIds = projects.flatMap(project => project.talentRequestId ? [project.talentRequestId] : []);
+  const [workers, tasks, requests] = await Promise.all([
+    Worker.find({ _id: { $in: workerIds } }).select('firstName lastName email country track kycStatus status lastLoginAt'),
     ProjectTask.find({ projectId: { $in: projectIds } }).select('projectId assigneeWorkerIds status'),
+    TalentRequest.find({ _id: { $in: requestIds }, companyId: { $in: projects.map(project => project.companyId) } }).select('companyId expectedStartDate expectedEndDate'),
   ]);
   const workersById = new Map(workers.map((worker) => [worker._id.toString(), worker]));
+  const requestsById = new Map(requests.map(request => [`${request.companyId}:${request._id}`, request]));
 
   return projects.map((project) => {
+    const request = requestsById.get(`${project.companyId}:${project.talentRequestId}`);
     const projectTasks = tasks.filter((task) => task.projectId.toString() === project._id.toString());
     return {
       ...serializeProject(project),
+      startDate: project.startDate ?? request?.expectedStartDate ?? null,
+      targetEndDate: project.targetEndDate ?? request?.expectedEndDate ?? null,
       teamAccess: project.teamMembers.map((member) => {
         const worker = workersById.get(member.workerId.toString());
         const memberTasks = projectTasks.filter((task) => task.assigneeWorkerIds.some((workerId) => workerId.toString() === member.workerId.toString()));
@@ -116,10 +122,15 @@ async function serializeCompanyProjects(projects: Array<InstanceType<typeof Proj
           workerId: member.workerId.toString(),
           role: member.role,
           name: worker ? `${worker.firstName} ${worker.lastName}` : 'Delivery team member',
+          firstName: worker?.firstName,
+          lastName: worker?.lastName,
+          country: worker?.country,
+          track: worker?.track,
+          kycStatus: worker?.kycStatus,
           email: worker?.email ?? '',
           accountStatus: worker?.status ?? 'inactive',
           lastLoginAt: worker?.lastLoginAt ?? null,
-          projectAccess: project.status === 'active' ? 'active' : project.status === 'contract_sent' ? 'pending client acceptance' : project.status,
+          projectAccess: project.status === 'active' ? (project.contractorAcceptances?.some(entry => entry.workerId.toString() === member.workerId.toString()) ? 'active' : 'pending contractor acceptance') : project.status === 'contract_sent' ? 'pending client acceptance' : project.status,
           taskSummary: {
             total: memberTasks.length,
             todo: memberTasks.filter((task) => task.status === 'todo').length,
@@ -137,18 +148,34 @@ export async function createProject(req: Request, res: Response, next: NextFunct
     const data = projectSchema.parse(req.body);
     let companyId = data.companyId;
     let talentRequestId: string | undefined;
+    let startDate = data.startDate ? new Date(data.startDate) : null;
+    let targetEndDate = data.targetEndDate ? new Date(data.targetEndDate) : null;
 
     if (data.talentRequestId) {
       const request = await TalentRequest.findById(data.talentRequestId);
       if (!request?.companyId) throw new AppError('The selected request is not linked to a signed-up company.', 400, 'COMPANY_REQUIRED');
       companyId = request.companyId.toString();
       talentRequestId = request._id.toString();
+      if (request.shortlistedWorkerIds?.length && !request.clientSelectionSubmittedAt && !request.workerId) {
+        throw new AppError('Wait for the client to submit their shortlist decisions before preparing the contract.', 400, 'CLIENT_SELECTION_REQUIRED');
+      }
+      if (request.clientSelectionSubmittedAt) {
+        const acceptedIds = request.clientDecisions.filter(decision => decision.decision === 'accepted').map(decision => decision.workerId.toString());
+        if (!acceptedIds.length || data.teamMembers.some(member => !acceptedIds.includes(member.workerId))) {
+          throw new AppError('The project team must contain only candidates accepted by the client. Send a new shortlist if another candidate is needed.', 400, 'CLIENT_SELECTION_REQUIRED');
+        }
+      }
+      startDate = startDate ?? request.expectedStartDate ?? null;
+      targetEndDate = targetEndDate ?? request.expectedEndDate ?? null;
     }
 
     const company = await Company.findById(companyId);
     if (!company) throw Errors.NotFound('Client company');
 
     const uniqueWorkerIds = [...new Set(data.teamMembers.map((member) => member.workerId))];
+    if (startDate && targetEndDate && targetEndDate < startDate) {
+      throw new AppError('Project end date must be on or after its start date.', 400, 'INVALID_PROJECT_DATES');
+    }
     if (uniqueWorkerIds.length !== data.teamMembers.length) throw new AppError('A team member can be added only once.', 400, 'DUPLICATE_TEAM_MEMBER');
     const workers = await Worker.find({ _id: { $in: uniqueWorkerIds }, status: { $ne: 'terminated' } }).select('_id');
     if (workers.length !== uniqueWorkerIds.length) throw new AppError('One or more selected team members are unavailable.', 400, 'INVALID_TEAM_MEMBER');
@@ -157,8 +184,8 @@ export async function createProject(req: Request, res: Response, next: NextFunct
       ...data,
       companyId: company._id,
       talentRequestId: talentRequestId ?? null,
-      startDate: data.startDate ? new Date(data.startDate) : null,
-      targetEndDate: data.targetEndDate ? new Date(data.targetEndDate) : null,
+      startDate,
+      targetEndDate,
       createdByAdminEmail: req.user!.email,
     });
 
@@ -188,6 +215,17 @@ export async function sendProjectContract(req: Request, res: Response, next: Nex
     const project = await Project.findById(req.params.id);
     if (!project) throw Errors.NotFound('Project');
     if (project.status !== 'draft') throw new AppError('Only draft projects can be sent for client acceptance.', 400, 'INVALID_PROJECT_STATUS');
+    if (project.talentRequestId) {
+      const request = await TalentRequest.findById(project.talentRequestId);
+      if (request?.clientSelectionSubmittedAt) {
+        const acceptedIds = request.clientDecisions.filter(decision => decision.decision === 'accepted').map(decision => decision.workerId.toString());
+        if (!acceptedIds.length || project.teamMembers.some(member => !acceptedIds.includes(member.workerId.toString()))) {
+          throw new AppError('The client selection changed. Update the project team to accepted candidates before sending the contract.', 409, 'CLIENT_SELECTION_CHANGED');
+        }
+      } else if (request?.shortlistedWorkerIds?.length && !request.workerId) {
+        throw new AppError('Wait for the client to submit their candidate decisions before sending this contract.', 409, 'CLIENT_SELECTION_REQUIRED');
+      }
+    }
 
     const company = await Company.findById(project.companyId);
     if (!company) throw Errors.NotFound('Client company');
@@ -214,7 +252,7 @@ export async function sendProjectContract(req: Request, res: Response, next: Nex
     project.contractSentAt = new Date();
     await project.save();
 
-    const actionUrl = projectActionUrl(project._id.toString());
+    const actionUrl = `/dashboard?tab=contracts#project-contract-${project._id.toString()}`;
     await CompanyNotification.create({
       companyId: project.companyId,
       projectId: project._id,
@@ -254,12 +292,20 @@ export async function acceptProjectContract(req: Request, res: Response, next: N
     if (!project) throw Errors.NotFound('Project');
     if (project.status !== 'contract_sent') throw new AppError('This project contract is not awaiting acceptance.', 400, 'INVALID_PROJECT_STATUS');
 
+    if (project.talentRequestId && (!project.startDate || !project.targetEndDate)) {
+      const request = await TalentRequest.findOne({ _id: project.talentRequestId, companyId: company._id });
+      project.startDate = project.startDate ?? request?.expectedStartDate ?? null;
+      project.targetEndDate = project.targetEndDate ?? request?.expectedEndDate ?? null;
+    }
+
     project.status = 'active';
     project.clientAcceptedAt = new Date();
     project.clientAcceptedBy = account.email;
     await project.save();
+    if (project.talentRequestId) await TalentRequest.updateOne({ _id: project.talentRequestId, companyId: company._id }, { $set: { unread: true } });
 
-    await notifyWorkers(project, 'Project activated', `You have been added to ${project.title}. The client has accepted the project contract.`);
+
+    void notifyWorkers(project, 'Review your project contract', `The client has approved ${project.title}. Open Contracts in your contractor dashboard to review and accept.`, `/contractor/dashboard?tab=contract&project=${project._id}`).catch(error => logger.error('Worker project contract email failed', error));
     await sendAdminEmail(`Client accepted project: ${project.title}`, `${company.companyName ?? 'Client company'} accepted the project contract for ${project.title}.`);
     await CompanyNotification.create({
       companyId: company._id,
@@ -300,17 +346,22 @@ export async function createProjectTask(req: Request, res: Response, next: NextF
       createdByCompanyUserId: req.user!.sub,
     });
 
-    const workers = await Worker.find({ _id: { $in: data.assigneeWorkerIds } }).select('email firstName');
-    await ContractorNotification.insertMany(data.assigneeWorkerIds.map((workerId) => ({
-      workerId,
-      type: 'general',
-      title: 'New project task assigned',
-      message: `You have been assigned "${task.title}" in ${project.title}.`,
-      actionUrl: `/contractor/dashboard?tab=projects&project=${project._id}`,
-    })));
-    await Promise.allSettled(workers.map((worker) => sendEmail(worker.email, `New task: ${task.title}`, `<p>Hi ${worker.firstName},</p><p>You have a new task in ${project.title}: <strong>${task.title}</strong>.</p>`)));
-
     created(res, task.toObject());
+
+    // Delivery notifications must not delay or fail an already saved task.
+    void (async () => {
+      const workers = await Worker.find({ _id: { $in: data.assigneeWorkerIds } }).select('email firstName');
+      await ContractorNotification.insertMany(data.assigneeWorkerIds.map((workerId) => ({
+        workerId,
+        type: 'general',
+        title: 'New project task assigned',
+        message: `You have been assigned "${task.title}" in ${project.title}.`,
+        actionUrl: `/contractor/dashboard?tab=projects&project=${project._id}`,
+      })));
+      await Promise.all(workers.map((worker) => sendEmail(worker.email, `New task: ${task.title}`, `<p>Hi ${worker.firstName},</p><p>You have a new task in ${project.title}: <strong>${task.title}</strong>.</p>`)));
+
+    })().catch((error) => logger.error('Project task notification failed', { taskId: task._id.toString(), error }));
+
   } catch (error) { next(error); }
 }
 
@@ -361,18 +412,52 @@ export async function verifyProjectPayment(req: Request, res: Response, next: Ne
   } catch (error) { next(error); }
 }
 
+async function serializeWorkerProject(project: InstanceType<typeof Project>, workerId: string) {
+  const company = await Company.findById(project.companyId).select('companyName companyWebsite companyCountry addressLine1 addressCity');
+  const acceptance = project.contractorAcceptances?.find(entry => entry.workerId.toString() === workerId);
+  return {
+    _id: project._id, title: project.title, description: project.description, scope: project.scope,
+    deliverables: project.deliverables, budget: project.budget, currency: project.currency,
+    paymentTerms: project.paymentTerms, startDate: project.startDate, targetEndDate: project.targetEndDate,
+    status: project.status, createdAt: project.createdAt, teamMembers: project.teamMembers,
+    clientAcceptedAt: project.clientAcceptedAt, contractorAcceptedAt: acceptance?.acceptedAt ?? null,
+    assignedRole: project.teamMembers.find(member => member.workerId.toString() === workerId)?.role ?? '',
+    companyDetails: company ? { name: company.companyName, website: company.companyWebsite, country: company.companyCountry, address: [company.addressLine1, company.addressCity].filter(Boolean).join(', ') } : null,
+  };
+}
+
 export async function listWorkerProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const worker = await getWorkerFromRequest(req);
-    const projects = await Project.find({ 'teamMembers.workerId': worker._id, status: { $in: ['active', 'payment_submitted', 'completed'] } }).sort({ updatedAt: -1 });
-    ok(res, projects.map(serializeProject));
+    const projects = await Project.find({ 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted', 'completed'] } }).sort({ updatedAt: -1 });
+    ok(res, await Promise.all(projects.map(project => serializeWorkerProject(project, worker._id.toString()))));
+  } catch (error) { next(error); }
+}
+
+export async function acceptWorkerProjectContract(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const worker = await getWorkerFromRequest(req);
+    const project = await Project.findOne({ _id: req.params.id, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted'] } });
+    if (!project) throw new AppError('This project contract is not available for your acceptance. The client must approve it first.', 409, 'CONTRACT_NOT_AVAILABLE');
+    const updated = await Project.findOneAndUpdate({
+      _id: project._id, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted'] },
+      'contractorAcceptances.workerId': { $ne: worker._id },
+    }, { $push: { contractorAcceptances: { workerId: worker._id, email: worker.email, acceptedAt: new Date() } } }, { new: true, runValidators: true });
+    const result = updated ?? await Project.findById(project._id);
+    if (!result) throw Errors.NotFound('Project');
+    if (updated) {
+      if (project.talentRequestId) await TalentRequest.updateOne({ _id: project.talentRequestId, companyId: project.companyId }, { $set: { unread: true } });
+      void sendAdminEmail('Contract approved by contractor: ' + project.title, worker.firstName + ' ' + worker.lastName + ' (' + worker.email + ') accepted the project contract for ' + project.title + '.').catch(error => logger.error('Contractor acceptance email failed', error));
+      void CompanyNotification.create({ companyId: project.companyId, projectId: project._id, type: 'general', title: 'Contract approved by contractor', message: worker.firstName + ' ' + worker.lastName + ' accepted the contract for ' + project.title + '.', actionUrl: '/dashboard?tab=contracts#project-contract-' + project._id }).catch(error => logger.error('Contractor acceptance notification failed', error));
+    }
+    ok(res, await serializeWorkerProject(result, worker._id.toString()));
   } catch (error) { next(error); }
 }
 
 export async function listWorkerProjectTasks(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const worker = await getWorkerFromRequest(req);
-    const project = await Project.findOne({ _id: req.params.id, 'teamMembers.workerId': worker._id });
+    const project = await Project.findOne({ _id: req.params.id, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted', 'completed'] } });
     if (!project) throw Errors.NotFound('Project');
     const tasks = await ProjectTask.find({ projectId: project._id, assigneeWorkerIds: worker._id }).sort({ dueDate: 1, createdAt: -1 });
     ok(res, tasks.map((task) => task.toObject()));
@@ -386,7 +471,8 @@ export async function updateWorkerProjectTask(req: Request, res: Response, next:
     const task = await ProjectTask.findOne({ _id: req.params.taskId, assigneeWorkerIds: worker._id });
     if (!task) throw Errors.NotFound('Assigned task');
     const project = await Project.findOne({ _id: task.projectId, 'teamMembers.workerId': worker._id });
-    if (!project || project.status !== 'active') throw new AppError('This task cannot be updated.', 400, 'TASK_NOT_ACTIVE');
+    if (!project || !project.clientAcceptedAt || !project.contractorAcceptances?.some(entry => entry.workerId.toString() === worker._id.toString())) throw new AppError('Accept the project contract in Contracts before updating tasks.', 403, 'PROJECT_CONTRACT_REQUIRED');
+    if (project.status !== 'active') throw new AppError('This task cannot be updated.', 400, 'TASK_NOT_ACTIVE');
 
     task.status = data.status;
     task.completionNote = data.completionNote ?? task.completionNote;

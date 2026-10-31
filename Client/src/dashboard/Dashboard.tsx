@@ -1,3 +1,6 @@
+import SignOutButton from '../components/common/SignOutButton';
+import DashboardHelp from './components/DashboardHelp';
+import DashboardNotifications from './components/DashboardNotifications';
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -489,7 +492,6 @@ export default function Dashboard({
   const [selectedMarketplaceProfileId, setSelectedMarketplaceProfileId] = useState('');
   const [marketplaceCheckoutSelection, setMarketplaceCheckoutSelection] = useState<MarketplaceCheckoutSelection | null>(null);
   const [hiringReturnView, setHiringReturnView] = useState<'marketplace' | 'requests'>('marketplace');
-  const [notifCount, setNotifCount] = useState(3);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [signupStep, setSignupStep] = useState<number | null>(null);
@@ -575,10 +577,22 @@ export default function Dashboard({
     };
   }, []);
 
-  const handleLogout = () => {
-    tokenStore.clear();
-    window.location.href = '/';
-  };
+
+
+  useEffect(() => {
+    const checkCompanySession = () => {
+      if (!tokenStore.getAccess()) window.location.replace('/company/login');
+    };
+    window.addEventListener('dechub:session-expired', checkCompanySession);
+    window.addEventListener('storage', checkCompanySession);
+    window.addEventListener('focus', checkCompanySession);
+    checkCompanySession();
+    return () => {
+      window.removeEventListener('dechub:session-expired', checkCompanySession);
+      window.removeEventListener('storage', checkCompanySession);
+      window.removeEventListener('focus', checkCompanySession);
+    };
+  }, []);
 
   const handleContinueSetup = () => {
     sessionStorage.setItem(COMPANY_DESTINATION_KEY, 'dashboard');
@@ -716,31 +730,12 @@ export default function Dashboard({
         </nav>
 
         <div className="db-sidebar-user">
-          <div className="db-user-avatar">{initials}</div>
-          <div className="db-user-info">
+          <a href="/company/profile" className="db-user-avatar" aria-label="Open company profile">{initials}</a>
+          <a href="/company/profile" className="db-user-info">
             <div className="db-user-name">{userName}</div>
             <div className="db-user-role">{userRole}</div>
-          </div>
-          <button
-            onClick={handleLogout}
-            title="Sign out"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'rgba(255,255,255,0.3)',
-              fontSize: 16,
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.color = 'rgba(255,255,255,0.3)';
-            }}
-          >
-            ⇥
-          </button>
+          </a>
+          <SignOutButton className="db-signout-btn" />
         </div>
       </aside>
 
@@ -771,18 +766,9 @@ export default function Dashboard({
           </div>
 
           <div className="db-topbar-actions">
-            <button
-              className="db-icon-btn"
-              aria-label={`${notifCount} notifications`}
-              onClick={() => setNotifCount(0)}
-            >
-              🔔
-              {notifCount > 0 && <span className="db-notif-dot" />}
-            </button>
-            <button className="db-icon-btn" aria-label="Help">
-              ?
-            </button>
-            <div
+            <DashboardNotifications />
+            <DashboardHelp />
+            <a href="/company/profile" aria-label="Open company profile"
               style={{
                 width: 32,
                 height: 32,
@@ -798,7 +784,7 @@ export default function Dashboard({
               title={userName}
             >
               {initials}
-            </div>
+            </a>
           </div>
         </header>
 

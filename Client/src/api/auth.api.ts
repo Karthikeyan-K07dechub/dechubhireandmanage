@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { contractorTokenStore } from '../contractor/api/contractor.api';
 import { api, tokenStore, ApiResponse, normalizeError, unwrapApiData } from './client';
 
 export interface AuthResult {
@@ -138,7 +139,7 @@ export function redirectToGoogle(intent: 'login' | 'signup' = 'signup'): void {
   window.location.href = `${base}/api/auth/google?intent=${intent}`;
 }
 
-export function handleGoogleCallback(): { signupStep: number; accountStatus: 'existing' | 'new' } | null {
+export function handleGoogleCallback(): { signupStep: number; accountStatus: 'existing' | 'new'; role: 'company' | 'contractor' } | null {
   const params = new URLSearchParams(window.location.search);
   const access = params.get('access_token');
   const refresh = params.get('refresh_token');
@@ -147,10 +148,20 @@ export function handleGoogleCallback(): { signupStep: number; accountStatus: 'ex
 
   if (!access || !refresh) return null;
 
-  tokenStore.set(access, refresh);
+  let role: 'company' | 'contractor';
+  try {
+    const payload = JSON.parse(atob(access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    role = payload.role === 'contractor' ? 'contractor' : 'company';
+  } catch {
+    window.history.replaceState({}, '', window.location.pathname);
+    return null;
+  }
+  if (role === 'contractor') contractorTokenStore.set(access, refresh);
+  else tokenStore.set(access, refresh);
   window.history.replaceState({}, '', window.location.pathname);
 
   return {
+    role,
     signupStep: Number(step ?? 1),
     accountStatus: accountStatus === 'existing' ? 'existing' : 'new',
   };

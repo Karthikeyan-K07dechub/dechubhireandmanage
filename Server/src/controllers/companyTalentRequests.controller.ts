@@ -1,3 +1,4 @@
+import { resolveCompanyRequestDetails } from '../utils/companyRequestDetails';
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { TalentRequest } from '../models/TalentRequest';
@@ -5,6 +6,7 @@ import { Worker } from '../models/Worker';
 import { CompanyAuth } from '../models/CompanyAuth';
 import { Company } from '../models/Company';
 import { ok, Errors, AppError } from '../utils/response';
+import { shortlistDecisionsSchema, decisionsMatchShortlist } from '../utils/shortlistDecisions';
 
 const AVAILABILITY_LABELS: Record<string, string> = {
   available_now: 'Available now',
@@ -42,6 +44,9 @@ function buildProfileSummary(worker: any) {
     profilePhotoUrl: worker.contractorProfile?.profilePhotoUrl ?? '',
     location: city ? `${city}${country ? `, ${country}` : ''}` : (country || 'Remote'),
     availabilityLabel: AVAILABILITY_LABELS[availability] || 'Not provided',
+    skills: worker.contractorProfile?.skills ?? [],
+    rate: worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? null,
+    currency: worker.payCurrency ?? 'USD',
     email: worker.email ?? '',
     country: worker.country ?? country ?? '',
     track: worker.track ?? '',
@@ -74,6 +79,7 @@ async function serializeRequest(item: any) {
 
   return {
     ...source,
+    ...await resolveCompanyRequestDetails(source),
     _id: source._id?.toString?.() ?? source._id,
     companyId: source.companyId?.toString?.() ?? source.companyId ?? null,
     workerId: source.workerId?.toString?.() ?? source.workerId ?? null,
@@ -86,6 +92,37 @@ async function serializeRequest(item: any) {
       : [],
     shortlistHistory,
   };
+}
+
+export async function submitShortlistDecisions(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { company } = await getCompanyForUser(req.user!.sub);
+    const data = shortlistDecisionsSchema.parse(req.body);
+    const item = await TalentRequest.findOne({ _id: req.params.id, companyId: company._id });
+    if (!item) throw Errors.NotFound('Talent request');
+    if (item.status !== 'shortlisted_sent' || item.shortlistSentAt?.toISOString() !== data.shortlistSentAt) {
+      throw new AppError('The shortlist changed or your decisions were already submitted. Refresh to see the latest request.', 409, 'SHORTLIST_CHANGED');
+    }
+    const shortlistedIds = item.shortlistedWorkerIds.map(id => id.toString());
+    if (!decisionsMatchShortlist(shortlistedIds, data.decisions)) {
+      throw new AppError('Accept or reject every candidate in the current shortlist.', 400, 'INVALID_SHORTLIST_DECISIONS');
+    }
+    const acceptedIds = data.decisions.filter(decision => decision.decision === 'accepted').map(decision => decision.workerId);
+    const accepted = await Worker.find({ _id: { $in: acceptedIds }, status: { $nin: ['terminated', 'invited'] } });
+    if (accepted.length !== acceptedIds.length) throw new AppError('An accepted candidate is no longer available. Refresh the shortlist.', 409, 'CANDIDATE_UNAVAILABLE');
+    const first = accepted.find(worker => worker._id.toString() === acceptedIds[0]);
+    const updated = await TalentRequest.findOneAndUpdate({ _id: item._id, companyId: company._id, status: 'shortlisted_sent', shortlistSentAt: item.shortlistSentAt }, {
+      $set: {
+        clientDecisions: data.decisions, clientSelectionSubmittedAt: new Date(), unread: true,
+        status: 'candidate_selected', workerId: first?._id ?? null,
+        workerName: first ? `${first.firstName} ${first.lastName}`.trim() : 'No candidates accepted',
+        workerRole: first?.roleTitle || 'No accepted candidate', workerProfileUrl: first ? `/marketplace/${first._id}` : '',
+        approvedAt: acceptedIds.length ? new Date() : null,
+      },
+    }, { new: true, runValidators: true });
+    if (!updated) throw new AppError('The shortlist changed. Refresh before submitting again.', 409, 'SHORTLIST_CHANGED');
+    ok(res, await serializeRequest(updated));
+  } catch (error) { next(error); }
 }
 
 export async function listCompanyTalentRequests(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -147,6 +184,9 @@ export async function getTalentRequestHirePrefill(req: Request, res: Response, n
     const { company } = await getCompanyForUser(req.user!.sub);
     const item = await TalentRequest.findOne({ _id: req.params.id, companyId: company._id });
     if (!item) throw Errors.NotFound('Talent request');
+    if (item.clientSelectionSubmittedAt) {
+      throw new AppError('Your candidate decisions have been submitted. Dechub will prepare the project contract in Contracts.', 409, 'AWAITING_PROJECT_CONTRACT');
+    }
     if (!['approved', 'candidate_selected', 'hire_started'].includes(item.status)) {
       throw new AppError('This request is not approved for hiring yet', 400, 'REQUEST_NOT_APPROVED');
     }

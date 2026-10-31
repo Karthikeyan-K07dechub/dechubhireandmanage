@@ -1,0 +1,18 @@
+.db-help-overlay { position: fixed; inset: 0; z-index: 1250; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: rgba(10,22,40,.45); }
+.db-help-dialog { display: flex; flex-direction: column; width: min(720px,100%); max-height: calc(100dvh - 48px); min-height: 0; overflow: hidden; box-sizing: border-box; border-radius: 16px; background: #fff; color: #0a1628; box-shadow: 0 20px 70px #0003; font-family: inherit; }
+.db-help-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 24px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.db-help-header h2 { margin: 0; font-size: 23px; }
+.db-help-header p { margin: 6px 0 0; font-size: 14px; color: #526580; }
+.db-help-header button { flex-shrink: 0; }
+.db-help-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 24px; }
+.db-help-faqs { display: grid; gap: 10px; }
+.db-help-faqs details { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px 18px; }
+.db-help-faqs summary { cursor: pointer; font-size: 14px; font-weight: 600; line-height: 1.6; }
+.db-help-faqs details[open] { background: #f8fafc; }
+.db-help-faqs p, .db-help-contact p { color: #526580; font-size: 14px; line-height: 1.7; margin: 12px 0 0; }
+.db-help-contact { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+.db-help-contact h3 { margin: 0; font-size: 17px; }
+.db-help-contact > div { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.db-help-contact a { text-decoration: none; overflow-wrap: anywhere; }
+.db-help-dialog :focus-visible { outline: 2px solid #6d42d8; outline-offset: 3px; }
+@media(max-width: 600px) { .db-help-overlay { padding: 12px; } .db-help-dialog { max-height: calc(100dvh - 24px); } .db-help-header, .db-help-content { padding: 18px; } }

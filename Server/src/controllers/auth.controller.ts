@@ -317,14 +317,15 @@ export function googleAuthRedirect(req: Request, res: Response): void {
     access_type: 'offline',
     scope:       ['openid', 'email', 'profile'],
     prompt:      'select_account',
-    state:       intent,
+    state:       req.query.role === 'contractor' ? `contractor:${intent}` : intent,
   });
   res.redirect(url);
 }
 
 export async function googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const intent = getGoogleAuthIntent(req.query.state);
+    const isContractor = req.query.state === 'contractor:login' || req.query.state === 'contractor:signup';
+    const intent = getGoogleAuthIntent(isContractor ? String(req.query.state).split(':')[1] : req.query.state);
     const code = req.query.code as string;
     if (!code) throw new AppError('Missing OAuth code', 400, 'OAUTH_ERROR');
 
@@ -335,6 +336,34 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
     const { data } = await oauth2.userinfo.get();
 
     if (!data.email || !data.id) throw new AppError('Google profile incomplete', 400, 'OAUTH_ERROR');
+
+    if (isContractor) {
+      const loginError = (message: string) => res.redirect(`${env.CLIENT_URL}/freelancer/login?${new URLSearchParams({ error: message })}`);
+      if (!data.verified_email) {
+        loginError('Please use a verified Google email address.');
+        return;
+      }
+      const worker = await Worker.findOne({ email: data.email.trim().toLowerCase() }).select('+passwordHash +refreshTokenHash');
+      if (!worker) {
+        loginError('No contractor account exists for this email. Please sign up as a contractor first.');
+        return;
+      }
+      if (worker.status === 'invited' || !worker.passwordHash) {
+        loginError('Please complete your contractor account setup using your invitation link first.');
+        return;
+      }
+      if (worker.status === 'terminated' || worker.status === 'inactive') {
+        loginError('Your contractor account has been deactivated. Contact your company.');
+        return;
+      }
+      const accessToken = signAccessToken({ sub: worker._id.toString(), email: worker.email, role: 'contractor', companyId: worker.companyId.toString() });
+      const refreshToken = signRefreshToken({ sub: worker._id.toString() });
+      worker.refreshTokenHash = await hashToken(refreshToken);
+      worker.lastLoginAt = new Date();
+      await worker.save();
+      res.redirect(`${env.CLIENT_URL}/auth/callback?${new URLSearchParams({ access_token: accessToken, refresh_token: refreshToken, account_status: 'existing' })}`);
+      return;
+    }
 
     const { firstName, lastName } = getGoogleProfileNames(data);
 

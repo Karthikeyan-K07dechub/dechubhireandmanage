@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { ApiError } from '../api/client';
+import ShortlistReview from '../components/common/ShortlistReview';
 import {
   acceptSuggestedTalent,
   listCompanyTalentRequests,
@@ -35,14 +36,19 @@ export default function MarketplaceTalentRequestsPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState('');
+  useEffect(() => {
+    if (loading || !window.location.hash) return;
+    document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [loading]);
 
   useEffect(() => {
     let active = true;
 
-    listCompanyTalentRequests()
+    const refresh = () => { void listCompanyTalentRequests()
       .then((data) => {
         if (!active) return;
         setItems(data);
+        setError('');
         setLoading(false);
       })
       .catch((err) => {
@@ -50,9 +56,12 @@ export default function MarketplaceTalentRequestsPage({
         const apiError = err as ApiError;
         setError(apiError.message ?? 'Unable to load talent requests.');
         setLoading(false);
-      });
+      }); };
+    refresh();
+    window.addEventListener('focus', refresh);
 
     return () => {
+      window.removeEventListener('focus', refresh);
       active = false;
     };
   }, []);
@@ -91,16 +100,16 @@ export default function MarketplaceTalentRequestsPage({
       {!loading && !error && items.length > 0 ? (
         <div style={{ display: 'grid', gap: 18 }}>
           {items.map((item) => (
-            <article key={item._id} style={{ ...cardStyle, padding: 24 }}>
+            <article id={`talent-request-${item._id}`} key={item._id} style={{ ...cardStyle, padding: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
-                    <span style={statusPillStyle(item.status)}>{STATUS_LABELS[item.status] ?? item.status}</span>
+                    <span style={statusPillStyle(item.status)}>{item.clientSelectionSubmittedAt ? 'Worker list updated' : item.status === 'shortlisted_sent' ? 'Review candidates' : STATUS_LABELS[item.status] ?? item.status}</span>
                     <span style={{ color: '#64748b', fontSize: 13 }}>
                       Submitted {new Date(item.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <h2 style={{ margin: 0, fontSize: 26, color: '#0f172a' }}>{item.workerName}</h2>
+                  <h2 style={{ margin: 0, fontSize: 26, color: '#0f172a' }}>{item.projectName || item.workerName}</h2>
                   <p style={{ margin: '8px 0 0', color: '#475569' }}>{item.workerRole} · {item.projectType}</p>
                 </div>
 
@@ -116,7 +125,7 @@ export default function MarketplaceTalentRequestsPage({
                       View current profile
                     </button>
                   ) : null}
-                  {['approved', 'candidate_selected', 'hire_started'].includes(item.status) ? (
+                  {!item.clientSelectionSubmittedAt && ['approved', 'candidate_selected', 'hire_started'].includes(item.status) ? (
                     <button
                       type="button"
                       onClick={() => { window.location.href = `/dashboard?hireRequest=${encodeURIComponent(item._id)}`; }}
@@ -143,9 +152,10 @@ export default function MarketplaceTalentRequestsPage({
                   <div style={sectionLabelStyle}>Request summary</div>
                   <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>{item.companyName}</div>
                   <div style={{ color: '#475569', lineHeight: 1.7 }}>{item.projectDescription}</div>
+                  {(item.expectedStartDate || item.expectedEndDate) && <p style={{ color: '#475569', fontSize: 13 }}>Expected dates: {item.expectedStartDate ? new Date(item.expectedStartDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not set'} – {item.expectedEndDate ? new Date(item.expectedEndDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not set'}</p>}
                 </div>
 
-                <div style={innerCardStyle}>
+                {!item.shortlistedTalentProfiles?.length && <div style={innerCardStyle}>
                   <div style={sectionLabelStyle}>Admin update</div>
                   <div style={{ color: '#0f172a', fontWeight: 600, marginBottom: 8 }}>
                     {STATUS_LABELS[item.status] ?? item.status}
@@ -162,8 +172,9 @@ export default function MarketplaceTalentRequestsPage({
                       || (item.status === 'talent_hired' ? 'The agreement is fully signed and this candidate is now hired.' : '')
                       || 'An alternative profile was suggested for review.'}
                   </div>
-                </div>
+                </div>}
               </div>
+              <ShortlistReview request={item} onOpenProfile={onOpenProfile} onUpdate={updated => setItems(current => current.map(entry => entry._id === updated._id ? updated : entry))} />
 
               {item.suggestedTalentProfile ? (
                 <div style={{ ...innerCardStyle, marginTop: 16 }}>

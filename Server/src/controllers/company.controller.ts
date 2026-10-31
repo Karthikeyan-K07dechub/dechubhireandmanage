@@ -375,3 +375,31 @@ export async function savePreferences(req: Request, res: Response, next: NextFun
     next(err);
   }
 }
+
+const profileText = z.string().trim().max(500);
+const profileEmail = z.union([z.string().trim().email(), z.literal('')]);
+const companyProfileSchema = z.object({
+  user: z.object({ firstName: profileText.min(1), lastName: profileText, phone: profileText }).partial().optional(),
+  company: z.object({
+    companyName: profileText, companyCountry: profileText, companyType: profileText, taxId: profileText,
+    companySize: z.union([z.enum(['1-10', '11-50', '51-200', '201-500', '500+']), z.literal('')]),
+    companyIndustry: profileText, companyWebsite: z.union([z.string().trim().url().max(1000), z.literal('')]),
+    addressLine1: profileText, addressCity: profileText, addressZip: profileText, referralSource: profileText,
+    billCurrency: z.union([z.enum(['USD', 'INR', 'AED']), z.literal('')]), billingEmail: profileEmail,
+    payCycle: profileText, contractCurrency: z.union([z.enum(['USD', 'INR', 'AED']), z.literal('')]), companyTimezone: profileText, hrEmail: profileEmail,
+    notif1: z.boolean(), notif2: z.boolean(), notif3: z.boolean(), notif4: z.boolean(),
+  }).partial().optional(),
+}).strict();
+
+export async function updateCompanyProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = companyProfileSchema.parse(req.body);
+    const company = await getCompanyForUser(req.user!.sub);
+    const account = await CompanyAuth.findById(req.user!.sub);
+    if (!account) throw Errors.NotFound('Company account');
+    // Profile edits never bypass onboarding, verification, or payment setup.
+    if (data.company) { Object.assign(company, data.company); await company.save(); }
+    if (data.user) { Object.assign(account, data.user); await account.save(); }
+    await getMyCompany(req, res, next);
+  } catch (error) { next(error); }
+}

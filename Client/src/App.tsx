@@ -1,3 +1,4 @@
+import CompanyProfilePage from './pages/CompanyProfilePage';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import './styles.css';
 import CompanyAuthPage from './pages/CompanyAuthPage';
@@ -85,6 +86,7 @@ type AppPage =
   | 'admin-talent-requests'
   | 'admin-talent-request-detail'
   | 'admin-project-builder'
+  | 'company-profile'
   | 'notifications';
 
 type AuthMode = 'login' | 'signup';
@@ -235,6 +237,8 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   if (normalizedPath === '/company/dashboard/login' || normalizedPath === '/company/login') {
     return { page: 'company-dashboard-auth', mode: 'login' };
   }
+
+  if (normalizedPath === '/company/profile') return { page: 'company-profile', mode: 'login' };
 
   if (normalizedPath === '/company/onboarding') {
     return { page: 'company-onboarding', mode: 'login' };
@@ -451,15 +455,10 @@ export default function App() {
     const hasCompanyToken = tokenStore.getAccess();
 
     // Define page access rules by role
-    const adminPages = new Set(['admin-login', 'admin-talent-requests', 'admin-talent-request-detail', 'admin-project-builder']);
     // Pages that require an ACTIVE company login session (NOT the login page itself)
     const companyOnlyPages = new Set(['company-onboarding', 'marketplace-requests', 'marketplace-consultation', 'marketplace-payment', 'notifications']);
 
-    // Rule 1: If admin is logged in, restrict to admin pages only
-    if (hasAdminToken && !adminPages.has(page)) {
-      setPage('admin-talent-requests');
-      return;
-    }
+    // Admin and company sessions are independent; protect each route using its own token.
 
     // Rule 2: Accessing admin-talent-requests without admin token → go to admin login
     if (!hasAdminToken && (page === 'admin-talent-requests' || page === 'admin-talent-request-detail' || page === 'admin-project-builder')) {
@@ -485,6 +484,11 @@ export default function App() {
     const result = handleGoogleCallback();
     if (!result) {
       setPage('company-dashboard-auth');
+      return;
+    }
+
+    if (result.role === 'contractor') {
+      window.location.replace('/contractor/dashboard');
       return;
     }
 
@@ -628,6 +632,9 @@ export default function App() {
         break;
       case 'company-dashboard-auth':
         targetPath = `/company/login${shortlistClaimQuery}`;
+        break;
+      case 'company-profile':
+        targetPath = '/company/profile';
         break;
       case 'company-onboarding':
         targetPath = '/company/onboarding';
@@ -1014,6 +1021,8 @@ export default function App() {
       />
     );
   }
+
+  if (page === 'company-profile') return <CompanyProfilePage />;
 
   if (page === 'company-onboarding') {
     return (

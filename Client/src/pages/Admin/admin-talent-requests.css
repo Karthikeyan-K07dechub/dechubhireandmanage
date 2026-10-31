@@ -487,3 +487,5 @@
     font-size: 24px;
   }
 }
+
+.atr-contract-approvals { display: grid; gap: 5px; text-align: left; color: #76f2cc; }

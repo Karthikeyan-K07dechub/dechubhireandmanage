@@ -1,24 +1,12 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import type { Worker, WorkerStatus, Track, AddWorkerFormData } from '../types/dashboard.type';
 import { getWorkers, terminateWorker } from '../api/dashboard.api';
+import { getCompanyProjects, type DeliveryProject } from '../../api/projects.api';
+import { buildWorkerAssignments, mergeProjectWorkers, type WorkerListEntry } from '../utils/workerAssignments';
 import AddWorkerModal from '../components/AddWorkerModel';
 import { getTalentRequestHirePrefill } from '../../api/talentRequests.api';
 
-const STATUS_CONFIG: Record<WorkerStatus, { cls: string; label: string }> = {
-  active: { cls: 'db-badge db-badge-active', label: 'Active' },
-  invited: { cls: 'db-badge db-badge-invited', label: 'Invited' },
-  kyc_pending: { cls: 'db-badge db-badge-kyc', label: 'KYC Pending' },
-  inactive: { cls: 'db-badge db-badge-terminated', label: 'Inactive' },
-  terminated: { cls: 'db-badge db-badge-terminated', label: 'Terminated' },
-};
-
-const KYC_CONFIG: Record<'pending' | 'approved' | 'rejected', { cls: string; label: string }> = {
-  pending: { cls: 'db-badge db-badge-pending', label: 'Pending' },
-  approved: { cls: 'db-badge db-badge-approved', label: 'Verified' },
-  rejected: { cls: 'db-badge db-badge-disputed', label: 'Rejected' },
-};
-
-function WorkerAvatar({ w }: { w: Worker }) {
+function WorkerAvatar({ w }: { w: WorkerListEntry }) {
   return (
     <div
       style={{
@@ -39,7 +27,7 @@ function WorkerAvatar({ w }: { w: Worker }) {
   );
 }
 
-function RowMenu({ worker, onTerminate }: { worker: Worker; onTerminate: (id: string) => void }) {
+function RowMenu({ worker, onTerminate }: { worker: WorkerListEntry; onTerminate: (id: string) => void }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -102,7 +90,9 @@ interface WorkersPageProps {
 }
 
 export default function WorkersPage({ initialHireRequestId = '' }: WorkersPageProps) {
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [workers, setWorkers] = useState<WorkerListEntry[]>([]);
+  const [projects, setProjects] = useState<DeliveryProject[]>([]);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalSeed, setModalSeed] = useState<AddWorkerFormData | undefined>(undefined);
@@ -114,10 +104,18 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getWorkers();
-      setWorkers(data);
+      setLoadError('');
+      const [data, assignments] = await Promise.allSettled([getWorkers(), getCompanyProjects()]);
+      setWorkers(mergeProjectWorkers(
+        data.status === 'fulfilled' ? data.value : [],
+        assignments.status === 'fulfilled' ? assignments.value : [],
+      ));
+      if (assignments.status === 'fulfilled') setProjects(assignments.value);
+      if (data.status === 'rejected' || assignments.status === 'rejected') {
+        setLoadError('Some worker or project information could not be loaded. Refresh to try again.');
+      }
     } catch {
-      // Keep page usable if worker fetch fails.
+      setLoadError('Unable to load workers. Refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -125,6 +123,9 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
 
   useEffect(() => {
     void load();
+    const refresh = () => { void load(); };
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
   }, [load]);
 
   useEffect(() => {
@@ -151,14 +152,15 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
   }, [initialHireRequestId]);
 
   const filtered = useMemo(() => {
-    const q = searchQuery.toLowerCase();
-    return workers.filter((w) => {
-      if (q && !`${w.firstName} ${w.lastName} ${w.email} ${w.roleTitle}`.toLowerCase().includes(q)) return false;
+    const q = searchQuery.trim().toLowerCase();
+    return buildWorkerAssignments(workers, projects).filter(row => {
+      const w = row.worker;
+      if (q && ![w.firstName, w.lastName, w.email, row.role, w.country, row.project?.title].join(' ').toLowerCase().includes(q)) return false;
       if (filterStatus && w.status !== filterStatus) return false;
       if (filterTrack && w.track !== filterTrack) return false;
       return true;
     });
-  }, [workers, searchQuery, filterStatus, filterTrack]);
+  }, [workers, projects, searchQuery, filterStatus, filterTrack]);
 
   const handleTerminate = useCallback(async (id: string) => {
     if (!window.confirm('Terminate this worker? This cannot be undone.')) return;
@@ -194,10 +196,11 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
             </div>
           </div>
           <div className="db-page-actions">
-            <button className="db-btn-secondary">Export CSV</button>
+            <button type="button" className="db-btn-secondary" onClick={() => void load()}>Refresh</button>
           </div>
         </div>
 
+        {loadError && <p className="db-pending-warning" role="alert">{loadError}</p>}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
           {[
             { label: 'All', value: workers.length, filter: '', color: '#0a1628' },
@@ -246,7 +249,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
               <span style={{ color: '#94a3b8' }}>Search</span>
               <input
                 type="text"
-                placeholder="Search by name, email, or role..."
+                placeholder="Search workers, countries, or projects..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
@@ -263,7 +266,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
             </select>
 
             <div className="db-filter-count">
-              {filtered.length} of {workers.length} workers
+              {new Set(filtered.map(row => row.worker._id)).size} of {workers.length} workers ? {filtered.length} assignments
             </div>
           </div>
 
@@ -288,64 +291,34 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
               <table className="db-table">
                 <thead>
                   <tr>
-                    <th>Worker</th>
-                    <th>Track</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>KYC</th>
-                    <th>Services</th>
-                    <th>Pay rate</th>
-                    <th>Last payment</th>
-                    <th>Added</th>
-                    <th></th>
+                    <th>Worker name</th><th>Role</th><th>Country</th><th>Assigned project</th>
+                    <th>Start date</th><th>End date</th><th>Project status</th><th aria-label="Worker actions"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((w) => (
-                    <tr key={w._id}>
+                  {filtered.map(row => (
+                    <tr key={row.key}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <WorkerAvatar w={w} />
+                          <WorkerAvatar w={row.worker} />
                           <div>
-                            <div className="db-table-name">{w.firstName} {w.lastName}</div>
-                            <div className="db-table-sub">{w.email}</div>
+                            <div className="db-table-name">{row.worker.firstName} {row.worker.lastName}</div>
+                            <div className="db-table-sub">{row.worker.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td>
-                        <span className={w.track === 'track_2_us' ? 'db-track db-track-2' : 'db-track db-track-1'}>
-                          {w.track === 'track_2_us' ? 'US' : 'India'}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 500, color: '#334155' }}>{w.roleTitle}</div>
-                        {w.department ? <div className="db-table-sub">{w.department}</div> : null}
-                      </td>
-                      <td>
-                        <span className={STATUS_CONFIG[w.status]?.cls ?? 'db-badge db-badge-draft'}>
-                          {STATUS_CONFIG[w.status]?.label ?? w.status}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={KYC_CONFIG[w.kycStatus]?.cls ?? 'db-badge db-badge-pending'}>
-                          {KYC_CONFIG[w.kycStatus]?.label ?? w.kycStatus}
-                        </span>
-                      </td>
-                      <td style={{ color: '#64748b', fontSize: 12.5 }}>
-                        {w.selectedServices.length} service{w.selectedServices.length !== 1 ? 's' : ''}
-                      </td>
-                      <td style={{ fontWeight: 500, color: '#0f172a', fontSize: 13 }}>
-                        {w.payRate ? `${w.payCurrency} ${w.payRate.toLocaleString()}/mo` : '-'}
-                      </td>
-                      <td style={{ color: '#94a3b8', fontSize: 12 }}>
-                        {w.lastPaymentAt ? new Date(w.lastPaymentAt).toLocaleDateString() : '-'}
-                      </td>
-                      <td style={{ color: '#94a3b8', fontSize: 12, whiteSpace: 'nowrap' }}>
-                        {new Date(w.createdAt).toLocaleDateString()}
-                      </td>
-                      <td>
-                        <RowMenu worker={w} onTerminate={handleTerminate} />
-                      </td>
+                      <td>{row.role || '?'}</td>
+                      <td>{row.worker.country || '?'}</td>
+                      <td><span className="db-table-name">{row.project?.title ?? (loadError ? 'Unavailable' : 'Not assigned')}</span></td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{row.startDate ? new Date(row.startDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not provided'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{row.endDate ? new Date(row.endDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not provided'}</td>
+                      <td><span className={
+                        row.project?.status === 'active' || row.project?.status === 'payment_submitted'
+                          ? 'db-worker-project-status ongoing'
+                          : row.project?.status === 'completed' ? 'db-worker-project-status completed'
+                          : 'db-worker-project-status'
+                      }>{!row.project && loadError ? 'Unavailable' : row.status}</span></td>
+                      <td>{row.worker.canManage !== false && <RowMenu worker={row.worker} onTerminate={handleTerminate} />}</td>
                     </tr>
                   ))}
                 </tbody>

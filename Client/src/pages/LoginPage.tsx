@@ -256,7 +256,7 @@ export default function LoginPage({
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:4000'}/api/auth/google`;
+    window.location.href = `${import.meta.env.VITE_API_URL ?? 'http://localhost:4000'}/api/auth/google?intent=login&role=${role}`;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

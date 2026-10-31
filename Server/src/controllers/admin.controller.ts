@@ -1,3 +1,7 @@
+import { Project } from '../models/Project';
+import { CompanyNotification } from '../models/CompanyNotification';
+import { logger } from '../utils/logger';
+import { resolveCompanyRequestDetails } from '../utils/companyRequestDetails';
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import crypto from 'crypto';
@@ -236,6 +240,7 @@ async function serializeTalentRequest(item: ITalentRequest) {
 
   return {
     ...item.toObject(),
+    ...await resolveCompanyRequestDetails(item),
     talentProfile: formatTalentProfile(worker),
     suggestedTalentProfile: suggestedWorker
       ? {
@@ -309,6 +314,7 @@ body { font-family: 'DM Sans', Arial, sans-serif; background: #f8fafc; color: #0
         <div class="row"><strong>Candidate:</strong> ${options.profileName}</div>
         <div class="row"><strong>Role:</strong> ${options.profileRole}</div>
       </div>
+      <p><a href="${env.CLIENT_URL}/dashboard?tab=hiring&amp;hiringView=requests">Review workers and submit selections</a></p>
       ${reviewNotes ? `<p class="note"><strong>Dechub note:</strong> ${reviewNotes}</p>` : ''}
       <a href="${absoluteProfileUrl}" class="button">Review marketplace profile</a>
       <p class="note">
@@ -354,7 +360,9 @@ async function sendShortlistedProfilesEmail(
 
   const profileLinks = workerProfiles
     .map((profile) => {
-      const profileUrl = `${env.CLIENT_URL}/marketplace/${profile.workerId}?requestId=${encodeURIComponent(item._id.toString())}&token=${encodeURIComponent(token)}`;
+      const profileUrl = item.companyId
+        ? `${env.CLIENT_URL}/marketplace/${profile.workerId}`
+        : `${env.CLIENT_URL}/marketplace/${profile.workerId}?requestId=${encodeURIComponent(item._id.toString())}&token=${encodeURIComponent(token)}`;
       return `
         <li style="margin: 0 0 18px;">
           <div style="font-weight: 700; color: #0f172a;">${profile.workerName}</div>
@@ -385,7 +393,7 @@ body { font-family: 'DM Sans', Arial, sans-serif; background: #f8fafc; color: #0
     <div class="content">
       <p>Hello ${item.contactFirstName || 'there'},</p>
       <p class="note">
-        Review the candidate profiles below. When you click <strong>Continue</strong> on a profile, we’ll ask you to log in or sign up as a company so we can securely move that same request into hiring.
+        Workers have been shortlisted for your project. Please review each candidate in Manage Requests, choose <strong>Accept</strong> or <strong>Reject</strong>, and click <strong>Submit selections</strong>. Dechub will review your choices and prepare the project contract.
       </p>
       ${reviewNotes ? `<p class="note"><strong>Dechub note:</strong> ${reviewNotes}</p>` : ''}
       <ul style="list-style: none; padding: 0; margin: 24px 0 0;">
@@ -495,7 +503,26 @@ export async function listTalentRequests(req: Request, res: Response, next: Next
       .limit(per)
       .lean();
 
-    ok(res, { total, page: pageNum, perPage: per, items });
+    const acceptedProjects = await Project.find({
+      talentRequestId: { $in: items.map(item => item._id) },
+      clientAcceptedAt: { $ne: null },
+      status: { $in: ['active', 'payment_submitted', 'completed'] },
+    }).select('talentRequestId companyId clientAcceptedAt teamMembers contractorAcceptances').lean();
+    ok(res, { total, page: pageNum, perPage: per, items: await Promise.all(items.map(async item => ({
+      ...item,
+      ...await resolveCompanyRequestDetails(item),
+      ...(() => {
+        const project = acceptedProjects.find(project => String(project.talentRequestId) === String(item._id) && String(project.companyId) === String(item.companyId));
+        const teamIds = [...new Set(project?.teamMembers.map(member => member.workerId.toString()) ?? [])];
+        const acceptedIds = new Set(project?.contractorAcceptances?.map(entry => entry.workerId.toString()) ?? []);
+        return {
+          clientContractApprovedAt: project?.clientAcceptedAt ?? null,
+          contractorContractApproved: teamIds.length > 0 && teamIds.every(id => acceptedIds.has(id)),
+          contractorAcceptedCount: teamIds.filter(id => acceptedIds.has(id)).length,
+          contractorTotalCount: teamIds.length,
+        };
+      })(),
+    }))) });
   } catch (err) { next(err); }
 }
 
@@ -556,6 +583,12 @@ export async function updateTalentRequestStatus(req: Request, res: Response, nex
     }
 
     await item.save();
+    if (item.companyId) await CompanyNotification.create({
+      companyId: item.companyId, type: 'general', title: `Hiring request ${status.replace(/_/g, ' ')}`,
+      message: item.reviewNotes || `Your hiring request for ${item.projectName || item.projectType} was updated by Dechub.`,
+      actionUrl: `/dashboard?tab=hiring&hiringView=requests#talent-request-${item._id}`,
+    }).catch(error => logger.error('Hiring notification failed', error));
+
 
     if (status === 'approved' && item.workerId) {
       await sendTalentRequestUpdateEmail(item, {
@@ -631,6 +664,8 @@ export async function sendTalentRequestShortlist(req: Request, res: Response, ne
     item.shortlistTokenHash = tokenHash;
     item.shortlistTokenExpiresAt = expiresAt;
     item.shortlistSentAt = new Date();
+    item.clientDecisions = [];
+    item.clientSelectionSubmittedAt = null;
     item.reviewNotes = typeof reviewNotes === 'string' ? reviewNotes.trim() : item.reviewNotes;
     item.workerId = null;
     item.workerProfileUrl = '';
@@ -649,6 +684,12 @@ export async function sendTalentRequestShortlist(req: Request, res: Response, ne
       },
     ];
     await item.save();
+    if (item.companyId) await CompanyNotification.create({
+      companyId: item.companyId, type: 'general', title: 'Shortlisted workers ready for review',
+      message: `Workers have been shortlisted for ${item.projectName || item.projectType}. Please accept or reject each candidate and submit your selections.`,
+      actionUrl: `/dashboard?tab=hiring&hiringView=requests#talent-request-${item._id}`,
+    }).catch(error => logger.error('Hiring notification failed', error));
+
 
     await sendShortlistedProfilesEmail(
       item,
@@ -699,10 +740,12 @@ export async function listMarketplaceCandidatesForAdmin(req: Request, res: Respo
     const pageSize = Math.max(1, Math.min(24, Number(perPage) || 12));
 
     let requestQuery = q.trim();
+    let clientAcceptedIds = new Set<string>();
     if (requestId) {
       const request = await TalentRequest.findById(requestId).lean();
       if (request) {
         requestQuery = requestQuery || `${request.projectType} ${request.projectDescription}`;
+        clientAcceptedIds = new Set((request.clientDecisions ?? []).filter(decision => decision.decision === 'accepted').map(decision => decision.workerId.toString()));
       }
     }
 
@@ -737,6 +780,8 @@ export async function listMarketplaceCandidatesForAdmin(req: Request, res: Respo
         score: scoreMarketplaceCandidate(entry.worker, requestQuery),
       }))
       .sort((a, b) => {
+        const acceptedDifference = Number(clientAcceptedIds.has(b.worker._id.toString())) - Number(clientAcceptedIds.has(a.worker._id.toString()));
+        if (acceptedDifference) return acceptedDifference;
         if (b.score !== a.score) {
           return b.score - a.score;
         }

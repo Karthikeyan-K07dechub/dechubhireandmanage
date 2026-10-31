@@ -41,6 +41,9 @@ export interface ServiceConfig {
 // ─── Domain models ────────────────────────────────────────────────────────────
 
 export interface Worker {
+  canManage?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
   _id:              string;
   companyId:        string;
   firstName:        string;
@@ -115,6 +118,8 @@ export interface DashboardStats {
   pendingInvoices:  number;
   nextPayrollDate:  string | null;
   monthlyTotalCost: number;
+  monthlyCostByCurrency?: Record<string, number>;
+  hourlyWorkersExcluded?: number;
   currency:         string;
   pendingKyc:       number;
   contractsExpiring:number;

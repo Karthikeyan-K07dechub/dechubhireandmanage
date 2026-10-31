@@ -15,6 +15,7 @@ import contractorRoutes from './routes/contractor.routes';
 import adminRoutes from './routes/admin.routes';
 import debugRoutes from './routes/debug.routes';
 import contractsRoutes from './routes/contracts.routes';
+import invoicesRoutes from './routes/invoices.routes';
 import publicRoutes from './routes/public.routes';
 
 
@@ -75,6 +76,7 @@ app.use('/api/company', companyRoutes);
 app.use('/api/workers',   workersRoutes);
 app.use('/api/contractor', contractorRoutes);
 app.use('/api/contracts', contractsRoutes);
+app.use('/api/invoices', invoicesRoutes);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/debug', debugRoutes);

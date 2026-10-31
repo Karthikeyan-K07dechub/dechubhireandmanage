@@ -1,6 +1,8 @@
+import { api } from '../../api/client';
 import { useEffect, useState, useMemo } from 'react';
 import type { Contract, ContractStatus, Invoice, InvoiceStatus } from '../types/dashboard.type';
 import { getContracts, getInvoices, approveInvoice, disputeInvoice, countersignContract } from '../api/dashboard.api';
+import ProjectContractsSection from '../components/ProjectContractsSection';
 
 function getContractDownloadName(contract: Contract): string {
   const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -76,6 +78,25 @@ const INVOICE_BADGE: Record<InvoiceStatus, [string, string]> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ContractsPage() {
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const exportAllContracts = async () => {
+    if (exporting) return;
+    setExporting(true); setExportError('');
+    try {
+      const response = await api.get('/contracts/export', { responseType: 'blob' });
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a'); link.href = url; link.download = 'dechub-contracts.pdf';
+      document.body.appendChild(link); link.click(); link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (reason) {
+      const failure = reason as { response?: { data?: Blob } };
+      let message = 'Unable to download contracts. Please try again.';
+      try { const body = JSON.parse(await failure.response!.data!.text()); message = body.error?.message || message; } catch { /* Use the fallback message. */ }
+      setExportError(message);
+    } finally { setExporting(false); }
+  };
+
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState('');
@@ -108,14 +129,17 @@ export function ContractsPage() {
         <div>
           <div className="db-page-title">Contracts</div>
           <div className="db-page-sub">
-            {contracts.length} total · {active} active · {pending} pending signatures
+            {contracts.length} worker contracts · {active} active · {pending} pending signatures
           </div>
         </div>
         <div className="db-page-actions">
-          <button className="db-btn-secondary">↓ Export</button>
+          <button type="button" className="db-btn-secondary" disabled={exporting} onClick={() => void exportAllContracts()}>{exporting ? 'Downloading...' : 'Export contracts'}</button>
         </div>
       </div>
 
+      {exportError && <p className="db-project-error" role="alert">{exportError}</p>}
+      <ProjectContractsSection />
+      <h2 className="db-card-title">Worker contracts</h2>
       <div className="db-card">
         <div className="db-filters">
           <div className="db-filter-search">
@@ -146,7 +170,7 @@ export function ContractsPage() {
         ) : filtered.length === 0 ? (
           <div className="db-empty">
             <div className="db-empty-icon">📄</div>
-            <div className="db-empty-title">No contracts yet</div>
+            <div className="db-empty-title">No worker contracts yet</div>
             <div className="db-empty-sub">
               Contracts are auto-generated when you invite a worker and they complete KYC
             </div>

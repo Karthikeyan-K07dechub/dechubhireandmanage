@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { Worker, Invoice, DashboardStats } from '../types/dashboard.type';
-import { getDashboardStats, getWorkers, getInvoices, approveInvoice } from '../api/dashboard.api';
+import type { Worker, Invoice, DashboardStats, Contract } from '../types/dashboard.type';
+import { getDashboardStats, getWorkers, getInvoices, getContracts, approveInvoice } from '../api/dashboard.api';
+import { getCompanyProjects, type DeliveryProject } from '../../api/projects.api';
+import { listCompanyTalentRequests, type CompanyTalentRequestItem } from '../../api/talentRequests.api';
+import { getMyCompany } from '../../api/company.api';
+import { buildPendingActions } from '../utils/pendingActions';
 
 function workerBadge(status: Worker['status']) {
   const map: Record<Worker['status'], [string, string]> = {
@@ -20,12 +24,16 @@ function StatCard({
   icon,
   delta,
   deltaType = 'neutral',
+  onAction,
+  actionLabel,
 }: {
   label: string;
   value: string | number;
   icon: string;
   delta?: string;
   deltaType?: 'positive' | 'negative' | 'neutral';
+  onAction?: () => void;
+  actionLabel?: string;
 }) {
   return (
     <div className="db-stat-card">
@@ -37,6 +45,11 @@ function StatCard({
         <div className={`db-stat-delta ${deltaType === 'negative' ? 'negative' : deltaType === 'positive' ? '' : 'neutral'}`}>
           {delta}
         </div>
+      )}
+      {onAction && actionLabel && (
+        <button type="button" className="db-btn-primary" style={{ marginTop: 12 }} onClick={onAction}>
+          {actionLabel}
+        </button>
       )}
     </div>
   );
@@ -110,47 +123,68 @@ export default function DashboardHome({ onNavigate }: Props) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [projects, setProjects] = useState<DeliveryProject[]>([]);
+  const [requests, setRequests] = useState<CompanyTalentRequestItem[]>([]);
+  const [signupStep, setSignupStep] = useState<number | null>(null);
+  const [failedSections, setFailedSections] = useState<string[]>([]);
+  const [approvalError, setApprovalError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const refresh = () => setRefreshKey(key => key + 1);
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      try {
-        const [s, w, inv] = await Promise.all([
+        setLoading(true);
+        const [s, w, inv, c, p, r, company] = await Promise.allSettled([
           getDashboardStats(),
           getWorkers(),
           getInvoices(),
+          getContracts(),
+          getCompanyProjects(),
+          listCompanyTalentRequests(),
+          getMyCompany(),
         ]);
         if (cancelled) return;
-        setStats(s);
-        setWorkers(w.slice(0, 5));
-        setInvoices(inv.filter((invoice: Invoice) => invoice.status === 'submitted').slice(0, 3));
-      } catch {
-        // Silently fail and show empty state.
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+        setStats(s.status === 'fulfilled' ? s.value : null);
+        setWorkers(w.status === 'fulfilled' ? w.value : []);
+        setInvoices(inv.status === 'fulfilled' ? inv.value : []);
+        setContracts(c.status === 'fulfilled' ? c.value : []);
+        setProjects(p.status === 'fulfilled' ? p.value : []);
+        setRequests(r.status === 'fulfilled' ? r.value : []);
+        setSignupStep(company.status === 'fulfilled' ? company.value.user?.signupStep ?? null : null);
+        setFailedSections([
+          [s, 'Dashboard totals'], [w, 'Workers'], [inv, 'Invoices'], [c, 'Contracts'],
+          [p, 'Projects'], [r, 'Manage Requests'], [company, 'Company setup'],
+        ].flatMap(([result, label]) => (result as PromiseSettledResult<unknown>).status === 'rejected' ? [label as string] : []));
+        setLoading(false);
     }
 
     void load();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   const handleApproveInvoice = async (id: string) => {
     setApprovingId(id);
+    setApprovalError('');
     try {
       const updated = await approveInvoice(id);
       setInvoices((prev) =>
         prev
           .map((inv) => (inv._id === id ? updated : inv))
-          .filter((inv) => inv.status === 'submitted'),
       );
     } catch {
-      // Leave the current list visible if approval fails.
+      setApprovalError('Unable to approve this invoice. Please try again.');
     } finally {
       setApprovingId(null);
     }
@@ -166,8 +200,13 @@ export default function DashboardHome({ onNavigate }: Props) {
     );
   }
 
+  const projectWorkerCount = new Set(projects.flatMap(project => [
+    ...project.teamMembers.map(member => member.workerId),
+    ...(project.teamAccess ?? []).map(member => member.workerId),
+  ]).filter(Boolean)).size;
   const pendingKyc = workers.filter((w) => w.kycStatus === 'pending').length;
-  const pendingInvite = workers.filter((w) => w.status === 'invited').length;
+  const pendingInvoices = invoices.filter((invoice) => invoice.status === 'submitted');
+  const pendingActions = buildPendingActions({ contracts, projects, requests, invoices, workers, signupStep, contractsExpiring: stats?.contractsExpiring ?? 0 });
 
   return (
     <div className="db-page">
@@ -183,37 +222,60 @@ export default function DashboardHome({ onNavigate }: Props) {
       <div className="db-stats-row">
         <StatCard
           icon="Team"
-          label="Active Workers"
-          value={stats?.activeWorkers ?? 0}
-          delta={`${pendingInvite} invite${pendingInvite !== 1 ? 's' : ''} pending`}
+          label="Total Workers"
+          value={failedSections.includes('Projects') ? '-' : projectWorkerCount}
+          delta={failedSections.includes('Projects') ? 'Unable to load project workers' : 'Across all projects'}
           deltaType="neutral"
         />
         <StatCard
           icon="Bills"
           label="Pending Invoices"
-          value={stats?.pendingInvoices ?? 0}
-          delta={stats?.pendingInvoices ? 'Need your approval' : 'All clear'}
-          deltaType={stats?.pendingInvoices ? 'negative' : 'neutral'}
+          actionLabel="Invoices"
+          onAction={() => onNavigate('invoices')}
+          value={failedSections.includes('Invoices') ? '-' : pendingInvoices.length}
+          delta={failedSections.includes('Invoices') ? 'Unable to load invoices' : pendingInvoices.length ? 'Need your approval' : 'All clear'}
+          deltaType={pendingInvoices.length ? 'negative' : 'neutral'}
         />
         <StatCard
           icon="Pay"
           label="Next Payroll"
           value={stats?.nextPayrollDate
             ? new Date(stats.nextPayrollDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : '-'}
-          delta="Auto-processed via Wise"
+            : failedSections.includes('Dashboard totals') ? '-' : 'Not scheduled'}
+          delta={failedSections.includes('Dashboard totals') ? 'Unable to load payroll status' : stats?.nextPayrollDate ? 'Upcoming payroll' : 'No payroll schedule configured'}
           deltaType="neutral"
         />
         <StatCard
           icon="Cost"
           label="Monthly Cost"
-          value={stats ? `${stats.currency} ${stats.monthlyTotalCost.toLocaleString()}` : '-'}
-          delta="All active workers"
+          value={stats ? Object.entries(stats.monthlyCostByCurrency ?? { [stats.currency]: stats.monthlyTotalCost }).map(([currency, amount]) => `${currency} ${amount.toLocaleString()}`).join(' / ') || `${stats.currency} 0` : '-'}
+          delta={stats?.hourlyWorkersExcluded ? `Estimate · ${stats.hourlyWorkersExcluded} hourly workers excluded` : 'Estimated recurring monthly cost'}
           deltaType="neutral"
         />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
+        <div style={{ minWidth: 0 }}>
+        <section className="db-card db-pending-actions" aria-labelledby="pending-actions-title">
+          <div className="db-card-header">
+            <h2 id="pending-actions-title" className="db-card-title" style={{ margin: 0 }}>Pending actions</h2>
+            <button type="button" className="db-card-link" onClick={() => setRefreshKey((key) => key + 1)}>Refresh</button>
+          </div>
+          {failedSections.length > 0 && (
+            <p className="db-pending-warning" role="status">Could not check: {failedSections.join(', ')}. Refresh to try again. Other available actions are shown below.</p>
+          )}
+          {pendingActions.length > 0 ? (
+            <div className="db-pending-list">
+              {pendingActions.map((action) => (
+                <div key={action.id} className="db-pending-action">
+                  <span className="db-pending-count">{action.count}</span>
+                  <span className="db-pending-copy"><strong>{action.title}</strong><span>{action.description}</span></span>
+                  <a className="db-card-link db-pending-link" href={action.href}>{action.linkLabel} <span aria-hidden="true">→</span></a>
+                </div>
+              ))}
+            </div>
+          ) : <p className="db-pending-empty">{failedSections.length ? 'No pending actions found in the sections that loaded.' : 'You’re all caught up. No pending actions.'}</p>}
+        </section>
         <div className="db-card">
           <div className="db-card-header">
             <span className="db-card-title">Recent Workers</span>
@@ -243,7 +305,7 @@ export default function DashboardHome({ onNavigate }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {workers.map((w) => (
+                  {workers.slice(0, 5).map((w) => (
                     <tr key={w._id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -286,8 +348,20 @@ export default function DashboardHome({ onNavigate }: Props) {
             </div>
           )}
         </div>
+        </div>
 
         <div>
+          <section className="db-card" style={{ marginBottom: 16, padding: 24 }} aria-labelledby="dashboard-projects-title">
+            <h2 id="dashboard-projects-title" className="db-card-title" style={{ margin: '0 0 10px', lineHeight: 1.5 }}>
+              Create and manage your projects in one place
+            </h2>
+            <p style={{ margin: '0 0 18px', color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>
+              Submit project requests, review contracts, assign tasks, and track progress from your dashboard.
+            </p>
+            <button type="button" className="db-btn-primary" onClick={() => onNavigate('projects')}>
+              Go to projects
+            </button>
+          </section>
           <div className="db-card" style={{ marginBottom: 16 }}>
             <div className="db-card-header">
               <span className="db-card-title">Invoices to Approve</span>
@@ -295,13 +369,14 @@ export default function DashboardHome({ onNavigate }: Props) {
                 {'View all ->'}
               </button>
             </div>
-            {invoices.length === 0 ? (
+            {approvalError && <p className="db-pending-warning" role="alert">{approvalError}</p>}
+            {failedSections.includes('Invoices') ? <p className="db-pending-warning">Invoices could not be loaded. Use Refresh in Pending actions to retry.</p> : pendingInvoices.length === 0 ? (
               <div style={{ padding: '20px 24px', fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
                 No pending invoices
               </div>
             ) : (
               <div className="db-action-list">
-                {invoices.map((inv) => (
+                {pendingInvoices.slice(0, 3).map((inv) => (
                   <div key={inv._id} className="db-action-item">
                     <div className="db-action-icon" style={{ background: '#eff6ff' }}>Bills</div>
                     <div className="db-action-text">

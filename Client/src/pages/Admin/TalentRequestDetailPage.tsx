@@ -32,7 +32,7 @@ const statusTone: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   pending_review: 'Pending review',
   shortlisted_sent: 'Shortlist sent',
-  candidate_selected: 'Candidate selected',
+  candidate_selected: 'Worker list updated',
   hire_started: 'Hiring started',
   approved: 'Approved',
   alternative_suggested: 'Alternative suggested',
@@ -180,6 +180,16 @@ export default function TalentRequestDetailPage({
     };
   }, [candidateAvailability, candidateCountry, candidatePage, debouncedCandidateSearch, requestId]);
 
+
+  useEffect(() => {
+    if (editingShortlist || request?.status !== 'shortlisted_sent') return;
+    let active = true;
+    const refresh = () => { void getTalentRequest(requestId).then(detail => { if (active) setRequest(detail); }).catch(() => {}); };
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [requestId, request?.status, editingShortlist]);
+
   const handleStatusChange = async (status: string) => {
     if (!request) {
       return;
@@ -299,7 +309,7 @@ export default function TalentRequestDetailPage({
         (profile) => profile.workerId === activeChosenRequest.workerId,
       ) ?? null
     : null;
-  const visibleSidebarProfiles = (isShortlistDraft || (isShortlistEditable && editingShortlist))
+  const visibleSidebarProfiles = request?.clientSelectionSubmittedAt ? sentProfiles.filter(profile => request.clientDecisions?.some(decision => decision.workerId === profile.workerId && decision.decision === 'accepted')) : (isShortlistDraft || (isShortlistEditable && editingShortlist))
     ? selectedProfiles
       : isShortlistEditable
       ? sentProfiles
@@ -358,9 +368,9 @@ export default function TalentRequestDetailPage({
     },
     {
       label: 'Candidate selected',
-      description: 'The company chose one shortlisted profile to continue hiring.',
+      description: request.clientSelectionSubmittedAt ? ((request.shortlistedTalentProfiles ?? []).filter(profile => request.clientDecisions?.some(decision => decision.workerId === profile.workerId && decision.decision === 'accepted')).map(profile => profile.workerName).join(', ') || 'All candidates were rejected. Prepare a new shortlist.') : 'Waiting for the company to review and submit candidate decisions.',
       done: ['candidate_selected', 'hire_started', 'hired', 'talent_hired'].includes(request.status),
-      meta: request.approvedAt ? formatDate(request.approvedAt) : 'Waiting for company action',
+      meta: request.clientSelectionSubmittedAt ? formatDate(request.clientSelectionSubmittedAt) : request.approvedAt ? formatDate(request.approvedAt) : 'Waiting for company action',
     },
     {
       label: 'Hiring started',
@@ -396,7 +406,7 @@ export default function TalentRequestDetailPage({
           <button
             className="atd-back"
             onClick={onBuildProject}
-            disabled={!request.companyId}
+            disabled={!request.companyId || Boolean(request.shortlistSentAt && !request.clientSelectionSubmittedAt && !request.workerId) || Boolean(request.clientSelectionSubmittedAt && !request.clientDecisions?.some(decision => decision.decision === 'accepted'))}
             title={request.companyId ? 'Build the delivery team and project contract.' : 'The client must sign up with this request email first.'}
             style={!request.companyId ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           >
@@ -483,6 +493,9 @@ export default function TalentRequestDetailPage({
           </div>
         ) : null}
       </header>
+
+
+
 
       {loading ? (
         <main className="atd-shell">
@@ -683,29 +696,41 @@ export default function TalentRequestDetailPage({
                                   <span>{step.meta}</span>
                                 </div>
                                 <p>{step.description}</p>
+                                {step.label === 'Candidate selected' && (
+                                  request.clientSelectionSubmittedAt
+                                    ? (request.shortlistedTalentProfiles ?? []).filter(profile =>
+                                        request.clientDecisions?.some(decision => decision.workerId === profile.workerId),
+                                      )
+                                    : selectedCandidateProfile ? [selectedCandidateProfile] : []
+                                ).map(profile => {
+                                  const decision = request.clientDecisions?.find(entry => entry.workerId === profile.workerId)?.decision;
+                                  return (
+                                    <div key={profile.workerId} className="atd-selected-candidate-card">
+                                      <div className={decision === 'rejected' ? 'atd-client-rejected' : 'atd-client-accepted'}>
+                                        {decision === 'rejected' ? 'Rejected by client' : decision === 'accepted' ? 'Accepted by client' : selectedCandidateTitle}
+                                      </div>
+                                      <div className="atd-selected-candidate-head">
+                                        <div>
+                                          <strong>{profile.workerName}</strong>
+                                          <p>{profile.workerRole}</p>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          className="atd-inline-button"
+                                          onClick={() => window.open(`/marketplace/${encodeURIComponent(profile.workerId)}`, '_blank', 'noopener,noreferrer')}
+                                        >
+                                          View profile
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           ))}
                         </div>
 
-                        {selectedCandidateProfile ? (
-                          <div className="atd-selected-candidate-card">
-                            <div className="atd-body-label">{selectedCandidateTitle}</div>
-                            <div className="atd-selected-candidate-head">
-                              <div>
-                                <strong>{selectedCandidateProfile.workerName}</strong>
-                                <p>{selectedCandidateProfile.workerRole}</p>
-                              </div>
-                              <button
-                                type="button"
-                                className="atd-inline-button"
-                                onClick={() => window.open(`/marketplace/${encodeURIComponent(selectedCandidateProfile.workerId)}`, '_blank', 'noopener,noreferrer')}
-                              >
-                                Open selected profile
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
+
                       </div>
                     ) : (
                       <div>
@@ -882,7 +907,7 @@ export default function TalentRequestDetailPage({
 
                     <aside className="atd-shortlist-sidebar">
                       <div className="atd-shortlist-sidebar-label">
-                        {isShortlistEditable ? 'Profiles sent' : selectedCandidateProfile ? 'Chosen candidate' : 'Selected profiles'}
+                        {isShortlistEditable ? 'Profiles sent' : selectedCandidateProfile ? (request?.clientSelectionSubmittedAt ? 'Client-selected workers' : 'Chosen candidate') : 'Selected profiles'}
                       </div>
                       <div className="atd-shortlist-sidebar-count">{visibleSidebarProfiles.length}</div>
                       <p className="atd-helper-copy" style={{ marginTop: 8 }}>
@@ -1143,11 +1168,14 @@ export default function TalentRequestDetailPage({
 
               <article className="atd-card">
                 <h2>Project brief</h2>
+                {request.projectName && <p className="atd-body-copy"><strong>{request.projectName}</strong></p>}
                 <div className="atd-info-grid">
                   <div>
                     <span>Project type</span>
                     <strong>{request.projectType || 'Not provided'}</strong>
                   </div>
+                  <div><span>Expected start date</span><strong>{request.expectedStartDate ? new Date(request.expectedStartDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not provided'}</strong></div>
+                  <div><span>Expected end date</span><strong>{request.expectedEndDate ? new Date(request.expectedEndDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not provided'}</strong></div>
                 </div>
                 <div className="atd-body-label">Project description</div>
                 <p className="atd-body-copy">

@@ -33,11 +33,16 @@ export interface ITalentRequest extends Document {
   phoneNumber: string;
   email: string;
   projectType: string;
+  projectName: string;
   projectDescription: string;
+  expectedStartDate: Date | null;
+  expectedEndDate: Date | null;
   requestedServices: string[];
   status: TalentRequestStatus;
   reviewNotes: string;
   shortlistedWorkerIds: mongoose.Types.ObjectId[];
+  clientDecisions: Array<{ workerId: mongoose.Types.ObjectId; decision: 'accepted' | 'rejected' }>;
+  clientSelectionSubmittedAt: Date | null;
   shortlistHistory: ITalentRequestShortlistHistoryEntry[];
   shortlistTokenHash: string | null;
   shortlistTokenExpiresAt: Date | null;
@@ -73,12 +78,15 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     companyName: { type: String, required: true, trim: true },
     companyWebsite: { type: String, default: '', trim: true },
     contactFirstName: { type: String, required: true, trim: true },
-    contactLastName: { type: String, required: true, trim: true },
-    phoneNumber: { type: String, required: true, trim: true },
+    contactLastName: { type: String, default: '', trim: true },
+    phoneNumber: { type: String, default: '', trim: true },
     email: { type: String, required: true, trim: true },
 
     projectType: { type: String, required: true, trim: true },
+    projectName: { type: String, default: '', trim: true, maxlength: 180 },
     projectDescription: { type: String, required: true, trim: true },
+    expectedStartDate: { type: Date, default: null },
+    expectedEndDate: { type: Date, default: null },
     requestedServices: { type: [String], default: [] },
 
     status: {
@@ -88,6 +96,8 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     },
     reviewNotes: { type: String, default: '', trim: true },
     shortlistedWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'Worker' }],
+    clientDecisions: { type: [{ workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true }, decision: { type: String, enum: ['accepted', 'rejected'], required: true }, _id: false }], default: [] },
+    clientSelectionSubmittedAt: { type: Date, default: null },
     shortlistHistory: { type: [talentRequestShortlistHistorySchema], default: [] },
     shortlistTokenHash: { type: String, default: null },
     shortlistTokenExpiresAt: { type: Date, default: null },

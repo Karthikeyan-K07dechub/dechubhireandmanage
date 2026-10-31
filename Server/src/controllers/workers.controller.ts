@@ -1,3 +1,4 @@
+import { resolveCompanyRequestDetails } from '../utils/companyRequestDetails';
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { z } from 'zod';
@@ -5,6 +6,10 @@ import { Worker } from '../models/Worker';
 import { Company } from '../models/Company';
 import { CompanyAuth } from '../models/CompanyAuth';
 import { Contract } from '../models/Contract';
+import { Invoice } from '../models/Invoice';
+import { Project } from '../models/Project';
+import { calculateMonthlyCosts } from '../utils/dashboardCosts';
+import { expectedProjectDatesSchema } from '../utils/projectAcceptance';
 import { MarketplaceOrderDraft } from '../models/MarketplaceOrderDraft';
 import { TalentRequest } from '../models/TalentRequest';
 import { ok, created, Errors, AppError } from '../utils/response';
@@ -275,15 +280,16 @@ const marketplaceOrderDraftSchema = z.object({
 });
 
 const marketplaceTalentRequestSchema = z.object({
+  projectName: z.string().trim().min(1).max(180).optional(),
   companyName: z.string().trim().min(1).max(120),
-  companyWebsite: z.string().trim().url().max(300),
+  companyWebsite: z.union([z.string().trim().url().max(300), z.literal('')]),
   projectType: z.string().trim().min(1).max(100),
   projectDescription: z.string().trim().min(1).max(3000),
   contactName: z.string().trim().min(2).max(120).optional(),
   contactEmail: z.string().trim().email().max(200).optional(),
   phoneNumber: z.string().trim().max(40).optional(),
   requestedServices: z.array(z.string().trim().min(1).max(100)).max(20).optional(),
-});
+}).and(expectedProjectDatesSchema);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -460,10 +466,13 @@ async function ensureDraftContract(worker: InstanceType<typeof Worker>, company:
 export async function listWorkers(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { company } = await getCompanyForUser(req.user!.sub);
-    const workers = await Worker.find({ companyId: company._id })
+    const projects = await Project.find({ companyId: company._id }).select('teamMembers.workerId').lean();
+    const assignedIds = projects.flatMap(project => project.teamMembers.map(member => member.workerId));
+    const workers = await Worker.find({ $or: [{ companyId: company._id }, { _id: { $in: assignedIds } }] })
+      .select('companyId firstName lastName email phone country track workerType roleTitle department kycStatus status selectedServices payRate payCurrency contractId lastPaymentAt createdAt startDate endDate')
       .sort({ createdAt: -1 })
       .lean();
-    ok(res, workers);
+    ok(res, workers.map(worker => ({ ...worker, canManage: worker.companyId.toString() === company._id.toString() })));
   } catch (err) { next(err); }
 }
 
@@ -590,6 +599,29 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
   }
 }
 
+export async function createCompanyProjectRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const details = z.object({
+      projectName: z.string().trim().min(1).max(180),
+      projectType: z.string().trim().min(1).max(100),
+      projectDescription: z.string().trim().min(1).max(3000),
+      expectedStartDate: z.string().min(1),
+      expectedEndDate: z.string().min(1),
+    }).and(expectedProjectDatesSchema).parse(req.body);
+    const { account, company } = await getCompanyForUser(req.user!.sub);
+    const defaults = await resolveCompanyRequestDetails({ companyId: company._id, email: account.email });
+    req.body = {
+      ...details,
+      companyName: defaults.companyName || 'Company name not provided',
+      companyWebsite: defaults.companyWebsite || '',
+      contactName: `${defaults.contactFirstName ?? ''} ${defaults.contactLastName ?? ''}`.trim(),
+      contactEmail: account.email,
+      phoneNumber: defaults.phoneNumber || '',
+    };
+    await createMarketplaceTalentRequest(req, res, next);
+  } catch (error) { next(error); }
+}
+
 export async function createMarketplaceTalentRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = marketplaceTalentRequestSchema.parse(req.body);
@@ -618,6 +650,7 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
     }
 
     if (!usedSignedInCompany) {
+      if (!data.companyWebsite) throw new AppError('Company website URL is required.', 400, 'INVALID_REQUEST');
       const normalizedName = data.contactName?.trim() ?? '';
       const nameParts = normalizedName.split(/\s+/).filter(Boolean);
       contactFirstName = nameParts[0] ?? 'Company';
@@ -667,6 +700,9 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
         companyId,
         workerId: null,
         workerName: 'Open talent request',
+        projectName: data.projectName ?? '',
+        expectedStartDate: data.expectedStartDate ? new Date(`${data.expectedStartDate}T00:00:00.000Z`) : null,
+        expectedEndDate: data.expectedEndDate ? new Date(`${data.expectedEndDate}T00:00:00.000Z`) : null,
         workerRole: 'Best-fit marketplace candidate to be suggested',
         workerProfileUrl: '',
         companyName,
@@ -684,6 +720,8 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
         id: request._id.toString(),
         status: request.status,
         createdAt: request.createdAt,
+        expectedStartDate: request.expectedStartDate,
+        expectedEndDate: request.expectedEndDate,
       });
 
       void sendTalentRequestAdminNotificationEmail(
@@ -935,8 +973,7 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
 
     const [activeCount, pendingInvoices, contractsExpiring] = await Promise.all([
       Worker.countDocuments({ companyId, status: 'active' }),
-      // Would query Invoice model — returning 0 as placeholder until Invoice model added
-      Promise.resolve(0),
+      Invoice.countDocuments({ companyId, status: 'submitted' }),
       // Workers with contracts ending within 30 days
       Worker.countDocuments({
         companyId,
@@ -947,18 +984,17 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
 
     // Sum pay rates for active workers as monthly cost estimate
     const activeWorkers = await Worker.find({ companyId, status: 'active' }).lean();
-    const monthlyTotalCost = activeWorkers.reduce((sum, w) => {
-      if (!w.payRate) return sum;
-      const rate = w.payFrequency === 'biweekly' ? w.payRate * 2.17 : w.payRate;
-      return sum + rate;
-    }, 0);
+    const currency = company.contractCurrency ?? 'USD';
+    const { monthlyCostByCurrency, hourlyWorkersExcluded } = calculateMonthlyCosts(activeWorkers, currency);
 
     ok(res, {
       activeWorkers:    activeCount,
       pendingInvoices:  pendingInvoices,
       nextPayrollDate:  null,
-      monthlyTotalCost: Math.round(monthlyTotalCost),
-      currency:         company.contractCurrency ?? 'USD',
+      monthlyTotalCost: monthlyCostByCurrency[currency] ?? 0,
+      monthlyCostByCurrency,
+      hourlyWorkersExcluded,
+      currency,
       pendingKyc:       await Worker.countDocuments({ companyId, kycStatus: 'pending', status: { $ne: 'terminated' } }),
       contractsExpiring,
     });

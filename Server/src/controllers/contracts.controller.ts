@@ -1,3 +1,5 @@
+import { Project } from '../models/Project';
+import { buildPdfBuffer, buildContractLines, wrapText } from '../services/contractPdf.service';
 import { Request, Response, NextFunction } from 'express';
 import { Contract } from '../models/Contract';
 import { Company } from '../models/Company';
@@ -104,4 +106,47 @@ export async function countersignContract(req: Request, res: Response, next: Nex
   } catch (err) {
     next(err);
   }
+}
+
+export async function exportContracts(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const company = await getCompanyForUser(req.user!.sub);
+    const [contracts, projects] = await Promise.all([
+      Contract.find({ companyId: company._id }).sort({ createdAt: -1 }),
+      Project.find({ companyId: company._id, status: { $ne: 'draft' } }).sort({ createdAt: -1 }),
+    ]);
+    if (!contracts.length && !projects.length) throw new AppError('No contracts are available to download yet.', 404, 'NO_CONTRACTS');
+    const lines: string[] = [];
+    const append = (content: string[]) => {
+      if (lines.length % 42) lines.push(...Array(42 - lines.length % 42).fill(''));
+      lines.push(...content);
+    };
+    for (const project of projects) {
+      const workers = await Worker.find({ _id: { $in: project.teamMembers.map(member => member.workerId) } }).select('firstName lastName');
+      const date = (value: Date | null) => value ? value.toISOString().slice(0, 10) : 'Not provided';
+      append([
+        'Dechub Bridge - Project contract',
+        ...wrapText('Company: ' + (company.companyName || 'Not provided')),
+        ...wrapText('Project: ' + project.title), 'Contract ID: ' + project._id,
+        'Status: ' + project.status.replace(/_/g, ' '),
+        'Client acceptance: ' + (project.clientAcceptedAt ? project.clientAcceptedAt.toISOString() : 'Awaiting signature'),
+        'Start date: ' + date(project.startDate), 'End date: ' + date(project.targetEndDate),
+        'Budget: ' + project.currency + ' ' + project.budget,
+        '', 'Description:', ...wrapText(project.description), '', 'Scope:', ...wrapText(project.scope),
+        '', 'Deliverables:', ...project.deliverables.flatMap(item => wrapText('- ' + item)),
+        '', 'Payment terms:', ...wrapText(project.paymentTerms),
+        '', 'Assigned workers:', ...workers.flatMap(worker => wrapText(worker.firstName + ' ' + worker.lastName)),
+        '', 'Contractor acceptance:', ...project.teamMembers.flatMap(member => {
+          const accepted = project.contractorAcceptances?.find(entry => entry.workerId.toString() === member.workerId.toString());
+          const worker = workers.find(entry => entry._id.toString() === member.workerId.toString());
+          return wrapText((worker ? worker.firstName + ' ' + worker.lastName : member.role) + ': ' + (accepted ? 'Accepted on ' + accepted.acceptedAt.toISOString() : 'Pending'));
+        }),
+      ]);
+    }
+    for (const contract of contracts) append(['Contract ID: ' + contract._id, ...buildContractLines(contract)]);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="dechub-contracts.pdf"');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(buildPdfBuffer(lines));
+  } catch (error) { next(error); }
 }

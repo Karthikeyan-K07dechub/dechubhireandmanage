@@ -2,6 +2,9 @@ import { api, ApiResponse, normalizeError, unwrapApiData } from './client';
 import type { AddWorkerFormData } from '../dashboard/types/dashboard.type';
 
 export interface CompanyTalentProfileSummary {
+  skills?: string[];
+  rate?: number | null;
+  currency?: string;
   workerId: string;
   workerName: string;
   workerRole: string;
@@ -14,6 +17,8 @@ export interface CompanyTalentProfileSummary {
 }
 
 export interface PublicTalentRequestPayload {
+  expectedStartDate?: string;
+  expectedEndDate?: string;
   companyName: string;
   companyWebsite: string;
   projectType: string;
@@ -34,6 +39,12 @@ export interface TalentRequestSignupPrefill {
 }
 
 export interface CompanyTalentRequestItem {
+  clientDecisions?: Array<{ workerId: string; decision: 'accepted' | 'rejected' }>;
+  clientSelectionSubmittedAt?: string | null;
+  shortlistSentAt?: string | null;
+  projectName?: string;
+  expectedStartDate?: string | null;
+  expectedEndDate?: string | null;
   _id: string;
   workerId: string | null;
   originalWorkerId?: string | null;
@@ -80,13 +91,25 @@ export async function listCompanyTalentRequests(): Promise<CompanyTalentRequestI
   }
 }
 
+export async function submitShortlistDecisions(id: string, payload: {
+  shortlistSentAt: string;
+  decisions: Array<{ workerId: string; decision: 'accepted' | 'rejected' }>;
+}): Promise<CompanyTalentRequestItem> {
+  try {
+    const res = await api.post<ApiResponse<CompanyTalentRequestItem>>(`/company/talent-requests/${id}/decisions`, payload);
+    return unwrapApiData(res.data);
+  } catch (error) { throw normalizeError(error); }
+}
+
 export async function createPublicTalentRequest(payload: PublicTalentRequestPayload): Promise<{
   id: string;
   status: string;
   createdAt: string;
+  expectedStartDate?: string | null;
+  expectedEndDate?: string | null;
 }> {
   try {
-    const res = await api.post<ApiResponse<{ id: string; status: string; createdAt: string }>>(
+    const res = await api.post<ApiResponse<{ id: string; status: string; createdAt: string; expectedStartDate?: string | null; expectedEndDate?: string | null }>>(
       '/workers/marketplace/talent-requests',
       payload,
     );
@@ -94,6 +117,16 @@ export async function createPublicTalentRequest(payload: PublicTalentRequestPayl
   } catch (err) {
     throw normalizeError(err);
   }
+}
+
+export async function createCompanyProjectRequest(payload: {
+  projectName: string; projectType: string; projectDescription: string;
+  expectedStartDate: string; expectedEndDate: string;
+}): Promise<Awaited<ReturnType<typeof createPublicTalentRequest>>> {
+  try {
+    const res = await api.post<ApiResponse<Awaited<ReturnType<typeof createPublicTalentRequest>>>>('/company/project-requests', payload);
+    return unwrapApiData(res.data);
+  } catch (error) { throw normalizeError(error); }
 }
 
 export async function getCompanyTalentRequest(id: string): Promise<CompanyTalentRequestItem> {

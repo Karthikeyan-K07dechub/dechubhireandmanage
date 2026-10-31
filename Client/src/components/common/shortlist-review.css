@@ -1,0 +1,28 @@
+.sr-review { margin-top: 22px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #0f172a; }
+.sr-review h3 { margin: 0 0 8px; font-size: 18px; }
+.sr-review > p { color: #64748b; font-size: 13px; line-height: 1.7; }
+.sr-profiles { display: grid; gap: 12px; margin-top: 16px; }
+.sr-profile { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 18px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+.sr-profile.accepted { border-color: #86cfa7; background: #f5fcf8; }
+.sr-profile.rejected { border-color: #f0b5b5; background: #fffafa; }
+.sr-profile-info { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 200px; }
+.sr-avatar { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; object-fit: cover; }
+.sr-initials { display: grid; place-items: center; background: #f1edff; color: #4b2bb8; font-size: 13px; font-weight: 700; }
+.sr-profile h4 { margin: 0 0 6px; font-size: 15px; }
+.sr-profile p { margin: 4px 0; font-size: 13px; color: #475569; }
+.sr-profile small { color: #64748b; font-size: 12px; }
+.sr-skills { line-height: 1.6; }
+.sr-actions, .sr-submit { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.sr-submit { justify-content: space-between; margin-top: 18px; font-size: 13px; color: #64748b; }
+.sr-button { display: inline-flex; justify-content: center; align-items: center; min-height: 36px; padding: 8px 14px; border: 1px solid #0a1628; border-radius: 8px; background: #fff; color: #0a1628; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.sr-button:hover { background: #f1f4f9; }
+.sr-button.accept { background: #166534; border-color: #166534; color: #fff; }
+.sr-button.reject { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.sr-primary { background: #0a1628; color: #fff; }
+.sr-primary:hover { background: #162d54; }
+.sr-button:focus-visible { outline: 2px solid #4b2bb8; outline-offset: 3px; }
+.sr-button:disabled { opacity: .5; cursor: not-allowed; }
+.sr-decision { font-size: 13px; text-transform: capitalize; }
+.sr-decision.accepted { color: #166534; }
+.sr-decision.rejected, .sr-review .sr-error { color: #b91c1c; }
+@media (max-width: 600px) { .sr-actions { width: 100%; } .sr-actions .sr-button { flex: 1; } }

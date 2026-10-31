@@ -36,6 +36,10 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
 
   useEffect(() => {
     load();
+    const refresh = () => { void load(); };
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
 
   const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'Unknown');
@@ -144,7 +148,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
                     <td>{formatDate(it.createdAt)}</td>
                     <td>
                       <span className={`atr-status-pill ${statusTone[it.status] || 'new'}`}>
-                        {formatStatus(it.status)}
+                        {it.clientContractApprovedAt && it.contractorContractApproved ? <span className="atr-contract-approvals"><span>&#9745; Client approved</span><span>&#9745; Contractor approved</span></span> : it.clientContractApprovedAt ? 'Contract approved by client' : it.clientSelectionSubmittedAt && it.status === 'candidate_selected' ? 'Worker list updated' : formatStatus(it.status)}
                       </span>
                     </td>
                     <td>

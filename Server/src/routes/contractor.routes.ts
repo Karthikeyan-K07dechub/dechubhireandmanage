@@ -24,7 +24,7 @@ import {
   submitInvoice,
   getMyInvoices,
 } from '../controllers/contractor.controller';
-import { listWorkerProjects, listWorkerProjectTasks, updateWorkerProjectTask } from '../controllers/projects.controller';
+import { acceptWorkerProjectContract, listWorkerProjects, listWorkerProjectTasks, updateWorkerProjectTask } from '../controllers/projects.controller';
 
 const router = Router();
 
@@ -82,6 +82,7 @@ router.post('/contract/signing-url', getSigningUrl);
 
 // Project delivery workspace
 router.get('/projects', listWorkerProjects);
+router.post('/projects/:id/accept-contract', acceptWorkerProjectContract);
 router.get('/projects/:id/tasks', listWorkerProjectTasks);
 router.patch('/project-tasks/:taskId', updateWorkerProjectTask);
 

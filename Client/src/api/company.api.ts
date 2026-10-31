@@ -209,3 +209,8 @@ export async function getMyCompany(): Promise<MyCompanyData> {
     throw normalizeError(err);
   }
 }
+
+export async function updateCompanyProfile(payload: { user: { firstName: string; lastName: string; phone: string }; company: Record<string, string | boolean> }): Promise<MyCompanyData> {
+  try { return unwrapApiData((await api.patch<ApiResponse<MyCompanyData>>('/company/profile', payload)).data); }
+  catch (error) { throw normalizeError(error); }
+}

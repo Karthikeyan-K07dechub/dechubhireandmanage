@@ -9,6 +9,55 @@
   overflow-x: hidden;
 }
 
+.db-pending-actions { margin-bottom: 20px; }
+.db-worker-project-status { color: #64748b; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.db-worker-project-status.ongoing { color: #00856a; }
+.db-worker-project-status.completed { color: #166534; }
+.db-project-contracts { margin-bottom: 28px; }
+.db-project-contract-card { margin-top: 16px; scroll-margin-top: 24px; }
+.db-contract-project-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; align-items: center; }
+.db-project-contract-card .db-project-section > .db-card-link { margin-top: 12px; }
+.db-project-acceptance { text-align: center; }
+.db-project-acceptance-form { display: grid; justify-items: center; gap: 18px; margin-top: 18px; }
+.db-project-acceptance-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: min(100%, 480px); text-align: left; }
+@media (max-width: 560px) {
+  .db-project-acceptance-dates { grid-template-columns: 1fr; }
+  .db-project-acceptance-form > button { width: 100%; justify-content: center; }
+}
+.db-pending-list { padding: 0 20px; }
+.db-pending-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  color: #0f172a;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f4f9;
+}
+.db-pending-action:last-child { border-bottom: 0; }
+.db-pending-count {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #f1edff;
+  color: #4b2bb8;
+  font-size: 13px;
+  font-weight: 700;
+}
+.db-pending-copy { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.db-pending-copy strong { font-size: 13px; font-weight: 600; }
+.db-pending-copy > span { color: #64748b; font-size: 12px; line-height: 1.5; }
+.db-pending-link { flex-shrink: 0; }
+.db-pending-empty { margin: 0; padding: 20px 24px; color: #64748b; font-size: 13px; }
+.db-pending-warning { margin: 12px 20px; color: #92400e; font-size: 12px; line-height: 1.6; }
+@media (max-width: 760px) {
+  .db-pending-action { flex-wrap: wrap; }
+  .db-pending-link { margin-left: 44px; }
+}
+
 .db-oauth-notice {
   margin: 24px 32px 0;
   padding: 13px 16px;
@@ -54,18 +103,19 @@
 }
 
 .db-platform-logo {
-  width: 108px;
-  height: 34px;
+  width: 132px;
+  height: 40px;
   overflow: hidden;
   position: relative;
 }
 
 .db-platform-logo img {
-  width: 160px;
+  width: 180px;
+  max-width: none;
   height: auto;
   position: absolute;
-  top: -22px;
-  left: -28px;
+  top: -24px;
+  left: -30px;
   filter: brightness(0) invert(1);
 }
 
@@ -109,11 +159,12 @@
 .db-nav {
   padding: 8px 0;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
 .db-nav-section {
-  padding: 16px 20px 6px;
+  padding: 12px 20px 5px;
   font-size: 10px;
   font-weight: 700;
   color: rgba(234,228,255,0.58);
@@ -125,7 +176,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px 9px 20px;
+  padding: 7px 12px 7px 20px;
   margin: 1px 12px;
   border-radius: 8px;
   cursor: pointer;
@@ -169,7 +220,7 @@
 .db-nav-sublist {
   display: grid;
   gap: 2px;
-  padding: 0 12px 8px 54px;
+  padding: 0 12px 5px 54px;
 }
 
 .db-nav-subitem {
@@ -180,7 +231,7 @@
   font-weight: 500;
   text-align: left;
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -602,17 +653,50 @@
 }
 
 .db-card-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 8px;
   font-size: 12px;
-  color: #2563eb;
+  line-height: 1.4;
+  color: #fff;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
-  background: none;
-  border: none;
+  background: #0a1628;
+  border: 1px solid #0a1628;
   font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
-.db-card-link:hover { text-decoration: underline; }
+.db-card-link:hover {
+  background: #162d54;
+  border-color: #162d54;
+  box-shadow: 0 4px 12px rgba(10, 22, 40, 0.25);
+  text-decoration: none;
+}
+.db-card-link:focus-visible { outline: 2px solid #0a1628; outline-offset: 3px; }
+.db-card-link:active { background: #0a1628; box-shadow: none; }
+.db-card-link:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+
+.db-pending-list .db-pending-link {
+  color: #000;
+  border-color: #000;
+  background: transparent;
+  box-shadow: none;
+}
+
+.db-pending-list .db-pending-link:hover,
+.db-pending-list .db-pending-link:active {
+  color: #000;
+  border-color: #000;
+  background: #f1f4f9;
+  box-shadow: none;
+}
 
 /* ── Tables ────────────────────────────────────────────────────────────────── */
 
@@ -1844,3 +1928,14 @@
     justify-content: center;
   }
 }
+
+.db-sidebar-user a { text-decoration: none; color: inherit; }
+.db-sidebar-user a:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+
+.db-topbar-actions > a { text-decoration: none; }
+
+.db-sidebar-logo, .db-sidebar-user { flex-shrink: 0; }
+
+.db-signout-btn { flex-shrink: 0; padding: 6px 9px; border: 1px solid rgba(255,255,255,.4); border-radius: 7px; background: rgba(255,255,255,.08); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.db-signout-btn:hover { background: rgba(255,255,255,.18); }
+.db-signout-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }

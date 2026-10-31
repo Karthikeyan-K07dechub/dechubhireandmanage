@@ -969,3 +969,9 @@
     width: 100%;
   }
 }
+.atd-client-decisions { margin: 22px 0; }
+.atd-client-decision-list { display: grid; gap: 12px; margin-top: 16px; }
+.atd-client-decision-card { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; padding: 16px; border: 1px solid rgba(148, 163, 184, .25); border-radius: 12px; }
+.atd-client-decision-card p { margin: 6px 0; }
+.atd-client-accepted { color: #5eead4; }
+.atd-client-rejected { color: #fca5a5; }

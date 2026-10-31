@@ -6,6 +6,11 @@ export type ProjectTaskStatus = 'todo' | 'in_progress' | 'completed';
 
 export interface ProjectTeamMember { workerId: string; role: string; }
 export interface ProjectTeamAccess extends ProjectTeamMember {
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  track?: 'track_1_india' | 'track_2_us';
+  kycStatus?: 'pending' | 'approved' | 'rejected';
   name: string;
   email: string;
   accountStatus: 'invited' | 'kyc_pending' | 'active' | 'inactive' | 'terminated';
@@ -14,6 +19,11 @@ export interface ProjectTeamAccess extends ProjectTeamMember {
   taskSummary: { total: number; todo: number; inProgress: number; completed: number; };
 }
 export interface DeliveryProject {
+  clientAcceptedAt?: string | null;
+  contractorAcceptedAt?: string | null;
+  assignedRole?: string;
+  companyDetails?: { name: string | null; website: string | null; country: string | null; address: string } | null;
+  completedAt?: string | null;
   _id: string; title: string; description: string; scope: string; budget: number; currency: 'USD' | 'INR' | 'AED';
   paymentTerms: string; startDate: string | null; targetEndDate: string | null; deliverables: string[];
   teamMembers: ProjectTeamMember[]; teamAccess?: ProjectTeamAccess[]; status: ProjectStatus; paymentReference: string | null; paymentProofUrl: string | null; createdAt: string;
@@ -43,6 +53,8 @@ export const getTeamMemberProjectTasks = (id: string) => contractorRequest<Deliv
 export const updateTeamMemberProjectTask = (id: string, payload: { status: ProjectTaskStatus; completionNote?: string }) => contractorRequest<DeliveryTask>(contractorApi.patch(`/project-tasks/${id}`, payload));
 
 export interface CreateDeliveryProjectPayload {
+  startDate?: string | null;
+  targetEndDate?: string | null;
   talentRequestId: string;
   title: string;
   description: string;
@@ -56,3 +68,5 @@ export interface CreateDeliveryProjectPayload {
 
 export const createAdminProject = (payload: CreateDeliveryProjectPayload) => companyRequest<DeliveryProject>(api.post('/admin/projects', payload));
 export const sendAdminProjectContract = (id: string) => companyRequest<DeliveryProject>(api.post(`/admin/projects/${id}/send-contract`));
+
+export const acceptTeamMemberProjectContract = (id: string) => contractorRequest<DeliveryProject>(contractorApi.post(`/projects/${id}/accept-contract`));

@@ -31,6 +31,7 @@ export interface IProject extends Document {
   contractSentAt: Date | null;
   clientAcceptedAt: Date | null;
   clientAcceptedBy: string | null;
+  contractorAcceptances: Array<{ workerId: mongoose.Types.ObjectId; acceptedAt: Date; email: string }>;
   paymentReference: string | null;
   paymentProofUrl: string | null;
   paymentSubmittedAt: Date | null;
@@ -68,6 +69,7 @@ const projectSchema = new Schema<IProject>(
     contractSentAt: { type: Date, default: null },
     clientAcceptedAt: { type: Date, default: null },
     clientAcceptedBy: { type: String, default: null, trim: true },
+    contractorAcceptances: { type: [new Schema({ workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true }, acceptedAt: { type: Date, required: true }, email: { type: String, required: true } }, { _id: false })], default: [] },
     paymentReference: { type: String, default: null, trim: true, maxlength: 240 },
     paymentProofUrl: { type: String, default: null, trim: true, maxlength: 1000 },
     paymentSubmittedAt: { type: Date, default: null },
