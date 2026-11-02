@@ -1,6 +1,7 @@
+import { api } from '../../api/client';
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
-import { getCompanyProjectNotifications, markCompanyProjectNotificationRead } from '../../api/projects.api';
+import { getCompanyProjects, getCompanyProjectNotifications, markCompanyProjectNotificationRead } from '../../api/projects.api';
 import { listCompanyTalentRequests } from '../../api/talentRequests.api';
 import { getContracts, getInvoices, getWorkers, getDocuments, getDashboardStats } from '../api/dashboard.api';
 import { getMyCompany } from '../../api/company.api';
@@ -8,11 +9,26 @@ import './dashboard-notifications.css';
 
 type Notice = { id: string; title: string; message: string; href: string; read: boolean; serverId?: string };
 const label = (status: string) => status.replace(/_/g, ' ');
-export default function DashboardNotifications() {
+function noticeSection(notice: Notice) {
+  const url = new URL(notice.href, window.location.origin);
+  return url.pathname === '/company/onboarding' ? 'settings' : url.searchParams.get('tab') || 'home';
+}
+export default function DashboardNotifications({ onCountsChange, activeSection }: { onCountsChange?: (counts: Record<string, number>) => void; activeSection: string }) {
+  const sectionRef = useRef(activeSection);
+  sectionRef.current = activeSection;
   const [notices, setNotices] = useState<Notice[]>([]);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const counts: Record<string, number> = {};
+    for (const notice of notices) {
+      if (notice.read) continue;
+      const section = noticeSection(notice);
+      counts[section] = (counts[section] || 0) + 1;
+    }
+    onCountsChange?.(counts);
+  }, [notices, onCountsChange]);
   const seen = useRef(new Set<string>());
   const read = useRef(new Set<string>());
   const storageKey = useRef('');
@@ -40,12 +56,12 @@ export default function DashboardNotifications() {
         storageKey.current = 'dechub_notification_reads:' + company.user.email;
         try { read.current = new Set(JSON.parse(localStorage.getItem(storageKey.current) || '[]')); } catch { /* Keep in-memory read state. */ }
         try { seen.current = new Set([...seen.current, ...JSON.parse(sessionStorage.getItem(storageKey.current + ':shown') || '[]')]); } catch { /* Keep in-memory popup state. */ }
-        const results = await Promise.allSettled([getCompanyProjectNotifications(), listCompanyTalentRequests(), getInvoices(), getContracts(), getWorkers(), getDocuments(), getDashboardStats()]);
+        const results = await Promise.allSettled([getCompanyProjectNotifications(), listCompanyTalentRequests(), getInvoices(), getContracts(), getWorkers(), getDocuments(), getDashboardStats(), getCompanyProjects()]);
         if (!active) return;
-        const [events, requests, invoices, contracts, workers, documents, stats] = results;
+        const [events, requests, invoices, contracts, workers, documents, stats, projects] = results;
         const items: Notice[] = [];
         if (events.status === 'fulfilled') items.push(...events.value.map(item => ({ id: 'event:' + item._id, serverId: item._id, title: item.title, message: item.message, href: item.title === 'Project contract ready for review' ? (item.actionUrl || '/dashboard?tab=contracts').replace('tab=projects', 'tab=contracts') : item.actionUrl?.startsWith('/dashboard') ? item.actionUrl : '/dashboard?tab=home', read: Boolean(item.readAt) })));
-        if (requests.status === 'fulfilled') items.push(...requests.value.map(item => ({ id: 'request:' + item._id + ':' + item.status + ':' + (item.shortlistSentAt || ''), title: item.status === 'shortlisted_sent' ? 'Shortlisted workers ready for review' : 'Hiring request: ' + label(item.status), message: (item.projectName || item.projectType) + '. ' + (item.reviewNotes || (item.status === 'shortlisted_sent' ? 'Accept or reject the candidates and submit your selections.' : 'View the latest request status and next steps.')), href: '/dashboard?tab=hiring&hiringView=requests#talent-request-' + item._id, read: false })));
+        if (requests.status === 'fulfilled') items.push(...requests.value.filter(item => item.status === 'shortlisted_sent' && !item.clientSelectionSubmittedAt).map(item => ({ id: 'request:' + item._id + ':' + item.status + ':' + (item.shortlistSentAt || ''), title: item.status === 'shortlisted_sent' ? 'Shortlisted workers ready for review' : 'Hiring request: ' + label(item.status), message: (item.projectName || item.projectType) + '. ' + (item.reviewNotes || (item.status === 'shortlisted_sent' ? 'Accept or reject the candidates and submit your selections.' : 'View the latest request status and next steps.')), href: '/dashboard?tab=hiring&hiringView=requests#talent-request-' + item._id, read: false })));
         if (invoices.status === 'fulfilled') items.push(...invoices.value.map(item => ({ id: 'invoice:' + item._id + ':' + item.status, title: 'Invoice ' + label(item.status), message: item.invoiceNumber + ' - ' + item.workerName + ': ' + item.currency + ' ' + item.amountGross.toLocaleString(), href: '/dashboard?tab=invoices', read: false })));
         if (contracts.status === 'fulfilled') items.push(...contracts.value.map(item => ({ id: 'contract:' + item._id + ':' + item.status, title: 'Contract ' + label(item.status), message: item.workerName + ': review the agreement and signature status.', href: '/dashboard?tab=contracts', read: false })));
         if (workers.status === 'fulfilled') items.push(...workers.value.map(item => ({ id: 'worker:' + item._id + ':' + item.status + ':' + item.kycStatus, title: 'Worker ' + label(item.status), message: item.firstName + ' ' + item.lastName + ' - verification ' + label(item.kycStatus), href: '/dashboard?tab=workers', read: false })));
@@ -53,8 +69,12 @@ export default function DashboardNotifications() {
         if (stats.status === 'fulfilled' && stats.value.nextPayrollDate) items.push({ id: 'payroll:' + stats.value.nextPayrollDate, title: 'Upcoming payroll', message: 'Next payroll: ' + new Date(stats.value.nextPayrollDate).toLocaleDateString(), href: '/dashboard?tab=payroll', read: false });
         if (company.company.kybStatus) items.push({ id: 'verification:' + String(company.company.kybStatus), title: 'Company verification ' + String(company.company.kybStatus), message: 'Review your company verification status and any remaining setup steps.', href: '/company/onboarding', read: false });
         if (company.user.signupStep < 7) items.push({ id: 'setup:' + company.user.signupStep, title: 'Complete your company setup', message: 'Finish your company profile, verification, and billing setup.', href: '/company/onboarding', read: false });
+        if (projects.status === 'fulfilled') projects.value.filter(item => item.status === 'contract_sent' && !item.clientAcceptedAt).forEach(item => {
+          const id = 'project-contract:' + item._id;
+          items.push({ id, title: 'Project contract awaiting acceptance', message: item.title, href: '/dashboard?tab=contracts#project-contract-' + item._id, read: false });
+        });
         const resolved = items.map(item => ({ ...item, read: item.read || read.current.has(item.id) }));
-        const fresh = resolved.some(item => !item.read && !seen.current.has(item.id));
+        const fresh = resolved.some(item => !item.read && noticeSection(item) !== sectionRef.current && !seen.current.has(item.id));
         resolved.forEach(item => seen.current.add(item.id));
         try { sessionStorage.setItem(storageKey.current + ':shown', JSON.stringify([...seen.current].slice(-1000))); } catch { /* Keep in-memory popup state. */ }
         setNotices(resolved);
@@ -67,14 +87,23 @@ export default function DashboardNotifications() {
     const timer = window.setInterval(() => void refresh(), 30000);
     const focus = () => void refresh();
     window.addEventListener('focus', focus);
-    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', focus); };
+    const interceptor = api.interceptors.response.use(response => {
+      if (response.config.method && !['get', 'head', 'options'].includes(response.config.method.toLowerCase())) void refresh();
+      return response;
+    });
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', focus); api.interceptors.response.eject(interceptor); };
   }, []);
   async function markRead(items: Notice[]) {
     for (const item of items) read.current.add(item.id);
     try { localStorage.setItem(storageKey.current, JSON.stringify([...read.current].slice(-1000))); } catch { /* Storage may be unavailable. */ }
+    window.dispatchEvent(new CustomEvent('dechub:notification-reads', { detail: [...read.current] }));
     setNotices(previous => previous.map(item => read.current.has(item.id) ? { ...item, read: true } : item));
     await Promise.allSettled(items.filter(item => item.serverId).map(item => markCompanyProjectNotificationRead(item.serverId!)));
   }
+  useEffect(() => {
+    const visited = notices.filter(item => !item.read && noticeSection(item) === activeSection);
+    if (visited.length && storageKey.current) void markRead(visited);
+  }, [activeSection, notices]);
   const unread = notices.filter(item => !item.read);
   return <>
     <button ref={bell} type="button" className="db-icon-btn" aria-label={unread.length + ' unread notifications'} aria-haspopup="dialog" onClick={() => setOpen(true)}>

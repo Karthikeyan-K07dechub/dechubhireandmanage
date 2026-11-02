@@ -12,6 +12,139 @@ svg {
   max-width: 100%;
 }
 
+/* Shared layouts use shrinkable tracks instead of fixed desktop columns. */
+.db-home-layout, .cd-home-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 20px;
+}
+.app-grid-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.app-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cd-portfolio-item { grid-template-columns: 120px minmax(0, 1fr); }
+.cd-setup-actions { width: 240px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+.atd-header-meta-shortlist { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+:where(.db-page, .cd-page, .atr-root, .atd-root, .apb-root, .cp-main) :where(section, article, aside, form, .db-card, .cd-card, .db-stat-card, .db-project-info > div, .app-grid-two > div, .app-grid-three > div) {
+  min-width: 0;
+}
+:where(.db-page, .cd-page, .atr-root, .atd-root, .apb-root, .cp-main) :where(h1, h2, h3, p, strong, label) {
+  overflow-wrap: anywhere;
+}
+.db-table-wrap, .atr-table-wrap, .cd-invoice-table {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.db-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+@media (max-width: 1200px) {
+  .db-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .db-home-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 1000px) {
+  .cd-topbar { height: auto; padding: 12px 20px; gap: 12px; flex-wrap: wrap; }
+  .cd-nav { order: 3; flex: 1 0 100%; width: 100%; margin-left: 0; overflow-x: auto; padding-bottom: 4px; }
+  .cd-nav-item { flex-shrink: 0; white-space: nowrap; min-height: 42px; }
+  .cd-home-layout { grid-template-columns: minmax(0, 1fr); }
+  .cd-setup-banner { flex-wrap: wrap; }
+  .cd-setup-actions { width: 100%; flex-direction: row; flex-wrap: wrap; }
+  .cd-setup-actions > button { flex: 1 1 180px; }
+}
+
+@media (max-width: 760px) {
+  .db-page, .cd-page { width: 100%; min-width: 0; padding: 20px 16px; }
+  .db-main { width: 100%; }
+  .db-page-header, .db-filter-bar { flex-wrap: wrap; gap: 12px; }
+  .db-filter-bar > * { min-width: 0; max-width: 100%; }
+  .db-topbar-heading { flex: 1 0 100%; }
+  .db-topbar-title { flex: 1; }
+  .db-topbar-search { flex: 1 1 120px; width: auto; }
+  .db-topbar-actions { flex-shrink: 0; }
+  .db-card-header, .cd-card-header { flex-wrap: wrap; gap: 12px; padding: 16px; }
+  .db-project-detail, .ctp-card { padding: 18px; }
+  .db-contract-header, .db-project-topline { flex-wrap: wrap; align-items: flex-start; }
+  .db-project-form { grid-template-columns: minmax(0, 1fr); }
+  .db-project-form > * { min-width: 0; max-width: 100%; }
+  .db-team-access-card { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 14px; }
+  .db-team-access-card > div:first-child { grid-column: 1 / -1; }
+  .db-team-access-card span, .db-team-access-card strong { overflow-wrap: anywhere; }
+  .db-stat-card { padding: 20px; }
+  .db-stat-label { align-items: flex-start; flex-wrap: wrap; line-height: 1.5; }
+  .db-stat-value { font-size: 28px; line-height: 1.2; letter-spacing: -.5px; }
+  .db-stat-delta { line-height: 1.5; }
+  .db-action-item { flex-wrap: wrap; gap: 12px; padding: 16px; }
+  .db-action-text { min-width: 0; overflow-wrap: anywhere; }
+  .db-pending-list { padding: 0 16px; }
+  .db-pending-link { white-space: normal; text-align: center; }
+  .db-settings-row { flex-wrap: wrap; gap: 8px !important; }
+  .db-settings-row > .db-label { width: 100% !important; }
+  .db-settings-row > input { max-width: 100% !important; }
+  .db-table { min-width: 640px; }
+  .cd-invoice-table table { min-width: 620px; }
+  .app-grid-three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cd-page > div:first-child { flex-wrap: wrap; gap: 16px; }
+  .cd-page > div:first-child > div { min-width: 0; }
+  .cd-user { min-width: 0; }
+  .cd-user > div:first-child { max-width: 180px; overflow: hidden; }
+  .cd-user-name, .cd-user-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .atd-header-meta, .atd-header-meta-shortlist { grid-template-columns: minmax(0, 1fr); }
+  .atd-header-card { min-width: 0; overflow-wrap: anywhere; }
+  .atd-header-card-select { min-width: 0; }
+  .atd-root, .atr-root, .apb-root { padding: 16px; }
+  .atd-card, .atd-hero-card, .atr-list, .apb-card { padding: 18px; border-radius: 16px; }
+  .atd-tracker-step { padding: 16px; }
+  .air-content, .air-invoice { padding: 14px; }
+  .air-panel, .air-invoice { min-width: 0; overflow-wrap: anywhere; }
+  .air-panel summary { display: flex; flex-wrap: wrap; gap: 8px; }
+  .air-panel button { max-width: 100%; white-space: normal; }
+  .company-onboarding > .app > .left { display: none; }
+  .company-onboarding > .app > .right { width: 100%; padding: 24px 16px; }
+  .company-onboarding .right > .card { width: 100%; padding: 22px 18px; }
+  .cp-modal-overlay { align-items: center; }
+  .cp-modal { display: flex; flex-direction: column; min-height: 0; }
+  .cp-modal-body { overflow-y: auto; min-height: 0; }
+  .cp-modal-header, .cp-modal-footer { flex-shrink: 0; }
+  .cp-modal-footer { flex-wrap: wrap; }
+  .cp-modal-footer button { min-width: 0; }
+}
+
+@media (max-width: 560px) {
+  .db-stats-row, .cd-stats, .app-grid-two, .app-grid-three { grid-template-columns: minmax(0, 1fr); }
+  .db-stats-row, .cd-stats { gap: 12px; }
+  .db-stat-card { padding: 18px 20px; }
+  .db-stat-label { margin-bottom: 8px; }
+  .db-stat-value { font-size: 30px; }
+  .db-page-title, .cd-page-title { font-size: 22px; }
+  .db-project-info, .db-team-access-card, .ctp-details { grid-template-columns: minmax(0, 1fr); }
+  .db-topbar { padding: 12px; }
+  .db-topbar-actions { gap: 6px; }
+  .db-setup-banner { margin: 16px 16px 0; padding: 18px; }
+  .db-setup-banner__actions { width: 100%; }
+  .db-setup-banner__actions > * { width: 100%; }
+  .db-project-contract-card .db-project-section { overflow-wrap: anywhere; }
+  .db-contract-header-actions { width: 100%; align-items: flex-start; }
+  .db-contract-header-actions > button { max-width: 100%; }
+  .cd-topbar { padding: 12px 16px; }
+  .cd-user > div:first-child { max-width: 140px; }
+  .cd-setup-banner { padding: 20px !important; }
+  .cd-setup-banner h2 { font-size: 24px !important; line-height: 1.25 !important; }
+  .ctp-task { padding: 14px; }
+  .ctp-task-actions > button { flex: 1 1 80px; }
+  .cd-portfolio-item { grid-template-columns: minmax(0, 1fr); }
+  .cd-portfolio-item img { width: 100%; height: auto; max-height: 220px; object-fit: cover; }
+  .cpi-grid { grid-template-columns: minmax(0, 1fr); }
+  .cpi-card { padding: 18px; }
+  .atd-hero-card h1, .atr-hero h1, .apb-header h1 { font-size: 26px; }
+  .atd-tracker-head { gap: 8px; }
+  .atd-payment-status-actions > button { flex: 1 1 90px; }
+  .cp-main { padding: 20px 16px; }
+  .cp-card { padding: 18px; }
+  .cp-grid { grid-template-columns: minmax(0, 1fr); }
+  :where(.db-shell, .cd-shell, .cp-page, .company-onboarding, .atr-root, .atd-root, .apb-root, .login-root, .cap-shell, .tmp-root, .mpp-root, .mpc-root, .ltrm-card) :where(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: 16px; max-width: 100%; }
+  :where(.db-shell, .cd-shell, .cp-page, .company-onboarding, .atr-root, .atd-root, .apb-root) :where(button, .db-card-link, .db-btn-primary, .db-btn-secondary) { min-height: 42px; }
+}
+
 .db-topbar-heading {
   display: flex;
   flex: 1;

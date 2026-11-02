@@ -973,7 +973,7 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
 
     const [activeCount, pendingInvoices, contractsExpiring] = await Promise.all([
       Worker.countDocuments({ companyId, status: 'active' }),
-      Invoice.countDocuments({ companyId, status: 'submitted' }),
+      Invoice.countDocuments({ companyId, status: 'submitted', clientSentAt: { $ne: null } }),
       // Workers with contracts ending within 30 days
       Worker.countDocuments({
         companyId,

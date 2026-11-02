@@ -93,9 +93,11 @@ export interface ContractorContract {
   createdAt: string;
 }
 
-export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'disputed';
+export type InvoiceStatus = 'pending_admin' | 'draft' | 'submitted' | 'approved' | 'paid' | 'disputed';
 
 export interface ContractorInvoice {
+  projectId?: string | null;
+  projectName?: string;
   _id: string;
   invoiceNumber: string;
   periodStart: string;
@@ -112,6 +114,8 @@ export interface ContractorInvoice {
 }
 
 export interface SubmitInvoicePayload {
+  projectId: string;
+  projectName: string;
   periodStart: string;
   periodEnd: string;
   amountGross: number;

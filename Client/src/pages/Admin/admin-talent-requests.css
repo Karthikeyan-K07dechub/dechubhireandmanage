@@ -489,3 +489,5 @@
 }
 
 .atr-contract-approvals { display: grid; gap: 5px; text-align: left; color: #76f2cc; }
+
+.atr-status-pill.project-completed { background: rgba(22,163,74,.16); border-color: #22c55e; color: #86efac; }

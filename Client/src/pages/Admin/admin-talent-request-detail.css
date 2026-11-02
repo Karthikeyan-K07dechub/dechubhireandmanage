@@ -975,3 +975,15 @@
 .atd-client-decision-card p { margin: 6px 0; }
 .atd-client-accepted { color: #5eead4; }
 .atd-client-rejected { color: #fca5a5; }
+
+.atd-tracker-step.project-completed { background: rgba(22,163,74,.14); border-color: #22c55e; }
+.atd-tracker-step.project-completed .atd-tracker-dot { background: #22c55e; }
+.atd-project-worker-status p.completed { color: #86efac; }
+
+.atd-payment-status-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.atd-payment-status-actions button[aria-pressed="true"] { background: rgba(22,163,74,.18); border-color: #22c55e; color: #86efac; }
+
+.atd-payment-status-actions button:nth-child(2)[aria-pressed="true"] { background: rgba(245,158,11,.12); border-color: #b7791f; color: #fcd34d; }
+
+.atd-payment-status-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.atd-payment-blocked { flex-basis: 100%; margin: 0; color: #fcd34d; font-size: 13px; }

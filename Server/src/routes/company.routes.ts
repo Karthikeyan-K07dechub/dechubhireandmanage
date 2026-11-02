@@ -1,3 +1,7 @@
+import multer from 'multer';
+import rateLimit from 'express-rate-limit';
+import { AppError } from '../utils/response';
+import { changeCompanyPassword, uploadCompanyLogo } from '../controllers/companySettings.controller';
 import { Router } from 'express';
 import { createCompanyProjectRequest } from '../controllers/workers.controller';
 import {
@@ -39,6 +43,9 @@ router.use(requireAuth);
 
 router.get  ('/me',             getMyCompany);
 router.patch('/profile', updateCompanyProfile);
+router.post('/change-password', rateLimit({ windowMs: 15 * 60 * 1000, max: 5, keyGenerator: req => req.user!.sub, message: { success: false, error: { message: 'Too many password change attempts. Try again in 15 minutes.' } } }), changeCompanyPassword);
+const logoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 0 } }).single('logo');
+router.post('/logo', (req, res, next) => logoUpload(req, res, error => next(error ? new AppError('Choose one logo image up to 2 MB.', 422, 'INVALID_LOGO') : undefined)), uploadCompanyLogo);
 router.post ('/identity',       saveIdentity);           // Step 2
 router.post ('/business',       saveBusinessDetails);    // Step 3
 router.post ('/kyb',            kybUpload, submitKyb);   // Step 4

@@ -384,51 +384,6 @@ function wireAccordions(root: HTMLElement) {
   };
 }
 
-function wireCheckboxButtons(root: HTMLElement) {
-  const checkboxes = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="checkbox"]'));
-
-  const setChecked = (button: HTMLButtonElement, checked: boolean) => {
-    button.setAttribute('aria-checked', checked ? 'true' : 'false');
-    button.style.background = checked ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.04)';
-    button.style.borderColor = checked ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.1)';
-
-    const marker = button.querySelector<HTMLElement>('span[aria-hidden="true"]');
-    if (marker) {
-      marker.style.background = checked ? 'var(--color-purple-525)' : 'transparent';
-      marker.style.borderColor = 'var(--color-purple-525)';
-      marker.style.boxShadow = checked ? 'inset 0 0 0 3px rgba(255,255,255,0.95)' : '';
-    }
-  };
-
-  const cleanupFns = checkboxes.map((button) => {
-    setChecked(button, button.getAttribute('aria-checked') === 'true');
-
-    const handleClick = () => {
-      const nextChecked = button.getAttribute('aria-checked') !== 'true';
-      setChecked(button, nextChecked);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        handleClick();
-      }
-    };
-
-    button.addEventListener('click', handleClick);
-    button.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      button.removeEventListener('click', handleClick);
-      button.removeEventListener('keydown', handleKeyDown);
-    };
-  });
-
-  return () => {
-    cleanupFns.forEach((cleanup) => cleanup());
-  };
-}
-
 export default function DeelEmbeddedPage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [landingLogoStripTarget, setLandingLogoStripTarget] = useState<HTMLDivElement | null>(null);
@@ -614,7 +569,6 @@ export default function DeelEmbeddedPage() {
     const cleanupSlider = wireSlider(root);
     const cleanupTabs = wireTabs(root);
     const cleanupAccordions = wireAccordions(root);
-    const cleanupCheckboxes = wireCheckboxButtons(root);
 
     root.addEventListener('click', handleAnchorClick);
 
@@ -623,7 +577,6 @@ export default function DeelEmbeddedPage() {
       cleanupSlider();
       cleanupTabs();
       cleanupAccordions();
-      cleanupCheckboxes();
     };
   }, []);
 

@@ -255,6 +255,17 @@ export function ContractsPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function InvoicesPage() {
+  const [downloadError, setDownloadError] = useState('');
+  const [downloading, setDownloading] = useState('');
+  const downloadInvoice = async (invoice: Invoice) => {
+    if (downloading) return; setDownloading(invoice._id); setDownloadError('');
+    try {
+      const result = await api.get('/invoices/' + invoice._id + '/pdf', { responseType: 'blob' });
+      const url = URL.createObjectURL(result.data); const link = document.createElement('a'); link.href = url; link.download = invoice.documentName || invoice.invoiceNumber + '.pdf'; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch { setDownloadError('Unable to download the invoice PDF. Please try again.'); }
+    finally { setDownloading(''); }
+  };
+
   const [invoices,     setInvoices]     = useState<Invoice[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [search,       setSearch]       = useState('');
@@ -265,10 +276,18 @@ export function InvoicesPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getInvoices()
-      .then((data) => { if (!cancelled) { setInvoices(data); setLoading(false); } })
-      .catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    let busy = false;
+    const refresh = async () => {
+      if (busy) return;
+      busy = true;
+      try { const data = await getInvoices(); if (!cancelled) setInvoices(data); }
+      catch { /* Keep the last loaded invoices while retrying. */ }
+      finally { busy = false; if (!cancelled) setLoading(false); }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15000);
+    window.addEventListener('focus', refresh);
+    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
 
   const filtered = useMemo(() => {
@@ -323,6 +342,7 @@ export function InvoicesPage() {
           </div>
         </div>
 
+        {downloadError && <p className="db-project-error" role="alert">{downloadError}</p>}
         {/* Pending banner */}
         {pending > 0 && (
           <div style={{
@@ -392,7 +412,6 @@ export function InvoicesPage() {
                     <th>Invoice</th>
                     <th>Worker</th>
                     <th>Period</th>
-                    <th>Amount</th>
                     <th>Submitted</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -410,21 +429,20 @@ export function InvoicesPage() {
                         </td>
                         <td>
                           <div className="db-table-name">{inv.workerName}</div>
-                          <div className="db-table-sub">{inv.workerRole}</div>
+                          <div className="db-table-sub">{inv.workerRole}</div>{inv.companyName && <div className="db-table-sub">{inv.companyName}</div>}{inv.projectName && <div className="db-table-sub">{inv.projectName}</div>}
                         </td>
                         <td style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
                           {new Date(inv.periodStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {' – '}
                           {new Date(inv.periodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </td>
-                        <td style={{ fontWeight: 600, fontSize: 14 }}>
-                          {inv.currency} {inv.amountGross.toLocaleString()}
-                        </td>
                         <td style={{ color: '#94a3b8', fontSize: 12 }}>
                           {new Date(inv.submittedAt).toLocaleDateString()}
                         </td>
                         <td><span className={badgeCls}>{badgeLabel}</span></td>
                         <td>
+                          <button type="button" className="db-btn-secondary db-btn-sm" disabled={Boolean(downloading)} onClick={() => void downloadInvoice(inv)}>{downloading === inv._id ? 'Downloading...' : 'Download PDF'}</button>
+                          {inv.status === 'paid' ? <span className="db-badge db-badge-active" style={{ marginLeft: 8 }}>Paid</span> : <a href="/dashboard?tab=payroll" className="db-btn-secondary db-btn-sm" style={{ marginLeft: 8 }}>Payroll</a>}
                           {inv.status === 'submitted' && (
                             <div style={{ display: 'flex', gap: 6 }}>
                               <button
@@ -446,9 +464,6 @@ export function InvoicesPage() {
                             <a href={inv.pdfUrl} target="_blank" rel="noreferrer" className="db-card-link">
                               Receipt
                             </a>
-                          )}
-                          {inv.status === 'approved' && (
-                            <span style={{ fontSize: 12, color: '#94a3b8' }}>Processing…</span>
                           )}
                         </td>
                       </tr>

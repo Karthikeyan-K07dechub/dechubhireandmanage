@@ -18,6 +18,7 @@ export interface ICompany extends Document {
 
   // ── Step 2: Company Identity ──────────────────────────────────────────────
   companyName:    string | null;
+  companyLogoUrl: string | null;
   companyCountry: string | null;
   companyType:    string | null;   // LLC | Corp | Pvt Ltd | Sole Trader | Partnership
   taxId:          string | null;
@@ -77,6 +78,7 @@ const companySchema = new Schema<ICompany>(
     ownerId: { type: Schema.Types.ObjectId, ref: 'CompanyAuth', required: true },
 
     // Step 2
+    companyLogoUrl: { type: String, default: null },
     companyName:    { type: String, default: null, trim: true },
     companyCountry: { type: String, default: null },
     companyType:    { type: String, default: null },

@@ -104,7 +104,7 @@
 
 .mpp-hero-banner {
   width: 100%;
-  min-height: 350px;
+  height: 200px;
   border-radius: 16px 16px 0 0;
   overflow: hidden;
   margin: 0 0 12px;
@@ -113,7 +113,6 @@
 .mpp-hero-banner img {
   display: block;
   width: 100%;
-  min-height: 350px;
   height: 100%;
   object-fit: cover;
   object-position: top;
@@ -143,11 +142,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 128px;
+  height: 128px;
+  flex: 0 0 128px;
   border-radius: 14px;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 32px;
   font-weight: 800;
   letter-spacing: -0.8px;
   overflow: hidden;
@@ -601,4 +601,12 @@
   .mpp-compare-row > *:last-child {
     border-bottom: none;
   }
+}
+
+.mpp-hero-head > :last-child { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .mpp-hero-banner { height: 160px; }
+  .mpp-avatar { width: 96px; height: 96px; flex-basis: 96px; }
+  .mpp-hero-head { flex-wrap: wrap; align-items: flex-start; }
+  .mpp-hero-head > :last-child { flex: 1 1 180px; }
 }

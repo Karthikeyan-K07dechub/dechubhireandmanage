@@ -197,6 +197,7 @@ export interface MyCompanyData {
     phone:           string | null;
     signupStep:      number;
     isEmailVerified: boolean;
+    canChangePassword?: boolean;
   };
   company: Record<string, unknown>;
 }
@@ -210,7 +211,7 @@ export async function getMyCompany(): Promise<MyCompanyData> {
   }
 }
 
-export async function updateCompanyProfile(payload: { user: { firstName: string; lastName: string; phone: string }; company: Record<string, string | boolean> }): Promise<MyCompanyData> {
+export async function updateCompanyProfile(payload: { user?: { firstName: string; lastName: string; phone: string }; company?: Record<string, string | boolean> }): Promise<MyCompanyData> {
   try { return unwrapApiData((await api.patch<ApiResponse<MyCompanyData>>('/company/profile', payload)).data); }
   catch (error) { throw normalizeError(error); }
 }

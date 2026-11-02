@@ -1,3 +1,5 @@
+import { Project } from '../models/Project';
+import { notifyInvoiceAdmin } from '../services/invoiceReview.service';
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -1133,6 +1135,8 @@ export async function markNotificationRead(req: Request, res: Response, next: Ne
 // ─── Invoice — submit ─────────────────────────────────────────────────────────
 
 const submitInvoiceSchema = z.object({
+  projectId: z.string().regex(/^[a-f\d]{24}$/i),
+  projectName: z.string().trim().min(1).max(180).optional(),
   periodStart:  z.string().min(1),
   periodEnd:    z.string().min(1),
   amountGross:  z.number().positive(),
@@ -1145,16 +1149,20 @@ export async function submitInvoice(req: Request, res: Response, next: NextFunct
     const data     = submitInvoiceSchema.parse(req.body);
     const worker   = await getWorkerFromReq(req);
 
-    if (worker.status !== 'active') {
-      throw new AppError('Your account must be active to submit invoices', 403, 'ACCOUNT_NOT_ACTIVE');
+    // Project contracts have their own acceptance and completion records;
+    // the legacy worker agreement status does not represent their eligibility.
+    if (worker.status === 'terminated') {
+      throw new AppError('Your account has been terminated. Contact Dechub before submitting invoices.', 403, 'ACCOUNT_TERMINATED');
     }
 
-    const contract = await Contract.findOne({ workerId: worker._id, status: 'active' });
-    if (!contract) throw new AppError('No active contract found', 404, 'NO_CONTRACT');
+    const project = await Project.findOne({ _id: data.projectId, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, 'contractorAcceptances.workerId': worker._id, 'deliveryCompletions.workerId': worker._id, status: { $in: ['active', 'payment_submitted', 'completed'] } });
+    if (!project) throw new AppError('You can submit an invoice only after completing your accepted project.', 403, 'PROJECT_NOT_COMPLETED');
+    const contract = await Contract.findOne({ workerId: worker._id, companyId: project.companyId, status: 'active' });
 
     // Check for duplicate invoice for same period
     const existing = await Invoice.findOne({
       workerId:    worker._id,
+      projectId: project._id,
       periodStart: new Date(data.periodStart),
       status:      { $ne: 'disputed' },
     });
@@ -1163,9 +1171,10 @@ export async function submitInvoice(req: Request, res: Response, next: NextFunct
     }
 
     const invoice = await Invoice.create({
-      companyId:   worker.companyId,
+      companyId:   project.companyId,
       workerId:    worker._id,
-      contractId:  contract._id,
+      contractId:  contract?._id ?? null,
+      projectId: project._id,
       workerName:  `${worker.firstName} ${worker.lastName}`,
       workerRole:  worker.roleTitle,
       periodStart: new Date(data.periodStart),
@@ -1173,12 +1182,14 @@ export async function submitInvoice(req: Request, res: Response, next: NextFunct
       amountGross: data.amountGross,
       currency:    worker.payCurrency,
       description: data.description,
+      projectName: project.title,
       hoursWorked: data.hoursWorked ?? null,
-      status:      'submitted',
+      status:      'pending_admin',
       submittedAt: new Date(),
     });
 
     logger.info(`Invoice submitted: ${invoice._id} by worker ${worker._id}`);
+    void notifyInvoiceAdmin(invoice).catch(error => logger.error('Invoice admin email failed', error));
     created(res, invoice);
   } catch (err) { next(err); }
 }
@@ -1191,6 +1202,6 @@ export async function getMyInvoices(req: Request, res: Response, next: NextFunct
     const invoices = await Invoice.find({ workerId: worker._id })
       .sort({ submittedAt: -1 })
       .lean();
-    ok(res, invoices);
+    ok(res, invoices.map(({ serviceCharge, clientTotal, adminReviewedBy, adminEmailSentAt, adminEmailError, clientEmailSentAt, clientEmailError, clientDocument, ...invoice }) => invoice));
   } catch (err) { next(err); }
 }

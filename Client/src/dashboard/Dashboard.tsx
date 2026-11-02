@@ -1,3 +1,4 @@
+import SettingsPage from './pages/SettingsPage';
 import SignOutButton from '../components/common/SignOutButton';
 import DashboardHelp from './components/DashboardHelp';
 import DashboardNotifications from './components/DashboardNotifications';
@@ -408,71 +409,6 @@ function PayrollPage() {
   );
 }
 
-function SettingsPage({ companyName }: { companyName: string }) {
-  return (
-    <div className="db-page">
-      <div className="db-page-header">
-        <div>
-          <div className="db-page-title">Settings</div>
-          <div className="db-page-sub">Manage your company profile, billing, and preferences</div>
-        </div>
-        <button className="db-btn-primary">Save changes</button>
-      </div>
-
-      {[
-        {
-          title: 'Company Profile',
-          rows: [
-            { label: 'Company name', value: companyName, input: 'text' },
-            { label: 'Company email', value: 'admin@company.com', input: 'email' },
-            { label: 'Default currency', value: 'USD', input: 'select' },
-            { label: 'Pay cycle', value: 'Monthly', input: 'select' },
-          ],
-        },
-        {
-          title: 'Billing',
-          rows: [
-            { label: 'Plan', value: 'Starter — $49/worker/month', input: 'none' },
-            { label: 'Billing card', value: '•••• •••• •••• 4242', input: 'none' },
-          ],
-        },
-      ].map((section) => (
-        <div key={section.title} className="db-card" style={{ marginBottom: 16 }}>
-          <div className="db-card-header">
-            <span className="db-card-title">{section.title}</span>
-          </div>
-          <div style={{ padding: '8px 24px 20px' }}>
-            {section.rows.map((row) => (
-              <div
-                key={row.label}
-                className="db-form-group"
-                style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 14 }}
-              >
-                <label
-                  className="db-label"
-                  style={{ width: 180, marginBottom: 0, flexShrink: 0, color: '#64748b', fontWeight: 500 }}
-                >
-                  {row.label}
-                </label>
-                {row.input === 'none' ? (
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>{row.value}</span>
-                ) : (
-                  <input
-                    type={row.input === 'email' ? 'email' : 'text'}
-                    className="db-input"
-                    defaultValue={row.value}
-                    style={{ maxWidth: 320 }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 interface DashboardProps {
   companyName?: string;
   userName?: string;
@@ -486,6 +422,7 @@ export default function Dashboard({
   userRole = 'Company Admin',
   initialPage = 'home',
 }: DashboardProps) {
+  const [sectionCounts, setSectionCounts] = useState<Record<string, number>>({});
   const initialHireRequestId = new URLSearchParams(window.location.search).get('hireRequest')?.trim() ?? '';
   const [page, setPage] = useState<DashboardPage>(() => getDashboardPageFromQuery(initialPage, initialHireRequestId));
   const [hiringView, setHiringView] = useState<HiringView>(() => getHiringViewFromQuery());
@@ -669,8 +606,7 @@ export default function Dashboard({
                   }}
                   aria-current={page === 'hiring' && hiringView === 'overview' ? 'page' : undefined}
                 >
-                  <span className="db-nav-icon">{item.icon}</span>
-                  <span className="db-nav-label">{item.label}</span>
+                  <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <span className="db-nav-badge" aria-label={sectionCounts[item.id] + " pending actions or unread notifications"}>{sectionCounts[item.id]}</span>}
                 </button>
                 <div className="db-nav-sublist">
                   <button
@@ -691,7 +627,7 @@ export default function Dashboard({
                       setMobileNavOpen(false);
                     }}
                   >
-                    Manage Requests
+                    Manage Requests {sectionCounts.hiring > 0 && <span className="db-nav-badge">{sectionCounts.hiring}</span>}
                   </button>
                 </div>
               </div>
@@ -705,9 +641,8 @@ export default function Dashboard({
                 }}
                 aria-current={page === item.id ? 'page' : undefined}
               >
-                <span className="db-nav-icon">{item.icon}</span>
-                <span className="db-nav-label">{item.label}</span>
-                {item.badge ? <span className="db-nav-badge">{item.badge}</span> : null}
+                <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <span className="db-nav-badge" aria-label={sectionCounts[item.id] + " pending actions or unread notifications"}>{sectionCounts[item.id]}</span>}
+
               </button>
             )
           ))}
@@ -723,8 +658,7 @@ export default function Dashboard({
               }}
               aria-current={page === item.id ? 'page' : undefined}
             >
-              <span className="db-nav-icon">{item.icon}</span>
-              <span className="db-nav-label">{item.label}</span>
+              <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <span className="db-nav-badge" aria-label={sectionCounts[item.id] + " pending actions or unread notifications"}>{sectionCounts[item.id]}</span>}
             </button>
           ))}
         </nav>
@@ -766,7 +700,7 @@ export default function Dashboard({
           </div>
 
           <div className="db-topbar-actions">
-            <DashboardNotifications />
+            <DashboardNotifications onCountsChange={setSectionCounts} activeSection={page === 'hiring' && hiringView !== 'requests' ? 'marketplace' : page} />
             <DashboardHelp />
             <a href="/company/profile" aria-label="Open company profile"
               style={{
@@ -848,7 +782,8 @@ export default function Dashboard({
           {page === 'payroll' && <PayrollPage />}
           {page === 'invoices' && <InvoicesPage />}
           {page === 'documents' && <DocumentsPage />}
-          {page === 'settings' && <SettingsPage companyName={companyName} />}
+          {page === 'settings' && <SettingsPage />}
+
         </main>
       </div>
     </div>

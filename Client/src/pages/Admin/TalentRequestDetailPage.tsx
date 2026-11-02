@@ -1,6 +1,8 @@
+import AdminInvoiceReview from './AdminInvoiceReview';
 import { useEffect, useMemo, useState } from 'react';
 import {
   getTalentRequest,
+  updateAdminProjectPaymentStatus,
   markAsRead,
   updateTalentRequestStatus,
   sendTalentRequestShortlist,
@@ -182,13 +184,13 @@ export default function TalentRequestDetailPage({
 
 
   useEffect(() => {
-    if (editingShortlist || request?.status !== 'shortlisted_sent') return;
+    if (editingShortlist || !request || (!request.clientSelectionSubmittedAt && !request.deliveryProject && request.status !== 'shortlisted_sent')) return;
     let active = true;
     const refresh = () => { void getTalentRequest(requestId).then(detail => { if (active) setRequest(detail); }).catch(() => {}); };
     const timer = window.setInterval(refresh, 15000);
     window.addEventListener('focus', refresh);
     return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
-  }, [requestId, request?.status, editingShortlist]);
+  }, [requestId, request?.status, request?.clientSelectionSubmittedAt, request?.deliveryProject?._id, editingShortlist]);
 
   const handleStatusChange = async (status: string) => {
     if (!request) {
@@ -353,6 +355,17 @@ export default function TalentRequestDetailPage({
     setActionError('');
   };
 
+  const setPaymentStatus = async (done: boolean) => {
+    if (!request?.deliveryProject || savingAction) return;
+    setSavingAction('payment'); setActionError(''); setActionSuccess('');
+    try {
+      const result = await updateAdminProjectPaymentStatus(request.deliveryProject._id, done);
+      setRequest(previous => previous?.deliveryProject ? { ...previous, deliveryProject: { ...previous.deliveryProject, status: result.status, paymentVerifiedAt: result.paymentVerifiedAt } } : previous);
+      setActionSuccess(done ? 'Payment marked done. Project completed.' : 'Payment marked not done.');
+    } catch (reason) { setActionError((reason as Error).message || 'Unable to update payment status.'); }
+    finally { setSavingAction(''); }
+  };
+
   const trackerSteps = request ? [
     {
       label: 'Request received',
@@ -372,6 +385,21 @@ export default function TalentRequestDetailPage({
       done: ['candidate_selected', 'hire_started', 'hired', 'talent_hired'].includes(request.status),
       meta: request.clientSelectionSubmittedAt ? formatDate(request.clientSelectionSubmittedAt) : request.approvedAt ? formatDate(request.approvedAt) : 'Waiting for company action',
     },
+    ...(request.clientSelectionSubmittedAt || request.deliveryProject ? [{
+      label: 'Contract approvals', description: 'Client and contractor acceptance for this project.', done: Boolean(request.deliveryProject?.clientAcceptedAt && request.deliveryProject.workers.length && request.deliveryProject.workers.every(worker => worker.acceptedAt)), meta: '',
+    }, {
+      label: 'Project status',
+      description: request.deliveryProject ? request.deliveryProject.title + ' - ' + (request.deliveryProject.completedAt ? 'Project completed. Contractors can submit their invoices for admin review.' : request.deliveryProject.workers.some(worker => worker.completedAt) ? request.deliveryProject.workers.filter(worker => worker.completedAt).length + ' of ' + request.deliveryProject.workers.length + ' contractors completed delivery.' : request.deliveryProject.status === 'contract_sent' ? 'Waiting for client contract approval.' : 'Delivery in progress.') : 'Waiting for admin to create the project for the selected candidates.',
+      done: Boolean(request.deliveryProject?.completedAt),
+      meta: request.deliveryProject?.completedAt ? formatDate(request.deliveryProject.completedAt) : request.deliveryProject ? 'In progress' : 'Not started yet',
+    }, {
+      label: 'Invoice', description: 'Review contractor invoices and upload the final PDF for the client.', done: false, meta: '',
+    }, {
+      label: 'Payment status',
+      description: request.deliveryProject?.paymentVerifiedAt ? 'Admin confirmed payment. This project is completed.' : request.deliveryProject?.completedAt ? 'Delivery is complete. Confirm whether payment is done.' : request.deliveryProject ? 'Payment status unlocks after all assigned contractors complete delivery. ' + request.deliveryProject.workers.filter(worker => worker.completedAt).length + ' of ' + request.deliveryProject.workers.length + ' contractors completed.' : 'Create the project and complete delivery before updating payment status.',
+      done: Boolean(request.deliveryProject?.paymentVerifiedAt),
+      meta: request.deliveryProject?.paymentVerifiedAt ? 'Done' : 'Not done',
+    }] : [
     {
       label: 'Hiring started',
       description: 'The company entered the dashboard hiring flow for the chosen profile.',
@@ -390,6 +418,7 @@ export default function TalentRequestDetailPage({
       done: request.status === 'talent_hired',
       meta: request.talentHiredAt ? formatDate(request.talentHiredAt) : 'Waiting for signed agreement',
     },
+    ]),
   ] : [];
 
   return (
@@ -415,8 +444,7 @@ export default function TalentRequestDetailPage({
         ) : null}
         {!loading && request ? (
           <div
-            className="atd-header-meta"
-            style={showShortlistExperience ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' } : undefined}
+            className={"atd-header-meta" + (showShortlistExperience ? " atd-header-meta-shortlist" : "")}
           >
             <div className="atd-header-card">
               <span>Request ID</span>
@@ -431,7 +459,7 @@ export default function TalentRequestDetailPage({
               <strong className={`atd-header-status ${currentTone}`}>{formatStatus(request.status)}</strong>
             </div>
             {!showShortlistExperience ? (
-              <div className="atd-header-card atd-header-card-select" style={{ minWidth: 320 }}>
+              <div className="atd-header-card atd-header-card-select">
               <label className="atd-select-label" htmlFor="atd-review-notes">Admin decision</label>
               <textarea
                 id="atd-review-notes"
@@ -688,7 +716,7 @@ export default function TalentRequestDetailPage({
 
                         <div className="atd-tracker-list">
                           {trackerSteps.map((step) => (
-                            <div key={step.label} className={`atd-tracker-step ${step.done ? 'done' : ''}`}>
+                            <div key={step.label} className={`atd-tracker-step ${step.done ? 'done' : ''} ${['Project status', 'Payment status'].includes(step.label) && step.done ? 'project-completed' : ''}`}>
                               <div className="atd-tracker-dot" aria-hidden="true" />
                               <div>
                                 <div className="atd-tracker-head">
@@ -696,6 +724,10 @@ export default function TalentRequestDetailPage({
                                   <span>{step.meta}</span>
                                 </div>
                                 <p>{step.description}</p>
+                                {step.label === 'Contract approvals' && <div><p style={{ color: request.deliveryProject?.clientAcceptedAt ? '#4ade80' : '#f87171' }}>Contract approved by client</p>{request.deliveryProject?.workers.map(worker => <p key={worker.workerId} style={{ color: worker.acceptedAt ? '#4ade80' : '#f87171' }}>Contractor: {request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role}</p>)}</div>}
+                                {step.label === 'Invoice' && request.deliveryProject && <AdminInvoiceReview projectId={request.deliveryProject._id} />}
+                                {step.label === 'Payment status' && <div className="atd-payment-status-actions">{!request.deliveryProject?.completedAt && <p className="atd-payment-blocked">Waiting for project completion. {request.deliveryProject?.workers.filter(worker => !worker.completedAt).map(worker => request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role).join(', ')}</p>}<button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={Boolean(request.deliveryProject?.paymentVerifiedAt)} onClick={() => void setPaymentStatus(true)}>Done</button><button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={!request.deliveryProject?.paymentVerifiedAt} onClick={() => void setPaymentStatus(false)}>Not done</button>{savingAction === 'payment' && <span role="status">Saving...</span>}</div>}
+                                {step.label === 'Project status' && request.deliveryProject && <div className="atd-project-worker-status">{request.deliveryProject.workers.map(worker => <p key={worker.workerId} className={worker.completedAt ? 'completed' : ''}>{request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role}: {worker.completedAt ? 'Completed - invoice eligible' : 'In progress'}</p>)}</div>}
                                 {step.label === 'Candidate selected' && (
                                   request.clientSelectionSubmittedAt
                                     ? (request.shortlistedTalentProfiles ?? []).filter(profile =>

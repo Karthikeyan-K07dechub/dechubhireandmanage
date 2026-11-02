@@ -126,6 +126,7 @@ export default function DashboardHome({ onNavigate }: Props) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [projects, setProjects] = useState<DeliveryProject[]>([]);
   const [requests, setRequests] = useState<CompanyTalentRequestItem[]>([]);
+  const [readNoticeIds, setReadNoticeIds] = useState<Set<string>>(new Set());
   const [signupStep, setSignupStep] = useState<number | null>(null);
   const [failedSections, setFailedSections] = useState<string[]>([]);
   const [approvalError, setApprovalError] = useState('');
@@ -135,8 +136,10 @@ export default function DashboardHome({ onNavigate }: Props) {
 
   useEffect(() => {
     const refresh = () => setRefreshKey(key => key + 1);
+    const updateReads = (event: Event) => setReadNoticeIds(new Set((event as CustomEvent<string[]>).detail));
     window.addEventListener('focus', refresh);
-    return () => window.removeEventListener('focus', refresh);
+    window.addEventListener('dechub:notification-reads', updateReads);
+    return () => { window.removeEventListener('focus', refresh); window.removeEventListener('dechub:notification-reads', updateReads); };
   }, []);
 
   useEffect(() => {
@@ -160,6 +163,9 @@ export default function DashboardHome({ onNavigate }: Props) {
         setContracts(c.status === 'fulfilled' ? c.value : []);
         setProjects(p.status === 'fulfilled' ? p.value : []);
         setRequests(r.status === 'fulfilled' ? r.value : []);
+        if (company.status === 'fulfilled') {
+          try { setReadNoticeIds(new Set(JSON.parse(localStorage.getItem('dechub_notification_reads:' + company.value.user.email) || '[]'))); } catch { setReadNoticeIds(new Set()); }
+        }
         setSignupStep(company.status === 'fulfilled' ? company.value.user?.signupStep ?? null : null);
         setFailedSections([
           [s, 'Dashboard totals'], [w, 'Workers'], [inv, 'Invoices'], [c, 'Contracts'],
@@ -206,7 +212,7 @@ export default function DashboardHome({ onNavigate }: Props) {
   ]).filter(Boolean)).size;
   const pendingKyc = workers.filter((w) => w.kycStatus === 'pending').length;
   const pendingInvoices = invoices.filter((invoice) => invoice.status === 'submitted');
-  const pendingActions = buildPendingActions({ contracts, projects, requests, invoices, workers, signupStep, contractsExpiring: stats?.contractsExpiring ?? 0 });
+  const pendingActions = buildPendingActions({ contracts, projects, requests, invoices, workers, signupStep, readNoticeIds, contractsExpiring: stats?.contractsExpiring ?? 0 });
 
   return (
     <div className="db-page">
@@ -254,7 +260,7 @@ export default function DashboardHome({ onNavigate }: Props) {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
+      <div className="db-home-layout">
         <div style={{ minWidth: 0 }}>
         <section className="db-card db-pending-actions" aria-labelledby="pending-actions-title">
           <div className="db-card-header">

@@ -46,6 +46,7 @@ transporter.verify().then(() => {
 
 type EmailBrandingOptions = {
   includeLogo?: boolean;
+  attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>;
 };
 
 function baseTemplate(body: string, { includeLogo = true }: EmailBrandingOptions = {}): string {
@@ -91,7 +92,7 @@ export async function sendEmail(
   to: string,
   subject: string,
   html: string,
-  { includeLogo = true }: EmailBrandingOptions = {},
+  { includeLogo = true, attachments = [] }: EmailBrandingOptions = {},
 ): Promise<void> {
   try {
     const from = env.EMAIL_FROM.includes('<')
@@ -104,7 +105,7 @@ export async function sendEmail(
           Authorization: `Bearer ${env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ from, to, subject, html }),
+        body: JSON.stringify({ from, to, subject, html, attachments: attachments.map(item => ({ filename: item.filename, content: item.content.toString('base64') })) }),
       });
       if (!response.ok) {
         throw new Error(`Resend rejected email: ${await response.text()}`);
@@ -115,14 +116,14 @@ export async function sendEmail(
         to,
         subject,
         html,
-        attachments: includeLogo && bridgeLogoPath
+        attachments: [...attachments, ...(includeLogo && bridgeLogoPath
           ? [{
               filename: 'bridge-logo-email.png',
               path: bridgeLogoPath,
               cid: bridgeLogoCid,
-              contentDisposition: 'inline',
+              contentDisposition: 'inline' as const,
             }]
-          : [],
+          : [])],
       });
     }
     logger.debug(`Email sent: "${subject}" → ${to}`);

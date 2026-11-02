@@ -168,8 +168,15 @@ export function applySolutionPageContent(
       syncOptionState(option, option.getAttribute('aria-checked') !== 'true');
       syncCallToAction();
     };
+    const handleOptionKeyDown = (event: KeyboardEvent) => {
+      if (option.tagName !== 'BUTTON' && (event.key === ' ' || event.key === 'Enter')) {
+        event.preventDefault();
+        handleOptionClick();
+      }
+    };
     option.addEventListener('click', handleOptionClick);
-    return () => option.removeEventListener('click', handleOptionClick);
+    option.addEventListener('keydown', handleOptionKeyDown);
+    return () => { option.removeEventListener('click', handleOptionClick); option.removeEventListener('keydown', handleOptionKeyDown); };
   });
   syncCallToAction();
 

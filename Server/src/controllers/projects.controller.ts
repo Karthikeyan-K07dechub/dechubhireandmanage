@@ -50,9 +50,7 @@ function getAdminEmails(): string[] {
 
 async function getCompanyForUser(userId: string) {
   const account = await CompanyAuth.findById(userId).select('companyId');
-  const company = account?.companyId
-    ? await Company.findById(account.companyId)
-    : await Company.findOne({ ownerId: userId });
+  const company = account?.companyId ? await Company.findById(account.companyId) : await Company.findOne({ ownerId: userId });
   if (!company) throw Errors.NotFound('Company');
   return company;
 }
@@ -338,6 +336,7 @@ export async function createProjectTask(req: Request, res: Response, next: NextF
     const permittedWorkerIds = new Set(project.teamMembers.map((member) => member.workerId.toString()));
     if (data.assigneeWorkerIds.some((workerId) => !permittedWorkerIds.has(workerId))) throw Errors.Forbidden();
 
+    if (project.deliveryCompletedAt || project.deliveryCompletions?.some(entry => data.assigneeWorkerIds.includes(entry.workerId.toString()))) throw new AppError('Delivery is completed for an assigned worker. Completed delivery cannot receive new tasks.', 409, 'DELIVERY_COMPLETED');
     const task = await ProjectTask.create({
       ...data,
       projectId: project._id,
@@ -421,6 +420,8 @@ async function serializeWorkerProject(project: InstanceType<typeof Project>, wor
     paymentTerms: project.paymentTerms, startDate: project.startDate, targetEndDate: project.targetEndDate,
     status: project.status, createdAt: project.createdAt, teamMembers: project.teamMembers,
     clientAcceptedAt: project.clientAcceptedAt, contractorAcceptedAt: acceptance?.acceptedAt ?? null,
+    deliveryCompletedAt: project.deliveryCompletedAt,
+    contractorCompletedAt: project.deliveryCompletions?.find(entry => entry.workerId.toString() === workerId)?.completedAt ?? null,
     assignedRole: project.teamMembers.find(member => member.workerId.toString() === workerId)?.role ?? '',
     companyDetails: company ? { name: company.companyName, website: company.companyWebsite, country: company.companyCountry, address: [company.addressLine1, company.addressCity].filter(Boolean).join(', ') } : null,
   };
@@ -464,6 +465,32 @@ export async function listWorkerProjectTasks(req: Request, res: Response, next: 
   } catch (error) { next(error); }
 }
 
+async function recordWorkerDeliveryCompletion(project: InstanceType<typeof Project>, workerId: string) {
+  const updated = await Project.findOneAndUpdate({ _id: project._id, 'teamMembers.workerId': workerId, 'deliveryCompletions.workerId': { $ne: workerId } }, { $push: { deliveryCompletions: { workerId, completedAt: new Date() } } }, { new: true });
+  const current = updated ?? await Project.findById(project._id);
+  if (!current) throw Errors.NotFound('Project');
+  const teamIds = [...new Set(current.teamMembers.map(member => member.workerId.toString()))];
+  if (teamIds.length && teamIds.every(id => current.deliveryCompletions.some(entry => entry.workerId.toString() === id))) {
+    await Project.updateOne({ _id: current._id, deliveryCompletedAt: null, 'deliveryCompletions.workerId': { $all: teamIds } }, { $set: { deliveryCompletedAt: new Date() } });
+  }
+  if (updated && current.talentRequestId) await TalentRequest.updateOne({ _id: current.talentRequestId, companyId: current.companyId }, { $set: { unread: true } });
+  if (updated) void CompanyNotification.create({ companyId: current.companyId, projectId: current._id, type: 'general', title: 'Contractor delivery completed', message: 'An assigned contractor completed delivery for ' + current.title + '.', actionUrl: projectActionUrl(current._id.toString()) }).catch(error => logger.error('Delivery completion notification failed', error));
+  return await Project.findById(current._id);
+}
+
+export async function completeWorkerProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const worker = await getWorkerFromRequest(req);
+    const project = await Project.findOne({ _id: req.params.id, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, 'contractorAcceptances.workerId': worker._id, status: { $in: ['active', 'payment_submitted', 'completed'] } });
+    if (!project) throw new AppError('Accept this assigned project contract before completing delivery.', 403, 'PROJECT_CONTRACT_REQUIRED');
+    const remaining = await ProjectTask.countDocuments({ projectId: project._id, assigneeWorkerIds: worker._id, status: { $ne: 'completed' } });
+    if (remaining) throw new AppError('Complete all your assigned tasks before marking this project completed.', 409, 'TASKS_INCOMPLETE');
+    const completed = await recordWorkerDeliveryCompletion(project, worker._id.toString());
+    if (!completed) throw Errors.NotFound('Project');
+    ok(res, await serializeWorkerProject(completed, worker._id.toString()));
+  } catch (error) { next(error); }
+}
+
 export async function updateWorkerProjectTask(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = z.object({ status: z.enum(['todo', 'in_progress', 'completed']), completionNote: z.string().trim().max(3000).optional() }).parse(req.body);
@@ -474,12 +501,15 @@ export async function updateWorkerProjectTask(req: Request, res: Response, next:
     if (!project || !project.clientAcceptedAt || !project.contractorAcceptances?.some(entry => entry.workerId.toString() === worker._id.toString())) throw new AppError('Accept the project contract in Contracts before updating tasks.', 403, 'PROJECT_CONTRACT_REQUIRED');
     if (project.status !== 'active') throw new AppError('This task cannot be updated.', 400, 'TASK_NOT_ACTIVE');
 
+    if (project.deliveryCompletions?.some(entry => entry.workerId.toString() === worker._id.toString())) throw new AppError('This delivery has been completed and is ready for invoicing.', 409, 'DELIVERY_COMPLETED');
     task.status = data.status;
     task.completionNote = data.completionNote ?? task.completionNote;
     task.completedAt = data.status === 'completed' ? new Date() : null;
     await task.save();
 
     if (data.status === 'completed') {
+      const remaining = await ProjectTask.countDocuments({ projectId: project._id, assigneeWorkerIds: worker._id, status: { $ne: 'completed' } });
+      if (remaining === 0) await recordWorkerDeliveryCompletion(project, worker._id.toString());
       await CompanyNotification.create({ companyId: project.companyId, projectId: project._id, type: 'task_completed', title: 'Task completed', message: `${worker.firstName} completed "${task.title}" in ${project.title}.`, actionUrl: projectActionUrl(project._id.toString()) });
     }
     ok(res, task.toObject());
@@ -490,7 +520,7 @@ export async function listCompanyNotifications(req: Request, res: Response, next
   try {
     const company = await getCompanyForUser(req.user!.sub);
     const notifications = await CompanyNotification.find({ companyId: company._id }).sort({ createdAt: -1 }).limit(50);
-    ok(res, notifications.map((notification) => notification.toObject()));
+    ok(res, notifications.map(notification => notification.toObject()));
   } catch (error) { next(error); }
 }
 
@@ -500,5 +530,28 @@ export async function markCompanyNotificationRead(req: Request, res: Response, n
     const notification = await CompanyNotification.findOneAndUpdate({ _id: req.params.id, companyId: company._id }, { readAt: new Date() }, { new: true });
     if (!notification) throw Errors.NotFound('Notification');
     ok(res, notification.toObject());
+  } catch (error) { next(error); }
+}
+
+export async function updateProjectPaymentStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { done } = z.object({ done: z.boolean() }).parse(req.body);
+    const project = await Project.findById(req.params.id);
+    if (!project) throw Errors.NotFound('Project');
+    if (!project.deliveryCompletedAt) throw new AppError('Complete project delivery before updating payment status.', 409, 'DELIVERY_NOT_COMPLETED');
+    if (!['active', 'payment_submitted', 'completed'].includes(project.status)) throw new AppError('Payment status cannot be changed for this project.', 409, 'INVALID_PROJECT_STATUS');
+    const alreadyDone = Boolean(project.paymentVerifiedAt);
+    const updated = await Project.findOneAndUpdate({ _id: project._id, deliveryCompletedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted', 'completed'] } }, { $set: {
+      status: done ? 'completed' : project.paymentSubmittedAt ? 'payment_submitted' : 'active',
+      paymentVerifiedAt: done ? project.paymentVerifiedAt ?? new Date() : null,
+      paymentVerifiedBy: done ? req.user!.email : null,
+      completedAt: done ? project.completedAt ?? new Date() : null,
+    } }, { new: true, runValidators: true });
+    if (!updated) throw new AppError('Project status changed. Refresh and try again.', 409, 'PROJECT_CHANGED');
+    if (updated.talentRequestId) await TalentRequest.updateOne({ _id: updated.talentRequestId, companyId: updated.companyId }, { $set: { unread: true } });
+    if (alreadyDone !== done) {
+      void CompanyNotification.create({ companyId: updated.companyId, projectId: updated._id, type: 'general', title: done ? 'Project completed' : 'Project payment pending', message: done ? updated.title + ' is completed and admin confirmed payment.' : 'Admin marked payment as not done for ' + updated.title + '.', actionUrl: projectActionUrl(updated._id.toString()) }).catch(error => logger.error('Payment status notification failed', error));
+    }
+    ok(res, serializeProject(updated));
   } catch (error) { next(error); }
 }

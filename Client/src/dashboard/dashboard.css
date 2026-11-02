@@ -165,7 +165,7 @@
 
 .db-nav-section {
   padding: 12px 20px 5px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: rgba(234,228,255,0.58);
   letter-spacing: 0.8px;
@@ -176,7 +176,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 12px 7px 20px;
+  padding: 10px 12px 10px 20px;
   margin: 1px 12px;
   border-radius: 8px;
   cursor: pointer;
@@ -204,7 +204,8 @@
 }
 
 .db-nav-label {
-  font-size: 13.5px;
+  font-size: 16px;
+  line-height: 1.4;
   font-weight: 500;
   color: rgba(255,255,255,0.55);
 }
@@ -220,18 +221,19 @@
 .db-nav-sublist {
   display: grid;
   gap: 2px;
-  padding: 0 12px 5px 54px;
+  padding: 0 12px 5px 42px;
 }
 
 .db-nav-subitem {
   border: none;
   background: none;
   color: rgba(255,255,255,0.45);
-  font-size: 12.5px;
+  font-size: 14px;
+  line-height: 1.4;
   font-weight: 500;
   text-align: left;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 8px 10px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -1939,3 +1941,14 @@
 .db-signout-btn { flex-shrink: 0; padding: 6px 9px; border: 1px solid rgba(255,255,255,.4); border-radius: 7px; background: rgba(255,255,255,.08); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer; }
 .db-signout-btn:hover { background: rgba(255,255,255,.18); }
 .db-signout-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.db-contract-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.db-contract-header > div:first-child { min-width: 0; }
+.db-contract-header p { color: #475569; line-height: 1.65; }
+.db-contract-header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; flex-shrink: 0; color: #0f172a; }
+@media (max-width: 560px) { .db-contract-header { flex-wrap: wrap; } .db-contract-header-actions { margin-left: auto; } }
+
+.db-nav-subitem { display: flex; align-items: center; gap: 8px; }
+.db-nav .db-nav-badge { color: #fff; background: #b91c1c; flex-shrink: 0; }
+
+

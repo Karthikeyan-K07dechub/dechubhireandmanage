@@ -38,6 +38,8 @@ export interface IProject extends Document {
   paymentVerifiedAt: Date | null;
   paymentVerifiedBy: string | null;
   completedAt: Date | null;
+  deliveryCompletions: Array<{ workerId: mongoose.Types.ObjectId; completedAt: Date }>;
+  deliveryCompletedAt: Date | null;
   createdByAdminEmail: string;
   createdAt: Date;
   updatedAt: Date;
@@ -75,6 +77,8 @@ const projectSchema = new Schema<IProject>(
     paymentSubmittedAt: { type: Date, default: null },
     paymentVerifiedAt: { type: Date, default: null },
     paymentVerifiedBy: { type: String, default: null, trim: true },
+    deliveryCompletions: { type: [new Schema({ workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true }, completedAt: { type: Date, required: true } }, { _id: false })], default: [] },
+    deliveryCompletedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     createdByAdminEmail: { type: String, required: true, trim: true, lowercase: true },
   },

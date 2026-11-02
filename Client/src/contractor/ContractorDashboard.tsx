@@ -1,3 +1,5 @@
+import CompletedProjectsForInvoicing from './CompletedProjectsForInvoicing';
+import { getTeamMemberProjects, type DeliveryProject } from '../api/projects.api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   ContractorContract,
@@ -43,6 +45,7 @@ function getContractorPageFromQuery(initialPage: ContractorPage): ContractorPage
 }
 
 const INVOICE_BADGE: Record<InvoiceStatus, { cls: string; label: string }> = {
+  pending_admin: { cls: 'inv-badge inv-badge-submitted', label: 'Awaiting admin review' },
   draft: { cls: 'inv-badge inv-badge-draft', label: 'Draft' },
   submitted: { cls: 'inv-badge inv-badge-submitted', label: 'Submitted' },
   approved: { cls: 'inv-badge inv-badge-approved', label: 'Approved' },
@@ -253,25 +256,37 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function SubmitInvoiceModal({
+  initialProject,
   profile,
   onClose,
   onSuccess,
 }: {
   profile: ContractorProfile;
+  initialProject?: DeliveryProject | null;
   onClose: () => void;
   onSuccess: (invoice: ContractorInvoice) => void;
 }) {
   const [form, setForm] = useState<SubmitInvoicePayload>({
     periodStart: '',
     periodEnd: '',
-    amountGross: profile.payRate ?? 0,
-    description: `Monthly contractor services - ${profile.roleTitle}`,
+    amountGross: 0,
+    projectName: initialProject?.title || '',
+    projectId: initialProject?._id || '',
+    description: initialProject ? [initialProject.assignedRole, initialProject.description].filter(Boolean).join(' - ') : '',
     hoursWorked: undefined,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isHourly = profile.payFrequency === 'hourly';
+  const [completedProjects, setCompletedProjects] = useState<DeliveryProject[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const invoiceProject = completedProjects.find(project => project._id === form.projectId) ?? (initialProject?._id === form.projectId ? initialProject : null);
+  useEffect(() => {
+    let active = true;
+    getTeamMemberProjects().then(items => { if (active) setCompletedProjects(items.filter(item => item.contractorCompletedAt && item.contractorAcceptedAt)); }).catch(() => { if (active) setError('Unable to load completed projects. Please try again.'); }).finally(() => { if (active) setProjectsLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -281,6 +296,7 @@ function SubmitInvoiceModal({
       next.periodEnd = 'End must be after start';
     }
     if (!form.amountGross || form.amountGross <= 0) next.amountGross = 'Enter a valid amount';
+    if (!form.projectId) next.projectName = 'Select a completed project';
     if (!form.description.trim()) next.description = 'Required';
     if (isHourly && !form.hoursWorked) next.hoursWorked = 'Required for hourly contracts';
     return next;
@@ -297,7 +313,7 @@ function SubmitInvoiceModal({
     setError(null);
     setLoading(true);
     try {
-      const invoice = await submitInvoice(form);
+      const invoice = await submitInvoice({ ...form, projectName: form.projectName.trim(), description: form.description.trim() });
       onSuccess(invoice);
     } catch (err) {
       setError((err as Error).message ?? 'Failed to submit invoice.');
@@ -308,7 +324,7 @@ function SubmitInvoiceModal({
 
   return (
     <div className="cp-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="cp-modal">
+      <div className="cp-modal cp-project-invoice-modal">
         <div className="cp-modal-header">
           <div>
             <div className="cp-modal-title">Submit Invoice</div>
@@ -320,9 +336,25 @@ function SubmitInvoiceModal({
         </div>
 
         <div className="cp-modal-body">
+          <p style={{ color: '#526580', fontSize: 13 }}>You can submit an invoice only after project completion. Your invoice goes to Dechub for review before it reaches the client.</p>
           {error && <div className="cp-error">Warning: {error}</div>}
+          {!projectsLoading && completedProjects.length === 0 && <p className="cp-error" role="status">No completed projects are available. Complete your assigned project in Projects first.</p>}
+          <div className="cp-field" style={{ marginBottom: 16 }}>
+            <label className="cp-label" htmlFor="invoice-project-name">Project name <span className="cp-req">*</span></label>
+            <select id="invoice-project-name" className={`cp-input ${errors.projectName ? 'error' : ''}`} value={form.projectId} disabled={projectsLoading || Boolean(initialProject)} onChange={event => { const project = completedProjects.find(item => item._id === event.target.value); setForm(previous => ({ ...previous, projectId: project?._id || '', projectName: project?.title || '', description: project ? [project.assignedRole, project.description].filter(Boolean).join(' - ') : '' })); }}><option value="">{projectsLoading ? 'Loading completed projects...' : 'Select a completed project'}</option>{completedProjects.map(project => <option key={project._id} value={project._id}>{project.title}</option>)}</select>
+            {errors.projectName && <p className="cp-field-error">{errors.projectName}</p>}
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+          {invoiceProject && <section className="cpi-form-summary" aria-label="Selected company and project details">
+            <div><small>Company</small><strong>{invoiceProject.companyDetails?.name || 'Not provided'}</strong></div>
+            <div><small>Country</small><span>{invoiceProject.companyDetails?.country || 'Not provided'}</span></div>
+            <div><small>Company website</small><span>{invoiceProject.companyDetails?.website || 'Not provided'}</span></div>
+            <div><small>Company address</small><span>{invoiceProject.companyDetails?.address || 'Not provided'}</span></div>
+            <div><small>Project</small><strong>{invoiceProject.title}</strong></div>
+            <div><small>Your role</small><span>{invoiceProject.assignedRole || profile.roleTitle}</span></div>
+            <div className="cpi-wide"><small>Project scope</small><span>{invoiceProject.scope}</span></div>
+          </section>}
+          <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
             <div className="cp-field">
               <label className="cp-label">Period start <span className="cp-req">*</span></label>
               <input
@@ -357,7 +389,7 @@ function SubmitInvoiceModal({
                   setForm((prev) => ({
                     ...prev,
                     hoursWorked: hours,
-                    amountGross: hours * (profile.payRate ?? 0),
+
                   }));
                 }}
               />
@@ -370,7 +402,8 @@ function SubmitInvoiceModal({
             <input
               type="number"
               className={`cp-input ${errors.amountGross ? 'error' : ''}`}
-              value={form.amountGross}
+              value={form.amountGross || ''}
+              placeholder="Enter invoice amount"
               readOnly={isHourly}
               onChange={(e) => setForm((prev) => ({ ...prev, amountGross: Number(e.target.value) }))}
             />
@@ -381,6 +414,7 @@ function SubmitInvoiceModal({
             <label className="cp-label">Description <span className="cp-req">*</span></label>
             <textarea
               className={`cp-textarea ${errors.description ? 'error' : ''}`}
+              placeholder="Add your role and describe the work you completed on this project."
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               style={{ height: 80 }}
@@ -413,7 +447,7 @@ function SubmitInvoiceModal({
             className="cp-btn-primary"
             style={{ flex: 2, height: 44, borderRadius: 10 }}
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || projectsLoading || !form.projectId}
           >
             {loading ? 'Submitting...' : 'Submit Invoice'}
           </button>
@@ -435,7 +469,7 @@ function DashboardHome({
   onNavigate: (page: ContractorPage) => void;
 }) {
   const totalPaid = invoices.filter((invoice) => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amountGross, 0);
-  const totalPending = invoices.filter((invoice) => invoice.status === 'submitted').reduce((sum, invoice) => sum + invoice.amountGross, 0);
+  const totalPending = invoices.filter((invoice) => ['pending_admin', 'submitted'].includes(invoice.status)).reduce((sum, invoice) => sum + invoice.amountGross, 0);
   const nextPayment = invoices.find((invoice) => invoice.status === 'approved');
   const recentInvoices = invoices.slice(0, 4);
   const isSetupIncomplete = profile.onboardingStep > 0 && profile.onboardingStep < 4;
@@ -461,7 +495,7 @@ function DashboardHome({
             gap: 20,
             boxShadow: '0 16px 40px rgba(15, 23, 42, 0.05)',
           }}
-          aria-label="Complete freelancer setup"
+          className="cd-setup-banner" aria-label="Complete freelancer setup"
         >
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4f46e5', marginBottom: 10 }}>
@@ -482,7 +516,7 @@ function DashboardHome({
             </div>
           </div>
 
-          <div style={{ width: 240, display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
+          <div className="cd-setup-actions">
             <button
               type="button"
               className="cp-btn-primary"
@@ -519,7 +553,7 @@ function DashboardHome({
         <div className="cd-stat">
           <div className="cd-stat-label">Pending approval</div>
           <div className="cd-stat-value">{profile.payCurrency} {totalPending.toLocaleString()}</div>
-          <div className="cd-stat-hint">{invoices.filter((invoice) => invoice.status === 'submitted').length} invoice(s)</div>
+          <div className="cd-stat-hint">{invoices.filter((invoice) => ['pending_admin', 'submitted'].includes(invoice.status)).length} invoice(s)</div>
         </div>
         <div className="cd-stat">
           <div className="cd-stat-label">Next payment</div>
@@ -530,7 +564,7 @@ function DashboardHome({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+      <div className="cd-home-layout">
         <div className="cd-card">
           <div className="cd-card-header">
             <span className="cd-card-title">Recent Invoices</span>
@@ -786,7 +820,7 @@ function InvoicesPage({
   readOnly,
 }: {
   invoices: ContractorInvoice[];
-  onSubmit: () => void;
+  onSubmit: (project?: DeliveryProject) => void;
   readOnly: boolean;
 }) {
   return (
@@ -794,16 +828,18 @@ function InvoicesPage({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
           <div className="cd-page-title">My Invoices</div>
-          <div className="cd-page-sub">{invoices.length} total</div>
+          <div className="cd-page-sub">{invoices.length} total</div><p className="cd-page-sub">You can submit an invoice only after project completion. Complete your delivery in Projects, then select the completed project when invoicing.</p>
         </div>
         {!readOnly && (
-          <button className="cp-btn-primary" style={{ width: 'auto', padding: '0 20px', height: 42 }} onClick={onSubmit}>
+          <button className="cp-btn-primary" style={{ width: 'auto', padding: '0 20px', height: 42 }} onClick={() => onSubmit()}>
             Submit Invoice
           </button>
         )}
       </div>
 
-      <div className="cd-card">
+      <CompletedProjectsForInvoicing invoices={invoices} onSend={project => onSubmit(project)} readOnly={readOnly} />
+      <h2 className="cd-page-title" style={{ fontSize: 20, marginBottom: 16 }}>Invoice history</h2>
+      <div className="cd-card cd-invoice-table">
         {invoices.length === 0 ? (
           <div style={{ padding: '64px 32px', textAlign: 'center', color: '#94a3b8' }}>
             No invoices yet.
@@ -824,7 +860,7 @@ function InvoicesPage({
                 <tr key={invoice._id} style={{ borderBottom: '1px solid #f1f4f9' }}>
                   <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>{invoice.invoiceNumber}</td>
                   <td style={{ padding: '13px 16px', fontSize: 12.5, color: '#64748b' }}>{new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}</td>
-                  <td style={{ padding: '13px 16px', fontSize: 13, color: '#475569' }}>{invoice.description}</td>
+                  <td style={{ padding: '13px 16px', fontSize: 13, color: '#475569' }}>{invoice.projectName && <strong style={{ display: 'block', marginBottom: 5 }}>{invoice.projectName}</strong>}{invoice.description}</td>
                   <td style={{ padding: '13px 16px', fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{invoice.currency} {invoice.amountGross.toLocaleString()}</td>
                   <td style={{ padding: '13px 16px' }}><span className={INVOICE_BADGE[invoice.status].cls}>{INVOICE_BADGE[invoice.status].label}</span></td>
                 </tr>
@@ -1274,7 +1310,7 @@ function ProfilePage({
             {Array.isArray(profile.portfolioProjects) && profile.portfolioProjects.length ? (
               <div style={{ display: 'grid', gap: 12 }}>
                 {profile.portfolioProjects.slice(0, 3).map((project) => (
-                  <div key={`${project.title}-${project.imageUrl}`} style={{ border: '1px solid #edf2f7', borderRadius: 18, padding: 16, display: 'grid', gridTemplateColumns: '120px 1fr', gap: 14, alignItems: 'center' }}>
+                  <div className="cd-portfolio-item" key={`${project.title}-${project.imageUrl}`} style={{ border: '1px solid #edf2f7', borderRadius: 18, padding: 16, display: 'grid', gap: 14, alignItems: 'center' }}>
                     <img src={resolveImageUrl(project.imageUrl)} alt={project.title} style={{ width: '100%', height: 84, objectFit: 'cover', borderRadius: 12, background: '#f8fafc' }} />
                     <div>
                       <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>{project.title}</div>
@@ -1315,7 +1351,7 @@ function ProfilePage({
 
         {error && <div style={{ marginBottom: 14, color: '#dc2626', fontSize: 13, fontWeight: 600 }}>{error}</div>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
           <div className="cp-field">
             <label className="cp-label">First name</label>
             <input className="cp-input" value={form.firstName} onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))} />
@@ -1394,7 +1430,7 @@ function ProfilePage({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div className="app-grid-three" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
           <div className="cp-field">
             <label className="cp-label">City</label>
             <input className="cp-input" value={form.city} onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))} />
@@ -1449,7 +1485,7 @@ function ProfilePage({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
           <div className="cp-field">
             <label className="cp-label">Average response time (hours)</label>
             <input className="cp-input" type="number" min="1" value={form.responseTimeHours} onChange={(e) => setForm((prev) => ({ ...prev, responseTimeHours: e.target.value }))} />
@@ -1620,7 +1656,7 @@ function ProfilePage({
 
         <div className="cp-field">
           <label className="cp-label">Service packages</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
+          <div className="app-grid-three" style={{ display: 'grid', gap: 14 }}>
             {form.servicePackages.map((pkg, index) => (
               <div key={`${pkg.name}-${index}`} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
                 <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>{pkg.name}</div>
@@ -1632,7 +1668,7 @@ function ProfilePage({
                   <label className="cp-label">Price ({profile.payCurrency})</label>
                   <input className="cp-input" type="number" min="0" value={pkg.price} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, price: Number(e.target.value) || 0 } : item) }))} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="app-grid-two" style={{ display: 'grid', gap: 10 }}>
                   <div className="cp-field">
                     <label className="cp-label">Delivery days</label>
                     <input className="cp-input" type="number" min="1" value={pkg.deliveryDays} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, deliveryDays: Number(e.target.value) || 1 } : item) }))} />
@@ -1771,6 +1807,7 @@ export default function ContractorDashboard({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showInvoice, setShowInvoice] = useState(false);
+  const [selectedInvoiceProject, setSelectedInvoiceProject] = useState<DeliveryProject | null>(null);
   const [bannerMessage, setBannerMessage] = useState(flashMessage);
   const isPreviewMode = Boolean(previewProfile);
 
@@ -1909,8 +1946,9 @@ export default function ContractorDashboard({
     window.location.href = '/';
   };
 
-  const handleOpenInvoiceModal = () => {
+  const handleOpenInvoiceModal = (project?: DeliveryProject) => {
     if (!isPreviewMode) {
+      setSelectedInvoiceProject(project ?? null);
       setShowInvoice(true);
     }
   };
@@ -2042,7 +2080,7 @@ export default function ContractorDashboard({
         <DashboardHome
           profile={profile}
           invoices={invoices}
-          onSubmitInvoice={handleOpenInvoiceModal}
+          onSubmitInvoice={() => handleOpenInvoiceModal()}
           onNavigate={setPage}
         />
       )}
@@ -2114,6 +2152,7 @@ export default function ContractorDashboard({
 
       {showInvoice && !isPreviewMode && (
         <SubmitInvoiceModal
+          initialProject={selectedInvoiceProject}
           profile={profile}
           onClose={() => setShowInvoice(false)}
           onSuccess={handleInvoiceSuccess}

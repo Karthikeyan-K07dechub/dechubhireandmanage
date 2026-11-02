@@ -4,6 +4,9 @@ import { z } from 'zod';
 dotenv.config();
 
 const envSchema = z.object({
+ SUPABASE_URL: z.string().default(''),
+ SUPABASE_SECRET_KEY: z.string().default(''),
+ SUPABASE_INVOICE_BUCKET: z.string().default('client-invoices'),
   PORT:                  z.string().default('4000'),
   NODE_ENV:              z.enum(['development', 'production', 'test']).default('development'),
   DNS_SERVERS:           z.string().default(''),

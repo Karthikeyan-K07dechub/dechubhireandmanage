@@ -71,9 +71,7 @@ const preferencesSchema = z.object({
 
 async function getCompanyForUser(userId: string) {
   const company = await Company.findOne({ ownerId: userId });
-  if (!company) {
-    throw Errors.NotFound('Company');
-  }
+  if (!company) throw Errors.NotFound('Company');
   return company;
 }
 
@@ -152,7 +150,7 @@ async function autoApproveKybForMvp(company: InstanceType<typeof Company>): Prom
 export async function getMyCompany(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const company = await getCompanyForUser(req.user!.sub);
-    const account = await CompanyAuth.findById(req.user!.sub).select('firstName lastName email phone signupStep isEmailVerified');
+    const account = await CompanyAuth.findById(req.user!.sub).select('firstName lastName email phone signupStep isEmailVerified passwordHash provider');
     if (!account) {
       throw Errors.NotFound('Company account');
     }
@@ -165,6 +163,7 @@ export async function getMyCompany(req: Request, res: Response, next: NextFuncti
         phone: account.phone,
         signupStep: account.signupStep,
         isEmailVerified: account.isEmailVerified,
+        canChangePassword: Boolean(account.passwordHash),
       },
       company,
     });

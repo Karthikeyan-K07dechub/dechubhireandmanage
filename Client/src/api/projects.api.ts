@@ -21,6 +21,8 @@ export interface ProjectTeamAccess extends ProjectTeamMember {
 export interface DeliveryProject {
   clientAcceptedAt?: string | null;
   contractorAcceptedAt?: string | null;
+  contractorCompletedAt?: string | null;
+  deliveryCompletedAt?: string | null;
   assignedRole?: string;
   companyDetails?: { name: string | null; website: string | null; country: string | null; address: string } | null;
   completedAt?: string | null;
@@ -70,3 +72,5 @@ export const createAdminProject = (payload: CreateDeliveryProjectPayload) => com
 export const sendAdminProjectContract = (id: string) => companyRequest<DeliveryProject>(api.post(`/admin/projects/${id}/send-contract`));
 
 export const acceptTeamMemberProjectContract = (id: string) => contractorRequest<DeliveryProject>(contractorApi.post(`/projects/${id}/accept-contract`));
+
+export const completeTeamMemberProject = (id: string) => contractorRequest<DeliveryProject>(contractorApi.post(`/projects/${id}/complete`));

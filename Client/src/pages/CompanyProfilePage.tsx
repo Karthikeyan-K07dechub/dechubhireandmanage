@@ -1,3 +1,4 @@
+import { resolveImageUrl } from '../utils/imageUrl';
 import SignOutButton from '../components/common/SignOutButton';
 import { useEffect, useState } from 'react';
 import { tokenStore } from '../api/client';
@@ -68,6 +69,7 @@ export default function CompanyProfilePage() {
     <main className="cp-main"><div className="cp-title"><h1>Company profile</h1><p>Review and edit your account, company details, and workspace preferences.</p></div>
       {error && <div className="cp-error" role="alert">{error}</div>}{success && <div className="cp-success" role="status">{success}</div>}
       {loading ? <p>Loading your company profile...</p> : data && <>
+        <section className="cp-card"><h2>Company logo</h2>{data.company.companyLogoUrl ? <img src={resolveImageUrl(String(data.company.companyLogoUrl))} alt="Company logo" style={{ width: 96, height: 96, objectFit: 'contain', marginBottom: 16 }} /> : <p>No company logo uploaded yet.</p>}<p><a href="/dashboard?tab=settings#company-profile">Manage your logo in Settings</a></p></section>
         <form onSubmit={save}>
           <section className="cp-card"><h2>Account details</h2><div className="cp-grid">{([{ key: 'firstName', label: 'First name' }, { key: 'lastName', label: 'Last name' }, { key: 'phone', label: 'Phone number', type: 'tel' }] as Field[]).map(item => field(item, user[item.key as keyof typeof user], value => setUser(previous => ({ ...previous, [item.key]: value }))))}<label className="cp-field"><span>Sign-in email</span><input value={data.user.email} readOnly /><small>Your sign-in email identifies your account.</small></label></div></section>
           {sections.map(section => <section key={section.title} className="cp-card"><h2>{section.title}</h2><div className="cp-grid">{section.fields.map(item => field(item, String(company[item.key] ?? ''), value => setCompany(previous => ({ ...previous, [item.key]: value }))))}</div></section>)}

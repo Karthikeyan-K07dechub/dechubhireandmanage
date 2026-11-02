@@ -1,7 +1,9 @@
 import { api, ApiResponse, normalizeError, unwrapApiData } from './client';
 
 export interface TalentRequestItem {
+  deliveryProject?: { _id: string; title: string; status: string; startDate: string | null; endDate: string | null; completedAt: string | null; paymentVerifiedAt?: string | null; clientAcceptedAt?: string | null; workers: Array<{ workerId: string; role: string; acceptedAt?: string | null; completedAt: string | null }> } | null;
   clientContractApprovedAt?: string | null;
+  projectCompleted?: boolean;
   contractorContractApproved?: boolean;
   contractorAcceptedCount?: number;
   contractorTotalCount?: number;
@@ -176,4 +178,9 @@ export async function listMarketplaceCandidatesForAdmin(params: {
     }>>('/admin/marketplace-candidates', { params });
     return unwrapApiData(res.data);
   } catch (err) { throw normalizeError(err); }
+}
+
+export async function updateAdminProjectPaymentStatus(projectId: string, done: boolean) {
+  try { return unwrapApiData((await api.patch<ApiResponse<{ status: string; paymentVerifiedAt: string | null }>>('/admin/projects/' + projectId + '/payment-status', { done })).data); }
+  catch (error) { throw normalizeError(error); }
 }

@@ -87,6 +87,11 @@ export interface Contract {
 }
 
 export interface Invoice {
+  companyName?: string;
+  documentName?: string | null;
+  projectName?: string;
+  serviceCharge?: number;
+  contractorAmount?: number;
   _id:          string;
   workerId:     string;
   workerName:   string;

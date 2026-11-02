@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './dashboard-help.css';
 
-const faqs = [
+export const faqs = [
   ['What is Dechub Bridge?', 'Dechub Bridge helps businesses find suitable talent and manage project delivery, onboarding, contracts, workers, and invoices through one platform.'],
   ['What does "Get a resource in 60 minutes" mean?', 'Our goal is to connect you with a suitable professional in as little as 60 minutes. This refers to talent deployment; project completion follows the agreed scope and timeline. Availability and your requirements affect the deployment time.'],
   ['Do you offer a free trial?', 'Yes, Dechub Bridge offers a 10-day free trial. Contact our team to confirm eligibility, what is included, and the terms before starting.'],

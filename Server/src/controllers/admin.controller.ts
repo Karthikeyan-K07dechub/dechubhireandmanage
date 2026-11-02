@@ -238,8 +238,10 @@ async function serializeTalentRequest(item: ITalentRequest) {
     }),
   );
 
+  const deliveryProject = await Project.findOne({ talentRequestId: item._id, companyId: item.companyId }).sort({ createdAt: -1 }).lean();
   return {
     ...item.toObject(),
+    deliveryProject: deliveryProject ? { _id: deliveryProject._id, title: deliveryProject.title, status: deliveryProject.status, startDate: deliveryProject.startDate, endDate: deliveryProject.targetEndDate, completedAt: deliveryProject.deliveryCompletedAt, paymentVerifiedAt: deliveryProject.paymentVerifiedAt, clientAcceptedAt: deliveryProject.clientAcceptedAt, workers: deliveryProject.teamMembers.map(member => ({ workerId: member.workerId, role: member.role, acceptedAt: deliveryProject.contractorAcceptances?.find(entry => String(entry.workerId) === String(member.workerId))?.acceptedAt ?? null, completedAt: deliveryProject.deliveryCompletions?.find(entry => String(entry.workerId) === String(member.workerId))?.completedAt ?? null })) } : null,
     ...await resolveCompanyRequestDetails(item),
     talentProfile: formatTalentProfile(worker),
     suggestedTalentProfile: suggestedWorker
@@ -507,7 +509,7 @@ export async function listTalentRequests(req: Request, res: Response, next: Next
       talentRequestId: { $in: items.map(item => item._id) },
       clientAcceptedAt: { $ne: null },
       status: { $in: ['active', 'payment_submitted', 'completed'] },
-    }).select('talentRequestId companyId clientAcceptedAt teamMembers contractorAcceptances').lean();
+    }).select('talentRequestId companyId clientAcceptedAt teamMembers contractorAcceptances deliveryCompletedAt paymentVerifiedAt status').sort({ createdAt: -1 }).lean();
     ok(res, { total, page: pageNum, perPage: per, items: await Promise.all(items.map(async item => ({
       ...item,
       ...await resolveCompanyRequestDetails(item),
@@ -517,6 +519,7 @@ export async function listTalentRequests(req: Request, res: Response, next: Next
         const acceptedIds = new Set(project?.contractorAcceptances?.map(entry => entry.workerId.toString()) ?? []);
         return {
           clientContractApprovedAt: project?.clientAcceptedAt ?? null,
+          projectCompleted: Boolean(project?.deliveryCompletedAt && project?.paymentVerifiedAt && project.status === 'completed'),
           contractorContractApproved: teamIds.length > 0 && teamIds.every(id => acceptedIds.has(id)),
           contractorAcceptedCount: teamIds.filter(id => acceptedIds.has(id)).length,
           contractorTotalCount: teamIds.length,
