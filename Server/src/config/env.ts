@@ -41,6 +41,9 @@ const envSchema = z.object({
   DECHUB_ADMIN_PASSWORD:    z.string().default(''), // admin login password for hidden admin portal
   GOOGLE_SHEETS_ENABLED:    z.string().default('false'),
   GOOGLE_SHEETS_WEBHOOK_URL:z.string().default(''),
+  // Optional until the ElevenLabs Bridge Visitor agent is configured.
+  AI_TOOL_SECRET:           z.string().default(''),
+  ELEVENLABS_WEBHOOK_SECRET:z.string().default(''),
 }).refine(
   (value) => Boolean(value.RESEND_API_KEY) || Boolean(value.SMTP_HOST && value.SMTP_USER && value.SMTP_PASS),
   { message: 'Configure RESEND_API_KEY or all SMTP credentials.', path: ['RESEND_API_KEY'] },

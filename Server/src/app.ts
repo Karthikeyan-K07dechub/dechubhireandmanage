@@ -19,9 +19,14 @@ import debugRoutes from './routes/debug.routes';
 import contractsRoutes from './routes/contracts.routes';
 import invoicesRoutes from './routes/invoices.routes';
 import publicRoutes from './routes/public.routes';
+import aiRoutes from './routes/ai.routes';
+import { receiveElevenLabsWebhook } from './controllers/aiVisitor.controller';
+import { elevenLabsWebhookRateLimiter, requireElevenLabsWebhookSecret } from './middleware/aiTool.middleware';
 
 
 const app = express();
+// Render sits in front of this service as one trusted proxy hop.
+app.set('trust proxy', 1);
 const allowedOrigins = new Set([
   env.CLIENT_URL,
   'http://localhost:5173',
@@ -50,6 +55,16 @@ app.use(cors({
 }));
 
 // ─── Body parsing ─────────────────────────────────────────────────────────────
+// This exact endpoint needs the unparsed body for ElevenLabs HMAC verification.
+// It is registered before express.json() so no other route's parsing changes.
+app.post(
+  '/api/ai/webhooks/elevenlabs',
+  elevenLabsWebhookRateLimiter,
+  express.raw({ type: 'application/json', limit: '1mb' }),
+  requireElevenLabsWebhookSecret,
+  receiveElevenLabsWebhook,
+);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -84,6 +99,7 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/ai', aiRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

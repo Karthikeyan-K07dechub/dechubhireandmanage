@@ -213,6 +213,7 @@ type TalentRequestAdminNotificationInput = {
   projectDescription: string;
   requestedServices: string[];
   dbSaveSucceeded: boolean;
+  source?: string;
 };
 
 export async function sendTalentRequestAdminNotificationEmail(
@@ -234,6 +235,7 @@ export async function sendTalentRequestAdminNotificationEmail(
     <h1>New Book a demo request</h1>
     <p>A new landing-page hiring request was submitted.</p>
     <p><strong>DB save status:</strong> ${input.dbSaveSucceeded ? 'Saved successfully' : 'Email fallback only'}</p>
+    ${input.source ? `<p><strong>Source:</strong> ${input.source}</p>` : ''}
     ${input.requestId ? `<p><strong>Request ID:</strong> ${input.requestId}</p>` : ''}
     <p><strong>Company name:</strong> ${input.companyName}</p>
     <p><strong>Company website:</strong> ${input.companyWebsite}</p>
@@ -253,6 +255,27 @@ export async function sendTalentRequestAdminNotificationEmail(
     html,
     { includeLogo: false },
   );
+}
+
+export async function sendAiCallbackAdminNotificationEmail(
+  to: string,
+  input: { contactName: string; workEmail: string; phone?: string; question: string; requestId: string },
+): Promise<void> {
+  const escape = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character] || character));
+  const html = baseTemplate(`
+    <h1>Callback request from AI assistant</h1>
+    <p><strong>Request ID:</strong> ${escape(input.requestId)}</p>
+    <p><strong>Source:</strong> AI assistant</p>
+    <p><strong>Contact name:</strong> ${escape(input.contactName)}</p>
+    <p><strong>Contact email:</strong> ${escape(input.workEmail)}</p>
+    <p><strong>Phone number:</strong> ${escape(input.phone || 'Not provided')}</p>
+    <p><strong>Question:</strong></p>
+    <p>${escape(input.question).replace(/\n/g, '<br />')}</p>
+  `, { includeLogo: false });
+
+  await sendEmail(to, `Callback request from AI assistant: ${input.contactName}`, html, { includeLogo: false });
 }
 
 export async function sendDemoClientConfirmationEmail(to:string,input:{firstName:string;companyName:string;projectName?:string;requestId:string}):Promise<void>{

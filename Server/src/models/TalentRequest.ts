@@ -52,6 +52,14 @@ export interface ITalentRequest extends Document {
   hiredAt: Date | null;
   talentHiredAt: Date | null;
   unread: boolean;
+  source?: string;
+  channel?: 'chat' | 'voice';
+  conversationId?: string;
+  consentContact?: boolean;
+  consentMarketingEmail?: boolean;
+  consentMarketingWhatsapp?: boolean;
+  aiRequestId?: string;
+  aiCompanyNameNormalized?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -107,6 +115,15 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     hiredAt: { type: Date, default: null },
     talentHiredAt: { type: Date, default: null },
     unread: { type: Boolean, default: true },
+    // AI assistant metadata is optional so existing Book a Demo records stay unchanged.
+    source: { type: String, default: '' },
+    channel: { type: String, enum: ['chat', 'voice'], default: undefined },
+    conversationId: { type: String, default: '' },
+    consentContact: { type: Boolean, default: undefined },
+    consentMarketingEmail: { type: Boolean, default: undefined },
+    consentMarketingWhatsapp: { type: Boolean, default: undefined },
+    aiRequestId: { type: String, default: '', index: true },
+    aiCompanyNameNormalized: { type: String, default: '', index: true },
   },
   { timestamps: true },
 );
@@ -115,5 +132,7 @@ talentRequestSchema.index({ companyName: 1, createdAt: -1 });
 talentRequestSchema.index({ unread: 1, createdAt: -1 });
 talentRequestSchema.index({ companyId: 1, createdAt: -1 });
 talentRequestSchema.index({ shortlistTokenExpiresAt: 1 });
+talentRequestSchema.index({ source: 1, email: 1, aiCompanyNameNormalized: 1, createdAt: -1 });
+talentRequestSchema.index({ conversationId: 1 });
 
 export const TalentRequest = mongoose.model<ITalentRequest>('TalentRequest', talentRequestSchema);

@@ -13,6 +13,8 @@ type TalentRequestSheetPayload = {
   requestedServices: string[];
   dbSaveStatus: 'saved' | 'failed';
   requestId: string | null;
+  source?: string;
+  requestType?: 'demo' | 'callback';
 };
 
 function isGoogleSheetsEnabled(): boolean {
