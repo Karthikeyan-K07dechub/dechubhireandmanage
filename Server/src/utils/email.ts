@@ -254,3 +254,10 @@ export async function sendTalentRequestAdminNotificationEmail(
     { includeLogo: false },
   );
 }
+
+export async function sendDemoClientConfirmationEmail(to:string,input:{firstName:string;companyName:string;projectName?:string;requestId:string}):Promise<void>{
+ const escape=(text:string)=>text.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+ const base='https://bridge.dechub.ai';
+ const html=baseTemplate('<h1>Your request has been received</h1><p>Hi '+escape(input.firstName||'there')+',</p><p>Thank you for contacting Dechub Bridge. We have received your request for '+escape(input.companyName)+'. Our team will review it and share the next steps.</p>'+(input.projectName?'<p><strong>Project:</strong> '+escape(input.projectName)+'</p>':'')+'<p><strong>Request reference:</strong> '+escape(input.requestId)+'</p><p>Log in to your client dashboard and open Hiring &gt; Manage Requests to check your request status.</p><a class="btn" href="'+escape(base+'/company/login')+'">Log in to dashboard</a><p>New to Bridge? <a href="'+escape(base+'/company/signup')+'">Create your company account</a> using the same email address you used for this request: '+escape(to)+'. Your request will be linked to that account.</p>');
+ await sendEmail(to,'Your Dechub Bridge request has been received',html);
+}

@@ -1,4 +1,5 @@
-import path from 'path';
+import { uploadVerificationFile, removeVerificationFile, validateVerificationFile, type VerificationFile } from '../services/verificationStorage.service';
+import { logger } from '../utils/logger';
 import { Request, Response, NextFunction } from 'express';
 import Stripe from 'stripe';
 import { z } from 'zod';
@@ -107,24 +108,6 @@ function normalizeOptionalString(value?: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function mapKybFile(
-  file: Express.Multer.File | null,
-  docType: IKybDocument['docType'],
-): IKybDocument | null {
-  if (!file) {
-    return null;
-  }
-
-  return {
-    docType,
-    fileName: file.originalname,
-    mimeType: file.mimetype,
-    sizeBytes: file.size,
-    storagePath: path.basename(file.path),
-    uploadedAt: new Date(),
-  };
-}
-
 async function autoApproveKybForMvp(company: InstanceType<typeof Company>): Promise<void> {
   // MVP-only temporary behavior:
   // keep the current "verifying" state immediately after upload so the frontend
@@ -212,35 +195,26 @@ export async function saveBusinessDetails(req: Request, res: Response, next: Nex
 }
 
 export async function submitKyb(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const uploaded: VerificationFile[] = []; let committed = false;
   try {
     const company = await getCompanyForUser(req.user!.sub);
-    const files = req.files;
-
-    const documents = [
-      mapKybFile(getUploadedFile(files, 'doc1'), 'incorporation_cert'),
-      mapKybFile(getUploadedFile(files, 'doc2'), 'tax_id'),
-      mapKybFile(getUploadedFile(files, 'doc3'), 'owner_id'),
-      mapKybFile(getUploadedFile(files, 'doc4'), 'proof_of_address'),
-    ].filter((document): document is IKybDocument => document !== null);
-
-    if (documents.length === 0) {
-      throw new AppError('At least one KYB document is required', 422, 'VALIDATION_ERROR');
+    const entries = [['doc1', 'incorporation_cert'], ['doc2', 'tax_id'], ['doc3', 'owner_id'], ['doc4', 'proof_of_address']].flatMap(([field, docType]) => { const file = getUploadedFile(req.files, field); return file ? [{ file, docType }] : []; });
+    if (!entries.length) throw new AppError('At least one KYB document is required', 422, 'VALIDATION_ERROR');
+    entries.forEach(({ file }) => validateVerificationFile(file));
+    const documents: IKybDocument[] = [];
+    for (const { file, docType } of entries) {
+      const privateFile = await uploadVerificationFile(file, 'client', String(company._id), docType, company.companyName || 'Company'); uploaded.push(privateFile);
+      documents.push({ docType, fileName: privateFile.fileName, mimeType: privateFile.mimeType, sizeBytes: privateFile.size, storagePath: privateFile.path, privateFile, uploadedAt: new Date() });
     }
-
-    company.kybDocuments = documents;
-    company.kybStatus = 'verifying';
-    company.kybSubmittedAt = new Date();
-    company.kybApprovedAt = null;
-    await company.save();
-
+    company.privateLegacyDocumentPaths = [...new Set([...(company.privateLegacyDocumentPaths || []), ...company.kybDocuments.filter(d => !d.privateFile).map(d => d.storagePath)])];
+    company.kybDocuments = [...company.kybDocuments.filter(existing => !documents.some(document => document.docType === existing.docType)), ...documents];
+    company.kybStatus = 'verifying'; company.kybSubmittedAt = new Date(); company.kybApprovedAt = null;
+    await company.save(); committed = true;
     await syncCompanyAccountStep(req.user!.sub, 4);
-    ok(res, {
-      kybStatus: company.kybStatus,
-      kybSubmittedAt: company.kybSubmittedAt,
-      documents: company.kybDocuments,
-    });
-  } catch (err) {
-    next(err);
+    ok(res, { kybStatus: company.kybStatus, kybSubmittedAt: company.kybSubmittedAt, documents: company.kybDocuments.map(d => ({ docType: d.docType, fileName: d.fileName, mimeType: d.mimeType, sizeBytes: d.sizeBytes, uploadedAt: d.uploadedAt })) });
+  } catch (error) {
+    if (!committed) await Promise.all(uploaded.map(file => removeVerificationFile(file).catch(() => logger.error('Verification upload cleanup failed'))));
+    next(error);
   }
 }
 

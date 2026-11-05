@@ -1,0 +1,21 @@
+.docs-page { min-width: 0; }
+.docs-tabs { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; }
+.docs-tabs button { border:1px solid #dce3ee; background:white; color:#334155; border-radius:24px; padding:10px 16px; cursor:pointer; font:inherit; }
+.docs-tabs button.selected { background:#15243b; color:white; border-color:#15243b; }
+.docs-tabs span { margin-left:6px; font-size:12px; }
+.docs-filters { display:grid; grid-template-columns:2fr 1.5fr 1fr 1fr 1fr auto; align-items:end; gap:12px; padding:20px; margin-bottom:20px; }
+.docs-filters label,.docs-upload label { display:grid; gap:8px; min-width:0; font-size:13px; font-weight:600; }
+.docs-filters .db-input { width:100%; min-width:0; box-sizing:border-box; }
+.docs-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:16px; margin-top:16px; }
+.docs-document,.docs-upload { padding:24px; }
+.docs-document h2 { font-size:17px; overflow-wrap:anywhere; margin:16px 0; }
+.docs-document-top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px; color:#64748b; }
+.docs-status { border-radius:18px; padding:5px 10px; background:#fef3c7; color:#92400e; }
+.docs-status.positive { background:#dcfce7; color:#166534; }.docs-status.negative { background:#fee2e2; color:#991b1b; }
+.docs-document dl { display:grid; gap:10px; margin:0 0 20px; }.docs-document dl div { display:grid; grid-template-columns:90px 1fr; gap:10px; font-size:13px; }.docs-document dt { color:#64748b; }.docs-document dd { margin:0; overflow-wrap:anywhere; }
+.docs-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.docs-error { color:#b91c1c; }.docs-success { color:#166534; }
+.docs-upload { margin-bottom:20px; }.docs-upload h2 { font-size:18px; }.docs-upload p { font-size:14px; color:#64748b; }.docs-upload-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin:20px 0; }.docs-upload input[type=file],.docs-replace input { width:100%; min-width:0; font-size:13px; }
+.docs-replace { display:grid; gap:6px; width:100%; font-size:13px; }
+@media(max-width:1100px) { .docs-filters { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:600px) { .docs-filters,.docs-upload-grid { grid-template-columns:1fr; }.docs-document,.docs-upload,.docs-filters { padding:16px; }.docs-tabs button { font-size:13px; padding:8px 12px; } }

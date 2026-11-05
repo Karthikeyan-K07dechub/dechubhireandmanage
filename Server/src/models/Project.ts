@@ -1,3 +1,4 @@
+import type { PaymentProofFile } from '../services/paymentProofStorage.service';
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type ProjectStatus =
@@ -9,6 +10,7 @@ export type ProjectStatus =
   | 'cancelled';
 
 export interface IProjectTeamMember {
+  agreedAmount?: number | null;
   workerId: mongoose.Types.ObjectId;
   role: string;
 }
@@ -32,6 +34,8 @@ export interface IProject extends Document {
   clientAcceptedAt: Date | null;
   clientAcceptedBy: string | null;
   contractorAcceptances: Array<{ workerId: mongoose.Types.ObjectId; acceptedAt: Date; email: string }>;
+  paymentMode: string | null;
+  paymentProof: PaymentProofFile | null;
   paymentReference: string | null;
   paymentProofUrl: string | null;
   paymentSubmittedAt: Date | null;
@@ -49,6 +53,7 @@ const projectTeamMemberSchema = new Schema<IProjectTeamMember>(
   {
     workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true },
     role: { type: String, required: true, trim: true, maxlength: 120 },
+    agreedAmount: { type: Number, min: 0, default: null },
   },
   { _id: false },
 );
@@ -58,8 +63,8 @@ const projectSchema = new Schema<IProject>(
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     talentRequestId: { type: Schema.Types.ObjectId, ref: 'TalentRequest', default: null, index: true },
     title: { type: String, required: true, trim: true, maxlength: 180 },
-    description: { type: String, required: true, trim: true, maxlength: 5000 },
-    scope: { type: String, required: true, trim: true, maxlength: 5000 },
+    description: { type: String, required: true, trim: true },
+    scope: { type: String, required: true, trim: true },
     budget: { type: Number, required: true, min: 0 },
     currency: { type: String, enum: ['USD', 'INR', 'AED'], default: 'USD' },
     paymentTerms: { type: String, required: true, trim: true, maxlength: 1200 },
@@ -72,6 +77,8 @@ const projectSchema = new Schema<IProject>(
     clientAcceptedAt: { type: Date, default: null },
     clientAcceptedBy: { type: String, default: null, trim: true },
     contractorAcceptances: { type: [new Schema({ workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true }, acceptedAt: { type: Date, required: true }, email: { type: String, required: true } }, { _id: false })], default: [] },
+    paymentMode: { type: String, default: null },
+    paymentProof: { type: Schema.Types.Mixed, default: null, select: false },
     paymentReference: { type: String, default: null, trim: true, maxlength: 240 },
     paymentProofUrl: { type: String, default: null, trim: true, maxlength: 1000 },
     paymentSubmittedAt: { type: Date, default: null },

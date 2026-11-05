@@ -16,9 +16,14 @@
 }
 
 .fsp-phone-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
   gap: 10px;
+  width: 100%;
+  min-width: 0;
 }
+
+.fsp-phone-row > .cp-input { width: 100%; min-width: 0; box-sizing: border-box; }
 
 .fsp-phone-code {
   width: 120px;
@@ -35,7 +40,7 @@
 
 @media (max-width: 720px) {
   .fsp-phone-row {
-    flex-direction: column;
+    grid-template-columns: 110px minmax(0, 1fr);
   }
 
   .fsp-phone-code {

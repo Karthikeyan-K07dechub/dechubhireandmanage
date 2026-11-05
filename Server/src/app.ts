@@ -1,3 +1,5 @@
+import { blockPublicVerificationFiles } from './middleware/verificationPrivacy.middleware';
+import documentsRoutes from './routes/documents.routes';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -59,7 +61,7 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev', {
 // ─── Static file serving for uploaded KYB docs ───────────────────────────────
 // Served only for internal/admin use — never exposed to end users directly.
 // In production, use S3 signed URLs instead.
-app.use('/uploads', (_req, res, next) => {
+app.use('/uploads', blockPublicVerificationFiles, (_req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 }, express.static(path.resolve(env.UPLOAD_DIR)));
@@ -77,6 +79,7 @@ app.use('/api/workers',   workersRoutes);
 app.use('/api/contractor', contractorRoutes);
 app.use('/api/contracts', contractsRoutes);
 app.use('/api/invoices', invoicesRoutes);
+app.use('/api/documents', documentsRoutes);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/debug', debugRoutes);
@@ -131,7 +134,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err && typeof err === 'object' && 'code' in err && err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       success: false,
-      error: { code: 'FILE_TOO_LARGE', message: `File exceeds ${env.MAX_FILE_SIZE_MB}MB limit` },
+      error: { code: 'FILE_TOO_LARGE', message: _req.path.includes('/kyc') || _req.path.includes('/kyb') ? 'Each verification file must be no larger than 2 MB.' : `File exceeds ${env.MAX_FILE_SIZE_MB}MB limit` },
     });
   }
 

@@ -1,4 +1,3 @@
-import AdminInvoiceReview from './AdminInvoiceReview';
 import { useEffect, useState } from 'react';
 import { listTalentRequests, unreadCount, type TalentRequestItem } from '../../api/admin.api';
 import './admin-talent-requests.css';
@@ -76,8 +75,6 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
           <button className="atr-logout" onClick={onLogout}>Logout</button>
         </div>
       </header>
-
-      <AdminInvoiceReview />
       <section className="atr-stats" aria-label="Summary">
         <article className="atr-stat-card">
           <span>Total requests</span>

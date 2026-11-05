@@ -1,3 +1,4 @@
+import { uploadTaskAttachmentFile, removeTaskAttachmentFile } from '../services/taskAttachment.service';
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { Company } from '../models/Company';
@@ -14,6 +15,7 @@ import { sendEmail } from '../utils/email';
 import { logger } from '../utils/logger';
 
 const teamMemberSchema = z.object({
+  agreedAmount: z.number().finite().positive(),
   workerId: z.string().trim().min(1),
   role: z.string().trim().min(2).max(120),
 });
@@ -22,8 +24,8 @@ const projectSchema = z.object({
   talentRequestId: z.string().trim().min(1).optional(),
   companyId: z.string().trim().min(1).optional(),
   title: z.string().trim().min(3).max(180),
-  description: z.string().trim().min(10).max(5000),
-  scope: z.string().trim().min(10).max(5000),
+  description: z.string().trim().min(1),
+  scope: z.string().trim().min(1),
   budget: z.coerce.number().min(0),
   currency: z.enum(['USD', 'INR', 'AED']),
   paymentTerms: z.string().trim().min(3).max(1200),
@@ -111,6 +113,7 @@ async function serializeCompanyProjects(projects: Array<InstanceType<typeof Proj
     const projectTasks = tasks.filter((task) => task.projectId.toString() === project._id.toString());
     return {
       ...serializeProject(project),
+      teamMembers: project.teamMembers.map(member => ({ workerId: member.workerId, role: member.role })),
       startDate: project.startDate ?? request?.expectedStartDate ?? null,
       targetEndDate: project.targetEndDate ?? request?.expectedEndDate ?? null,
       teamAccess: project.teamMembers.map((member) => {
@@ -212,6 +215,7 @@ export async function sendProjectContract(req: Request, res: Response, next: Nex
   try {
     const project = await Project.findById(req.params.id);
     if (!project) throw Errors.NotFound('Project');
+    if (project.status === 'contract_sent') { ok(res, { ...serializeProject(project), alreadySent: true }); return; }
     if (project.status !== 'draft') throw new AppError('Only draft projects can be sent for client acceptance.', 400, 'INVALID_PROJECT_STATUS');
     if (project.talentRequestId) {
       const request = await TalentRequest.findById(project.talentRequestId);
@@ -259,15 +263,8 @@ export async function sendProjectContract(req: Request, res: Response, next: Nex
       message: `The Dechub-Bridge project contract for ${project.title} is ready for your acceptance.`,
       actionUrl,
     });
-    let emailSent = true;
-    try {
-      await sendEmail(account.email, `Review project contract: ${project.title}`, `<p>Hi ${account.firstName},</p><p>Your Dechub-Bridge project contract is ready for review and acceptance.</p><p><strong>Project:</strong> ${project.title}</p><p><strong>Budget:</strong> ${project.currency} ${project.budget.toLocaleString()}</p><p>Open your dashboard to review and accept it.</p>`);
-    } catch (emailError) {
-      emailSent = false;
-      logger.error(`Project contract email failed for ${project._id.toString()}`, emailError);
-    }
-
-    ok(res, { ...serializeProject(project), emailSent });
+    void sendEmail(account.email, `Review project contract: ${project.title}`, `<p>Hi ${account.firstName},</p><p>Your Dechub-Bridge project contract is ready for review and acceptance.</p><p><strong>Project:</strong> ${project.title}</p><p><strong>Budget:</strong> ${project.currency} ${project.budget.toLocaleString()}</p><p>Open your dashboard to review and accept it.</p>`).catch(emailError => logger.error(`Project contract email failed for ${project._id.toString()}`, emailError));
+    ok(res, { ...serializeProject(project), emailQueued: true });
   } catch (error) {
     if (error instanceof AppError || error instanceof z.ZodError) {
       next(error);
@@ -327,17 +324,21 @@ export async function listCompanyProjects(req: Request, res: Response, next: Nex
 }
 
 export async function createProjectTask(req: Request, res: Response, next: NextFunction): Promise<void> {
+  let attachment: Awaited<ReturnType<typeof uploadTaskAttachmentFile>> | undefined;
+  let savedTask: InstanceType<typeof ProjectTask> | undefined;
+  let committed=false;
   try {
-    const data = taskSchema.parse(req.body);
+    let payload=req.body;
+    if(req.body.payload){try{payload=JSON.parse(req.body.payload);}catch{throw new AppError('Invalid task details.',422,'INVALID_TASK');}}
+    const data=taskSchema.parse(payload);
     const company = await getCompanyForUser(req.user!.sub);
-    const project = await Project.findOne({ _id: req.params.id, companyId: company._id, status: 'active' });
+    const project = await Project.findOne({ _id: req.params.id, companyId: company._id, status: { $in: ['active', 'payment_submitted'] } });
     if (!project) throw new AppError('Only active projects can receive tasks.', 400, 'PROJECT_NOT_ACTIVE');
 
     const permittedWorkerIds = new Set(project.teamMembers.map((member) => member.workerId.toString()));
     if (data.assigneeWorkerIds.some((workerId) => !permittedWorkerIds.has(workerId))) throw Errors.Forbidden();
 
-    if (project.deliveryCompletedAt || project.deliveryCompletions?.some(entry => data.assigneeWorkerIds.includes(entry.workerId.toString()))) throw new AppError('Delivery is completed for an assigned worker. Completed delivery cannot receive new tasks.', 409, 'DELIVERY_COMPLETED');
-    const task = await ProjectTask.create({
+    const task = new ProjectTask({
       ...data,
       projectId: project._id,
       companyId: company._id,
@@ -345,7 +346,12 @@ export async function createProjectTask(req: Request, res: Response, next: NextF
       createdByCompanyUserId: req.user!.sub,
     });
 
-    created(res, task.toObject());
+    if(req.file){attachment=await uploadTaskAttachmentFile(req.file,String(company._id),'tasks/'+task._id);task.attachmentName=attachment.fileName;task.assignmentAttachment=attachment;}
+    await task.save();savedTask=task;
+    committed=true;
+    await Project.updateOne({_id:project._id},{$pull:{deliveryCompletions:{workerId:{$in:data.assigneeWorkerIds}}},$set:{deliveryCompletedAt:null}});
+    const taskView = task.toObject(); delete taskView.assignmentAttachment;
+    created(res, taskView);
 
     // Delivery notifications must not delay or fail an already saved task.
     void (async () => {
@@ -361,7 +367,7 @@ export async function createProjectTask(req: Request, res: Response, next: NextF
 
     })().catch((error) => logger.error('Project task notification failed', { taskId: task._id.toString(), error }));
 
-  } catch (error) { next(error); }
+  } catch(error){if(!committed){if(attachment)await removeTaskAttachmentFile(attachment).catch(()=>{});if(savedTask)await ProjectTask.deleteOne({_id:savedTask._id}).catch(()=>{});}next(error);}
 }
 
 export async function listCompanyProjectTasks(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -398,30 +404,36 @@ export async function verifyProjectPayment(req: Request, res: Response, next: Ne
     if (!project) throw Errors.NotFound('Project');
     if (project.status !== 'payment_submitted') throw new AppError('No payment submission is awaiting verification.', 400, 'INVALID_PROJECT_STATUS');
 
-    project.status = 'completed';
+    project.status = 'active';
     project.paymentVerifiedAt = new Date();
     project.paymentVerifiedBy = req.user!.email;
-    project.completedAt = new Date();
     await project.save();
 
-    await CompanyNotification.create({ companyId: project.companyId, projectId: project._id, type: 'project_completed', title: 'Project completed', message: `${project.title} has been marked completed after payment verification.`, actionUrl: projectActionUrl(project._id.toString()) });
-    await notifyWorkers(project, 'Project completed', `${project.title} is complete and payment has been verified.`);
-    await sendAdminEmail(`Project completed: ${project.title}`, `Payment was verified and ${project.title} is now completed.`);
+    await CompanyNotification.create({ companyId: project.companyId, projectId: project._id, type: 'project_completed', title: 'Payment confirmed', message: `Payment has been verified for ${project.title}.`, actionUrl: projectActionUrl(project._id.toString()) });
+    await notifyWorkers(project, 'Payment confirmed', `Payment has been verified for ${project.title}.`);
+    await sendAdminEmail(`Payment confirmed: ${project.title}`, `Payment was verified for ${project.title}.`);
     ok(res, serializeProject(project));
   } catch (error) { next(error); }
 }
 
 async function serializeWorkerProject(project: InstanceType<typeof Project>, workerId: string) {
   const company = await Company.findById(project.companyId).select('companyName companyWebsite companyCountry addressLine1 addressCity');
+  const team = await Worker.find({ _id: { $in: project.teamMembers.map(member => member.workerId) } }).select('firstName lastName');
+  const agreedAmount = project.teamMembers.find(member => String(member.workerId) === workerId)?.agreedAmount ?? null;
   const acceptance = project.contractorAcceptances?.find(entry => entry.workerId.toString() === workerId);
   return {
     _id: project._id, title: project.title, description: project.description, scope: project.scope,
-    deliverables: project.deliverables, budget: project.budget, currency: project.currency,
+    deliverables: project.deliverables, budget: agreedAmount ?? 0, agreedAmount, currency: project.currency,
     paymentTerms: project.paymentTerms, startDate: project.startDate, targetEndDate: project.targetEndDate,
-    status: project.status, createdAt: project.createdAt, teamMembers: project.teamMembers,
+    status: project.status, createdAt: project.createdAt, teamMembers: project.teamMembers.map(member => ({ workerId: member.workerId, role: member.role })),
     clientAcceptedAt: project.clientAcceptedAt, contractorAcceptedAt: acceptance?.acceptedAt ?? null,
     deliveryCompletedAt: project.deliveryCompletedAt,
     contractorCompletedAt: project.deliveryCompletions?.find(entry => entry.workerId.toString() === workerId)?.completedAt ?? null,
+    teamDirectory: project.teamMembers.map(member => {
+      const worker = team.find(worker => String(worker._id) === String(member.workerId));
+      return { workerId: String(member.workerId), name: worker ? worker.firstName + ' ' + worker.lastName : 'Team member', role: member.role, isSelf: String(member.workerId) === workerId,
+        status: project.deliveryCompletions.some(entry => String(entry.workerId) === String(member.workerId)) ? 'Completed' : project.contractorAcceptances.some(entry => String(entry.workerId) === String(member.workerId)) ? 'In progress' : 'Awaiting acceptance' };
+    }),
     assignedRole: project.teamMembers.find(member => member.workerId.toString() === workerId)?.role ?? '',
     companyDetails: company ? { name: company.companyName, website: company.companyWebsite, country: company.companyCountry, address: [company.addressLine1, company.addressCity].filter(Boolean).join(', ') } : null,
   };
@@ -465,7 +477,7 @@ export async function listWorkerProjectTasks(req: Request, res: Response, next: 
   } catch (error) { next(error); }
 }
 
-async function recordWorkerDeliveryCompletion(project: InstanceType<typeof Project>, workerId: string) {
+export async function recordWorkerDeliveryCompletion(project: InstanceType<typeof Project>, workerId: string) {
   const updated = await Project.findOneAndUpdate({ _id: project._id, 'teamMembers.workerId': workerId, 'deliveryCompletions.workerId': { $ne: workerId } }, { $push: { deliveryCompletions: { workerId, completedAt: new Date() } } }, { new: true });
   const current = updated ?? await Project.findById(project._id);
   if (!current) throw Errors.NotFound('Project');
@@ -499,7 +511,7 @@ export async function updateWorkerProjectTask(req: Request, res: Response, next:
     if (!task) throw Errors.NotFound('Assigned task');
     const project = await Project.findOne({ _id: task.projectId, 'teamMembers.workerId': worker._id });
     if (!project || !project.clientAcceptedAt || !project.contractorAcceptances?.some(entry => entry.workerId.toString() === worker._id.toString())) throw new AppError('Accept the project contract in Contracts before updating tasks.', 403, 'PROJECT_CONTRACT_REQUIRED');
-    if (project.status !== 'active') throw new AppError('This task cannot be updated.', 400, 'TASK_NOT_ACTIVE');
+    if (!['active', 'payment_submitted'].includes(project.status)) throw new AppError('This task cannot be updated.', 400, 'TASK_NOT_ACTIVE');
 
     if (project.deliveryCompletions?.some(entry => entry.workerId.toString() === worker._id.toString())) throw new AppError('This delivery has been completed and is ready for invoicing.', 409, 'DELIVERY_COMPLETED');
     task.status = data.status;
@@ -542,16 +554,30 @@ export async function updateProjectPaymentStatus(req: Request, res: Response, ne
     if (!['active', 'payment_submitted', 'completed'].includes(project.status)) throw new AppError('Payment status cannot be changed for this project.', 409, 'INVALID_PROJECT_STATUS');
     const alreadyDone = Boolean(project.paymentVerifiedAt);
     const updated = await Project.findOneAndUpdate({ _id: project._id, deliveryCompletedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted', 'completed'] } }, { $set: {
-      status: done ? 'completed' : project.paymentSubmittedAt ? 'payment_submitted' : 'active',
+      status: project.status === 'completed' ? 'completed' : done ? 'active' : project.paymentSubmittedAt ? 'payment_submitted' : 'active',
       paymentVerifiedAt: done ? project.paymentVerifiedAt ?? new Date() : null,
       paymentVerifiedBy: done ? req.user!.email : null,
-      completedAt: done ? project.completedAt ?? new Date() : null,
     } }, { new: true, runValidators: true });
     if (!updated) throw new AppError('Project status changed. Refresh and try again.', 409, 'PROJECT_CHANGED');
     if (updated.talentRequestId) await TalentRequest.updateOne({ _id: updated.talentRequestId, companyId: updated.companyId }, { $set: { unread: true } });
     if (alreadyDone !== done) {
-      void CompanyNotification.create({ companyId: updated.companyId, projectId: updated._id, type: 'general', title: done ? 'Project completed' : 'Project payment pending', message: done ? updated.title + ' is completed and admin confirmed payment.' : 'Admin marked payment as not done for ' + updated.title + '.', actionUrl: projectActionUrl(updated._id.toString()) }).catch(error => logger.error('Payment status notification failed', error));
+      void CompanyNotification.create({ companyId: updated.companyId, projectId: updated._id, type: 'general', title: done ? 'Payment confirmed' : 'Project payment pending', message: done ? 'Admin confirmed payment for ' + updated.title + '.' : 'Admin marked payment as not done for ' + updated.title + '.', actionUrl: projectActionUrl(updated._id.toString()) }).catch(error => logger.error('Payment status notification failed', error));
     }
     ok(res, serializeProject(updated));
   } catch (error) { next(error); }
+}
+
+export async function closeCompanyProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const company = await getCompanyForUser(req.user!.sub);
+    const project = await Project.findOne({ _id: req.params.id, companyId: company._id });
+    if (!project) throw Errors.NotFound('Project');
+    if (project.status === 'completed') { ok(res, serializeProject(project)); return; }
+    if (!['active','payment_submitted'].includes(project.status)) throw new AppError('Only an active project can be closed.',409,'INVALID_PROJECT_STATUS');
+    if (!await ProjectTask.exists({projectId:project._id}) || await ProjectTask.exists({projectId:project._id,status:{$ne:'completed'}})) throw new AppError('Approve all project tasks before closing the project.',409,'TASKS_NOT_COMPLETED');
+    const updated = await Project.findOneAndUpdate({_id:project._id,companyId:company._id,status:project.status},{$set:{status:'completed',completedAt:new Date()}},{new:true,runValidators:true});
+    if (!updated) throw new AppError('Project changed. Refresh and try again.',409,'PROJECT_CHANGED');
+    await notifyWorkers(updated,'Project completed',updated.title + ' has been closed and completed by the client.');
+    ok(res,serializeProject(updated));
+  } catch(error) { next(error); }
 }

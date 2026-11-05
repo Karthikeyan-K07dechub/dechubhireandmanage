@@ -7,6 +7,7 @@ export type Track         = 'track_1_india' | 'track_2_us';
 export type WorkerType    = 'contractor' | 'full_time_employee';
 export type PayFrequency  = 'monthly' | 'biweekly' | 'hourly';
 export type DashboardPage =
+  | 'analytics'
   | 'home'
   | 'marketplace'
   | 'projects'

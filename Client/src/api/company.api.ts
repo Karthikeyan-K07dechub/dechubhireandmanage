@@ -65,6 +65,7 @@ export async function submitKyb(
   onProgress?: (pct: number) => void,
 ): Promise<KybResult> {
   try {
+    if (Object.values(files).some(file => file && file.size > 2 * 1024 * 1024)) throw new Error('Each verification file must be no larger than 2 MB.');
     const form = new FormData();
     if (files.doc1) form.append('doc1', files.doc1);
     if (files.doc2) form.append('doc2', files.doc2);

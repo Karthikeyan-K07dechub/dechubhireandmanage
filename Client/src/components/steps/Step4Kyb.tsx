@@ -121,7 +121,7 @@ export default function Step4Kyb({ state, handlers }: Props) {
         label="Certificate of Incorporation"
         required
         tooltip="Government-issued proof your company is legally registered"
-        subtitle="PDF, JPG, PNG · Max 10MB"
+        subtitle="PDF, JPG, PNG · Max 2 MB"
         icon="📄"
         state={uploadedDocs.doc1}
         isDragOver={!!dragOver.doc1}
@@ -135,7 +135,7 @@ export default function Step4Kyb({ state, handlers }: Props) {
       <UploadBox
         label="Tax ID / EIN document"
         tooltip="IRS EIN letter (US), VAT certificate (EU), or equivalent"
-        subtitle="PDF, JPG, PNG · Max 10MB · Optional"
+        subtitle="PDF, JPG, PNG · Max 2 MB · Optional"
         icon="🧾"
         state={uploadedDocs.doc2}
         isDragOver={!!dragOver.doc2}

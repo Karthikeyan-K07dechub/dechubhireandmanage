@@ -1,3 +1,7 @@
+import BridgeLogo from '../components/common/BridgeLogo';
+import ContractorNotificationPopup from './ContractorNotificationPopup';
+import ContractorProfileReminder from './ContractorProfileReminder';
+import SignOutButton from '../components/common/SignOutButton';
 import CompletedProjectsForInvoicing from './CompletedProjectsForInvoicing';
 import { getTeamMemberProjects, type DeliveryProject } from '../api/projects.api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -53,6 +57,12 @@ const INVOICE_BADGE: Record<InvoiceStatus, { cls: string; label: string }> = {
   disputed: { cls: 'inv-badge inv-badge-disputed', label: 'Disputed' },
 };
 
+function contractorInvoiceBadge(invoice:ContractorInvoice){
+ if(invoice.status==='paid')return INVOICE_BADGE.paid;
+ if(invoice.adminReviewStatus==='approved')return {cls:'inv-badge inv-badge-approved',label:'Approved by admin'};
+ if(invoice.adminReviewStatus==='changes_requested')return {cls:'inv-badge inv-badge-disputed',label:'Changes requested'};
+ return INVOICE_BADGE[invoice.status];
+}
 const MARKETPLACE_AVAILABILITY_OPTIONS = [
   { value: 'available_now', label: 'Available now' },
   { value: 'this_week', label: 'Available this week' },
@@ -185,6 +195,11 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
     companyName: profile.companyName ?? '',
     status: profile.status ?? '',
     kycStatus: profile.kycStatus ?? '',
+    kycDocumentsSubmitted: Boolean(profile.kycDocumentsSubmitted),
+    marketplaceProfileComplete: Boolean(profile.marketplaceProfileComplete),
+    marketplaceMissingFields: profile.marketplaceMissingFields || [],
+    marketplaceEligible: Boolean(profile.marketplaceEligible),
+    kycSubmittedAt: profile.kycSubmittedAt ?? null,
     payRate: typeof profile.payRate === 'number' ? profile.payRate : 0,
     payCurrency: profile.payCurrency ?? 'USD',
     payFrequency: profile.payFrequency ?? 'monthly',
@@ -269,7 +284,7 @@ function SubmitInvoiceModal({
   const [form, setForm] = useState<SubmitInvoicePayload>({
     periodStart: '',
     periodEnd: '',
-    amountGross: 0,
+    amountGross: initialProject?.agreedAmount ?? 0,
     projectName: initialProject?.title || '',
     projectId: initialProject?._id || '',
     description: initialProject ? [initialProject.assignedRole, initialProject.description].filter(Boolean).join(' - ') : '',
@@ -336,12 +351,12 @@ function SubmitInvoiceModal({
         </div>
 
         <div className="cp-modal-body">
-          <p style={{ color: '#526580', fontSize: 13 }}>You can submit an invoice only after project completion. Your invoice goes to Dechub for review before it reaches the client.</p>
+          <p style={{ color: '#526580', fontSize: 13 }}>You can submit an invoice only after the client approves completion of your assigned tasks. Your invoice goes to Dechub for review before it reaches the client.</p>
           {error && <div className="cp-error">Warning: {error}</div>}
-          {!projectsLoading && completedProjects.length === 0 && <p className="cp-error" role="status">No completed projects are available. Complete your assigned project in Projects first.</p>}
+          {!projectsLoading && completedProjects.length === 0 && <p className="cp-error" role="status">Wait until client completion approval. No approved projects are available for invoicing yet.</p>}
           <div className="cp-field" style={{ marginBottom: 16 }}>
             <label className="cp-label" htmlFor="invoice-project-name">Project name <span className="cp-req">*</span></label>
-            <select id="invoice-project-name" className={`cp-input ${errors.projectName ? 'error' : ''}`} value={form.projectId} disabled={projectsLoading || Boolean(initialProject)} onChange={event => { const project = completedProjects.find(item => item._id === event.target.value); setForm(previous => ({ ...previous, projectId: project?._id || '', projectName: project?.title || '', description: project ? [project.assignedRole, project.description].filter(Boolean).join(' - ') : '' })); }}><option value="">{projectsLoading ? 'Loading completed projects...' : 'Select a completed project'}</option>{completedProjects.map(project => <option key={project._id} value={project._id}>{project.title}</option>)}</select>
+            <select id="invoice-project-name" className={`cp-input ${errors.projectName ? 'error' : ''}`} value={form.projectId} disabled={projectsLoading || Boolean(initialProject)} onChange={event => { const project = completedProjects.find(item => item._id === event.target.value); setForm(previous => ({ ...previous, projectId: project?._id || '', projectName: project?.title || '', amountGross: project?.agreedAmount ?? 0, description: project ? [project.assignedRole, project.description].filter(Boolean).join(' - ') : '' })); }}><option value="">{projectsLoading ? 'Loading completed projects...' : 'Select a completed project'}</option>{completedProjects.map(project => <option key={project._id} value={project._id}>{project.title}</option>)}</select>
             {errors.projectName && <p className="cp-field-error">{errors.projectName}</p>}
           </div>
 
@@ -472,72 +487,13 @@ function DashboardHome({
   const totalPending = invoices.filter((invoice) => ['pending_admin', 'submitted'].includes(invoice.status)).reduce((sum, invoice) => sum + invoice.amountGross, 0);
   const nextPayment = invoices.find((invoice) => invoice.status === 'approved');
   const recentInvoices = invoices.slice(0, 4);
-  const isSetupIncomplete = profile.onboardingStep > 0 && profile.onboardingStep < 4;
-  const completedSteps = Math.max(1, Math.min(profile.onboardingStep, 4));
-  const progressPercent = Math.round((completedSteps / 4) * 100);
 
   return (
     <div className="cd-page">
       <div className="cd-page-title">Welcome back, {profile.firstName}</div>
       <div className="cd-page-sub">{profile.roleTitle} at {profile.companyName}</div>
 
-      {isSetupIncomplete ? (
-        <section
-          style={{
-            background: '#ffffff',
-            border: '1px solid #dbe4f0',
-            borderRadius: 24,
-            padding: '26px 28px',
-            marginBottom: 22,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 20,
-            boxShadow: '0 16px 40px rgba(15, 23, 42, 0.05)',
-          }}
-          className="cd-setup-banner" aria-label="Complete freelancer setup"
-        >
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4f46e5', marginBottom: 10 }}>
-              Complete freelancer setup
-            </div>
-            <h2 style={{ margin: '0 0 8px', fontSize: 34, lineHeight: 1.08, letterSpacing: '-0.04em', color: '#0f172a' }}>
-              Your dashboard is ready. Finish setup whenever you&apos;re ready.
-            </h2>
-            <p style={{ margin: '0 0 14px', maxWidth: 760, fontSize: 15, lineHeight: 1.7, color: '#64748b' }}>
-              You can explore the dashboard now and complete your personal details, identity check, and payment details later.
-            </p>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12, fontSize: 13.5, fontWeight: 600, color: '#334155' }}>
-              <span>{completedSteps}/4 setup steps completed</span>
-              <span>{progressPercent}% done</span>
-            </div>
-            <div style={{ height: 10, background: '#e5edff', borderRadius: 999, overflow: 'hidden', maxWidth: 480 }}>
-              <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #2563eb, #14b8a6)', borderRadius: 999 }} />
-            </div>
-          </div>
 
-          <div className="cd-setup-actions">
-            <button
-              type="button"
-              className="cp-btn-primary"
-              style={{ width: '100%' }}
-              onClick={() => {
-                window.location.href = '/freelancer/signup?resume=1';
-              }}
-            >
-              Complete freelancer setup
-            </button>
-            <button
-              type="button"
-              className="cp-btn-secondary"
-              style={{ width: '100%' }}
-              onClick={() => onNavigate('dashboard')}
-            >
-              Keep exploring dashboard
-            </button>
-          </div>
-        </section>
-      ) : null}
 
       <div className="cd-stats">
         <div className="cd-stat">
@@ -606,7 +562,7 @@ function DashboardHome({
                       </td>
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>{invoice.currency} {invoice.amountGross.toLocaleString()}</td>
                       <td style={{ padding: '12px 16px' }}>
-                        <span className={INVOICE_BADGE[invoice.status].cls}>{INVOICE_BADGE[invoice.status].label}</span>
+                        <span className={contractorInvoiceBadge(invoice).cls}>{contractorInvoiceBadge(invoice).label}</span>{invoice.adminReviewReason&&<p style={{fontSize:12,color:'#92400e',marginTop:6}}>Admin: {invoice.adminReviewReason}</p>}
                       </td>
                     </tr>
                   ))}
@@ -862,7 +818,7 @@ function InvoicesPage({
                   <td style={{ padding: '13px 16px', fontSize: 12.5, color: '#64748b' }}>{new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}</td>
                   <td style={{ padding: '13px 16px', fontSize: 13, color: '#475569' }}>{invoice.projectName && <strong style={{ display: 'block', marginBottom: 5 }}>{invoice.projectName}</strong>}{invoice.description}</td>
                   <td style={{ padding: '13px 16px', fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{invoice.currency} {invoice.amountGross.toLocaleString()}</td>
-                  <td style={{ padding: '13px 16px' }}><span className={INVOICE_BADGE[invoice.status].cls}>{INVOICE_BADGE[invoice.status].label}</span></td>
+                  <td style={{ padding: '13px 16px' }}><span className={contractorInvoiceBadge(invoice).cls}>{contractorInvoiceBadge(invoice).label}</span>{invoice.adminReviewReason&&<p style={{fontSize:12,color:'#92400e',marginTop:6}}>Admin: {invoice.adminReviewReason}</p>}</td>
                 </tr>
               ))}
             </tbody>
@@ -932,10 +888,14 @@ function ContractPage({ profile, readOnly }: { profile: ContractorProfile; readO
 }
 
 function ProfilePage({
+  editRequested = false,
+  onEditStarted,
   profile,
   readOnly,
   onSave,
 }: {
+  editRequested?: boolean;
+  onEditStarted?: () => void;
   profile: ContractorProfile;
   readOnly: boolean;
   onSave: (payload: {
@@ -988,7 +948,8 @@ function ProfilePage({
   }), [profile]);
 
   const [form, setForm] = useState(buildFormState);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(editRequested);
+  useEffect(() => { if (editRequested && !readOnly) { setIsEditing(true); onEditStarted?.(); } }, [editRequested, readOnly, onEditStarted]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -1806,6 +1767,7 @@ export default function ContractorDashboard({
   const [notifications, setNotifications] = useState<ContractorNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [profileEditRequested, setProfileEditRequested] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [selectedInvoiceProject, setSelectedInvoiceProject] = useState<DeliveryProject | null>(null);
   const [bannerMessage, setBannerMessage] = useState(flashMessage);
@@ -1890,6 +1852,10 @@ export default function ContractorDashboard({
           return;
         }
 
+        if (!profileResult.value.kycDocumentsSubmitted) {
+          window.location.replace('/freelancer/signup?resume=1');
+          return;
+        }
         setProfile(normalizeContractorProfile(profileResult.value));
         setLoadError('');
 
@@ -1930,6 +1896,15 @@ export default function ContractorDashboard({
       window.removeEventListener('dechub:contractor-session-expired', handleSessionExpired);
     };
   }, [previewProfile]);
+
+  useEffect(() => {
+    if (isPreviewMode) return;
+    let active = true;
+    const refresh = () => { void Promise.allSettled([getContractorNotifications(), getMyInvoices()]).then(([alerts,invoices]) => { if (!active) return; if(alerts.status==='fulfilled')setNotifications(alerts.value);if(invoices.status==='fulfilled')setInvoices(invoices.value); }); };
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [isPreviewMode]);
 
   const handleInvoiceSuccess = useCallback((invoice: ContractorInvoice) => {
     setInvoices((prev) => [invoice, ...prev]);
@@ -2037,10 +2012,7 @@ export default function ContractorDashboard({
   return (
     <div className="cd-shell">
       <header className="cd-topbar">
-        <div className="cd-logo">
-          <div className="cd-logo-dot" />
-          Dechub
-        </div>
+        <div className="cd-logo"><BridgeLogo className="cd-bridge-logo" /></div>
 
         <nav className="cd-nav">
           {nav.map((item) => (
@@ -2060,16 +2032,12 @@ export default function ContractorDashboard({
             <div className="cd-user-role">{profile.companyName}</div>
           </div>
           <div className="cd-avatar">{initials}</div>
-          <button
-            onClick={handleLogout}
-            title="Sign out"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, padding: '0 4px' }}
-          >
-            ⇥
-          </button>
+          <SignOutButton className="contractor-signout-button" onConfirm={handleLogout} />
         </div>
       </header>
 
+      {!isPreviewMode && <ContractorNotificationPopup notifications={notifications} account={profile.email} viewingNotifications={page === 'notifications'} onRead={id=>setNotifications(items=>items.map(item=>item._id===id?{...item,readAt:new Date().toISOString()}:item))} />}
+      {page === 'dashboard' && <ContractorProfileReminder profile={profile} readOnly={isPreviewMode} onComplete={() => { setProfileEditRequested(true); setPage('profile'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
       {bannerMessage ? (
         <div style={{ margin: '18px 28px 0', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', borderRadius: 12, padding: '14px 18px', fontSize: 14, fontWeight: 600 }}>
           {bannerMessage}
@@ -2102,8 +2070,11 @@ export default function ContractorDashboard({
           profile={profile}
           readOnly={isPreviewMode}
           onSave={handleSaveProfile}
+          editRequested={profileEditRequested}
+          onEditStarted={() => setProfileEditRequested(false)}
         />
       )}
+
 
       {page === 'notifications' && (
         <div className="cd-page">
@@ -2123,8 +2094,8 @@ export default function ContractorDashboard({
                       item._id === notification._id ? { ...item, readAt: new Date().toISOString() } : item
                     )));
                   }
-                  if (notification.actionUrl?.includes('contract')) {
-                    setPage('contract');
+                  if (notification.actionUrl?.startsWith('/contractor/dashboard?')) {
+                    window.location.assign(notification.actionUrl);
                   }
                 }}
                 style={{

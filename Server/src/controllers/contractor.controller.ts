@@ -1,3 +1,6 @@
+import { ProjectTask } from '../models/ProjectTask';
+import { marketplaceProfileCompletion, isMarketplaceEligible } from '../services/marketplaceEligibility.service';
+import { uploadVerificationFile, removeVerificationFile, validateVerificationFile, type VerificationFile } from '../services/verificationStorage.service';
 import { Project } from '../models/Project';
 import { notifyInvoiceAdmin } from '../services/invoiceReview.service';
 import { Request, Response, NextFunction } from 'express';
@@ -673,6 +676,7 @@ export async function savePersonalDetails(req: Request, res: Response, next: Nex
 // ─── Step 3 — KYC upload ─────────────────────────────────────────────────────
 
 export async function uploadKyc(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const uploaded: VerificationFile[] = []; let committed = false;
   try {
     const worker  = await getWorkerFromReq(req);
     const idType  = req.body.idType  as string;
@@ -683,26 +687,23 @@ export async function uploadKyc(req: Request, res: Response, next: NextFunction)
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     if (!files?.idFront?.[0]) throw new AppError('Front ID file is required', 400, 'VALIDATION_ERROR');
 
-    // In production: upload to S3 and store URLs
-    // Here we store file paths from multer
-    const kycData = {
-      idType,
-      idNumber,
-      idFrontPath:  files.idFront[0].path,
-      idBackPath:   files.idBack?.[0]?.path ?? null,
-      selfiePath:   files.selfie?.[0]?.path ?? null,
-      submittedAt:  new Date(),
-    };
+    const entries = (['idFront', 'idBack', 'selfie'] as const).flatMap(field => files[field]?.[0] ? [{ field, file: files[field][0] }] : []);
+    entries.forEach(({ file }) => validateVerificationFile(file));
+    const privateFiles: Partial<Record<'idFront' | 'idBack' | 'selfie', VerificationFile>> = {};
+    for (const { field, file } of entries) {
+      const document = await uploadVerificationFile(file, 'contractor', String(worker._id), field, `${worker.firstName} ${worker.lastName}`); uploaded.push(document); privateFiles[field] = document;
+    }
+    const kycData = { idType, idNumber, privateFiles, idFrontPath: privateFiles.idFront!.path, idBackPath: privateFiles.idBack?.path ?? null, selfiePath: privateFiles.selfie?.path ?? null, submittedAt: new Date() };
 
     worker.kycData = kycData;
     worker.kycStatus = 'pending';  // KYC team reviews within 24h
-    await worker.save();
+    await worker.save(); committed = true;
 
     // In production: trigger Stripe Identity or manual review notification here
 
     logger.info(`KYC submitted for worker: ${worker._id}`);
     ok(res, { message: 'KYC submitted for review. You will be notified within 24 hours.' });
-  } catch (err) { next(err); }
+  } catch (err) { if (!committed) await Promise.all(uploaded.map(file => removeVerificationFile(file).catch(() => logger.error('Verification upload cleanup failed')))); next(err); }
 }
 
 // ─── Step 4 — Bank details ────────────────────────────────────────────────────
@@ -869,6 +870,11 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       companyName: company?.companyName ?? 'Your Company',
       status: worker.status,
       kycStatus: worker.kycStatus,
+      kycDocumentsSubmitted: hasSubmittedKyc(worker),
+      marketplaceProfileComplete: marketplaceProfileCompletion(worker).complete,
+      marketplaceMissingFields: marketplaceProfileCompletion(worker).missingFields,
+      marketplaceEligible: isMarketplaceEligible(worker),
+      kycSubmittedAt: worker.kycData?.submittedAt ?? null,
       payRate: worker.payRate,
       payCurrency: worker.payCurrency,
       payFrequency: worker.payFrequency,
@@ -1063,6 +1069,11 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
       companyName:   company?.companyName ?? 'Your Company',
       status:        worker.status,
       kycStatus:     worker.kycStatus,
+      kycDocumentsSubmitted: hasSubmittedKyc(worker),
+      marketplaceProfileComplete: marketplaceProfileCompletion(worker).complete,
+      marketplaceMissingFields: marketplaceProfileCompletion(worker).missingFields,
+      marketplaceEligible: isMarketplaceEligible(worker),
+      kycSubmittedAt: worker.kycData?.submittedAt ?? null,
       payRate:       worker.payRate,
       payCurrency:   worker.payCurrency,
       payFrequency:  worker.payFrequency,
@@ -1156,7 +1167,9 @@ export async function submitInvoice(req: Request, res: Response, next: NextFunct
     }
 
     const project = await Project.findOne({ _id: data.projectId, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, 'contractorAcceptances.workerId': worker._id, 'deliveryCompletions.workerId': worker._id, status: { $in: ['active', 'payment_submitted', 'completed'] } });
-    if (!project) throw new AppError('You can submit an invoice only after completing your accepted project.', 403, 'PROJECT_NOT_COMPLETED');
+    if (!project) throw new AppError('Wait until the client approves completion of your assigned tasks before submitting an invoice.', 403, 'CLIENT_APPROVAL_REQUIRED');
+    const tasks = await ProjectTask.find({projectId:project._id,assigneeWorkerIds:worker._id}).select('status');
+    if (!tasks.length || tasks.some(task => task.status !== 'completed')) throw new AppError('Wait until the client approves completion of all your assigned tasks before submitting an invoice.',403,'CLIENT_APPROVAL_REQUIRED');
     const contract = await Contract.findOne({ workerId: worker._id, companyId: project.companyId, status: 'active' });
 
     // Check for duplicate invoice for same period

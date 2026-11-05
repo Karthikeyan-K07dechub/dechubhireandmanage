@@ -54,6 +54,7 @@ export default function SettingsPage() {
       const result = await updateCompanyProfile({ company });
       setAccount(result);
       setCompany(Object.fromEntries(companyFields.map(([key]) => [key, String(result.company[key] || '')])));
+      window.dispatchEvent(new CustomEvent('dechub:company-profile-updated', { detail: result.company }));
       setProfileMessage('Company details saved.');
     } catch (error) { setProfileError(normalizeError(error).message); }
     finally { setSaving(false); }
@@ -67,6 +68,7 @@ export default function SettingsPage() {
       const response = await api.post('/company/logo', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       const result = unwrapApiData<{ companyLogoUrl: string }>(response.data);
       setLogoUrl(result.companyLogoUrl); setLogo(null);
+      window.dispatchEvent(new CustomEvent('dechub:company-profile-updated', { detail: { companyLogoUrl: result.companyLogoUrl } }));
       const logoInput = document.getElementById('settings-logo') as HTMLInputElement | null; if (logoInput) logoInput.value = ''; setProfileMessage('Company logo saved.');
     } catch (error) { setProfileError(normalizeError(error).message); }
     finally { setUploading(false); }

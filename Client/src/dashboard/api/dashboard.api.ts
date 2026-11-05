@@ -1,9 +1,9 @@
+import type { LibraryDocument } from '../../api/documents.api';
 import { api, normalizeError, ApiResponse, unwrapApiData } from '../../api/client';
 import type {
   Worker,
   Contract,
   Invoice,
-  Document,
   DashboardStats,
   AddWorkerFormData,
 } from '../types/dashboard.type';
@@ -154,9 +154,9 @@ export async function disputeInvoice(id: string, reason: string): Promise<Invoic
 
 // ─── Documents ─────────────────────────────────────────────────────────────────
 
-export async function getDocuments(): Promise<Document[]> {
+export async function getDocuments(): Promise<LibraryDocument[]> {
   try {
-    const res = await api.get<ApiResponse<Document[]>>('/documents');
+    const res = await api.get<ApiResponse<LibraryDocument[]>>('/documents');
     return unwrapApiData(res.data);
   } catch (err) {
     throw normalizeError(err);

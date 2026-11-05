@@ -96,6 +96,8 @@ export interface ContractorContract {
 export type InvoiceStatus = 'pending_admin' | 'draft' | 'submitted' | 'approved' | 'paid' | 'disputed';
 
 export interface ContractorInvoice {
+  adminReviewStatus?: 'pending'|'approved'|'changes_requested';
+  adminReviewReason?: string | null;
   projectId?: string | null;
   projectName?: string;
   _id: string;
@@ -167,6 +169,11 @@ export interface ContractorProfile {
   companyName: string;
   status: string;
   kycStatus: string;
+  marketplaceProfileComplete?: boolean;
+  marketplaceMissingFields?: string[];
+  marketplaceEligible?: boolean;
+  kycDocumentsSubmitted?: boolean;
+  kycSubmittedAt?: string | null;
   payRate: number;
   payCurrency: string;
   payFrequency: string;

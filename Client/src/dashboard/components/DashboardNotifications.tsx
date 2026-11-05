@@ -16,6 +16,18 @@ function noticeSection(notice: Notice) {
 export default function DashboardNotifications({ onCountsChange, activeSection }: { onCountsChange?: (counts: Record<string, number>) => void; activeSection: string }) {
   const sectionRef = useRef(activeSection);
   sectionRef.current = activeSection;
+  const [taskAttentionCount,setTaskAttentionCount]=useState(0);
+  useEffect(()=>{
+    let active=true;let busy=false;
+    async function refreshAttention(){
+      if(busy)return;busy=true;
+      try{const response=await api.get('/company/task-attention');if(active)setTaskAttentionCount(response.data.data.length);}catch{/* Preserve the last count and retry. */}finally{busy=false;}
+    }
+    void refreshAttention();
+    const timer=window.setInterval(()=>void refreshAttention(),5000);
+    const refresh=()=>void refreshAttention();window.addEventListener('focus',refresh);window.addEventListener('task-attention-changed',refresh);
+    return()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',refresh);window.removeEventListener('task-attention-changed',refresh);};
+  },[]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
@@ -25,12 +37,15 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
     for (const notice of notices) {
       if (notice.read) continue;
       const section = noticeSection(notice);
+      if(section==='projects' && new URL(notice.href,window.location.origin).searchParams.has('task'))continue;
       counts[section] = (counts[section] || 0) + 1;
     }
+    counts.projects=(counts.projects||0)+taskAttentionCount;
     onCountsChange?.(counts);
-  }, [notices, onCountsChange]);
+  }, [notices, onCountsChange, taskAttentionCount]);
   const seen = useRef(new Set<string>());
   const read = useRef(new Set<string>());
+  const dismissed = useRef(new Set<string>());
   const storageKey = useRef('');
   const bell = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -54,6 +69,7 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
         const company = await getMyCompany();
         if (!active) return;
         storageKey.current = 'dechub_notification_reads:' + company.user.email;
+        try { dismissed.current = new Set(JSON.parse(localStorage.getItem(storageKey.current + ':dismissed') || '[]')); } catch { /* Keep in-memory dismissals. */ }
         try { read.current = new Set(JSON.parse(localStorage.getItem(storageKey.current) || '[]')); } catch { /* Keep in-memory read state. */ }
         try { seen.current = new Set([...seen.current, ...JSON.parse(sessionStorage.getItem(storageKey.current + ':shown') || '[]')]); } catch { /* Keep in-memory popup state. */ }
         const results = await Promise.allSettled([getCompanyProjectNotifications(), listCompanyTalentRequests(), getInvoices(), getContracts(), getWorkers(), getDocuments(), getDashboardStats(), getCompanyProjects()]);
@@ -64,8 +80,8 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
         if (requests.status === 'fulfilled') items.push(...requests.value.filter(item => item.status === 'shortlisted_sent' && !item.clientSelectionSubmittedAt).map(item => ({ id: 'request:' + item._id + ':' + item.status + ':' + (item.shortlistSentAt || ''), title: item.status === 'shortlisted_sent' ? 'Shortlisted workers ready for review' : 'Hiring request: ' + label(item.status), message: (item.projectName || item.projectType) + '. ' + (item.reviewNotes || (item.status === 'shortlisted_sent' ? 'Accept or reject the candidates and submit your selections.' : 'View the latest request status and next steps.')), href: '/dashboard?tab=hiring&hiringView=requests#talent-request-' + item._id, read: false })));
         if (invoices.status === 'fulfilled') items.push(...invoices.value.map(item => ({ id: 'invoice:' + item._id + ':' + item.status, title: 'Invoice ' + label(item.status), message: item.invoiceNumber + ' - ' + item.workerName + ': ' + item.currency + ' ' + item.amountGross.toLocaleString(), href: '/dashboard?tab=invoices', read: false })));
         if (contracts.status === 'fulfilled') items.push(...contracts.value.map(item => ({ id: 'contract:' + item._id + ':' + item.status, title: 'Contract ' + label(item.status), message: item.workerName + ': review the agreement and signature status.', href: '/dashboard?tab=contracts', read: false })));
-        if (workers.status === 'fulfilled') items.push(...workers.value.map(item => ({ id: 'worker:' + item._id + ':' + item.status + ':' + item.kycStatus, title: 'Worker ' + label(item.status), message: item.firstName + ' ' + item.lastName + ' - verification ' + label(item.kycStatus), href: '/dashboard?tab=workers', read: false })));
-        if (documents.status === 'fulfilled') items.push(...documents.value.map(item => ({ id: 'document:' + item._id, title: 'Document available', message: item.fileName + (item.workerName ? ' - ' + item.workerName : ''), href: '/dashboard?tab=documents', read: false })));
+        if (workers.status === 'fulfilled') items.push(...workers.value.filter(item => item.status !== 'kyc_pending').map(item => ({ id: 'worker:' + item._id + ':' + item.status + ':' + item.kycStatus, title: 'Worker ' + label(item.status), message: item.firstName + ' ' + item.lastName, href: '/dashboard?tab=workers', read: false })));
+        if (documents.status === 'fulfilled') items.push(...documents.value.map(item => ({ id: 'document:' + item._id + ':' + item.uploadedAt, title: 'Document available', message: item.fileName + (item.workerName ? ' - ' + item.workerName : ''), href: '/dashboard?tab=documents', read: false })));
         if (stats.status === 'fulfilled' && stats.value.nextPayrollDate) items.push({ id: 'payroll:' + stats.value.nextPayrollDate, title: 'Upcoming payroll', message: 'Next payroll: ' + new Date(stats.value.nextPayrollDate).toLocaleDateString(), href: '/dashboard?tab=payroll', read: false });
         if (company.company.kybStatus) items.push({ id: 'verification:' + String(company.company.kybStatus), title: 'Company verification ' + String(company.company.kybStatus), message: 'Review your company verification status and any remaining setup steps.', href: '/company/onboarding', read: false });
         if (company.user.signupStep < 7) items.push({ id: 'setup:' + company.user.signupStep, title: 'Complete your company setup', message: 'Finish your company profile, verification, and billing setup.', href: '/company/onboarding', read: false });
@@ -73,11 +89,11 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
           const id = 'project-contract:' + item._id;
           items.push({ id, title: 'Project contract awaiting acceptance', message: item.title, href: '/dashboard?tab=contracts#project-contract-' + item._id, read: false });
         });
-        const resolved = items.map(item => ({ ...item, read: item.read || read.current.has(item.id) }));
+        const resolved = items.filter(item => !dismissed.current.has(item.id)).map(item => ({ ...item, read: item.read || read.current.has(item.id) }));
         const fresh = resolved.some(item => !item.read && noticeSection(item) !== sectionRef.current && !seen.current.has(item.id));
         resolved.forEach(item => seen.current.add(item.id));
         try { sessionStorage.setItem(storageKey.current + ':shown', JSON.stringify([...seen.current].slice(-1000))); } catch { /* Keep in-memory popup state. */ }
-        setNotices(resolved);
+        setNotices(resolved.filter(item => !dismissed.current.has(item.id)));
         setError(results.some(result => result.status === 'rejected') ? 'Some notifications could not be loaded. They will refresh automatically.' : '');
         if (fresh) setOpen(true);
       } catch { if (active) setError('Unable to load notifications. Please try again shortly.'); }
@@ -93,6 +109,12 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
     });
     return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', focus); api.interceptors.response.eject(interceptor); };
   }, []);
+  function dismiss(item: Notice) {
+    dismissed.current.add(item.id);
+    try { localStorage.setItem(storageKey.current + ':dismissed', JSON.stringify([...dismissed.current])); } catch { /* Keep in-memory dismissals. */ }
+    void markRead([item]);
+    setNotices(previous => previous.filter(notice => notice.id !== item.id));
+  }
   async function markRead(items: Notice[]) {
     for (const item of items) read.current.add(item.id);
     try { localStorage.setItem(storageKey.current, JSON.stringify([...read.current].slice(-1000))); } catch { /* Storage may be unavailable. */ }
@@ -120,7 +142,7 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
         <header><div><h2 id="db-notification-title">Notifications</h2><p>{unread.length} unread alerts and updates</p></div><button ref={closeButton} type="button" className="db-btn-secondary" aria-label="Close notifications" onClick={close}>X</button></header>
         {error && <p role="alert">{error}</p>}
         {unread.length > 0 && <button type="button" className="db-btn-primary" onClick={() => void markRead(unread)}>Mark all as read</button>}
-        <div className="db-notification-list">{loading ? <p>Loading notifications...</p> : notices.length === 0 ? <p>No notifications yet.</p> : [...notices].sort((a, b) => Number(a.read) - Number(b.read)).map(item => <a key={item.id} href={item.href} className={'db-notification-item' + (item.read ? '' : ' unread')} onClick={event => { event.preventDefault(); void markRead([item]).finally(() => window.location.assign(item.href)); }}><strong>{item.title}</strong><span>{item.message}</span><small>{item.read ? 'Read' : 'Unread'} - Open section</small></a>)}</div>
+        <div className="db-notification-list">{loading ? <p>Loading notifications...</p> : notices.length === 0 ? <p>No notifications yet.</p> : [...notices].sort((a, b) => Number(a.read) - Number(b.read)).map(item => <div key={item.id} className="db-notification-row"><a href={item.href} className={'db-notification-item' + (item.read ? '' : ' unread')} onClick={event => { event.preventDefault(); void markRead([item]).finally(() => window.location.assign(item.href)); }}><strong>{item.title}</strong><span>{item.message}</span><small>{item.read ? 'Read' : 'Unread'} - Open section</small></a><button type="button" className="db-notification-dismiss" aria-label={'Delete notification: ' + item.title} onClick={() => dismiss(item)}><span aria-hidden="true">{'\u00d7'}</span></button></div>)}</div>
       </section>
     </div>, document.body)}
   </>;

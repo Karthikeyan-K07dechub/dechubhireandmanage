@@ -1,3 +1,4 @@
+import { isMarketplaceEligible as hasCompletedMarketplaceProfile } from '../services/marketplaceEligibility.service';
 import { resolveCompanyRequestDetails } from '../utils/companyRequestDetails';
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
@@ -14,7 +15,7 @@ import { MarketplaceOrderDraft } from '../models/MarketplaceOrderDraft';
 import { TalentRequest } from '../models/TalentRequest';
 import { ok, created, Errors, AppError } from '../utils/response';
 import { logger } from '../utils/logger';
-import { sendEmail, sendTalentRequestAdminNotificationEmail } from '../utils/email';
+import { sendEmail, sendTalentRequestAdminNotificationEmail, sendDemoClientConfirmationEmail } from '../utils/email';
 import { queueBookDemoSubmissionToGoogleSheets } from '../services/googleSheets.service';
 import { env } from '../config/env';
 
@@ -367,33 +368,6 @@ function mapWorkerToMarketplaceTalentDetail(worker: any) {
   };
 }
 
-function hasCompletedMarketplaceProfile(worker: any): boolean {
-  const title = worker.contractorProfile?.marketplaceTitle?.trim() ?? '';
-  const bio = worker.contractorProfile?.marketplaceBio?.trim() ?? '';
-  const rate = worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0;
-  const city = worker.contractorProfile?.city?.trim() || worker.contractorProfile?.address?.city?.trim() || '';
-  const country = worker.contractorProfile?.address?.country?.trim() || worker.country?.trim() || '';
-  const skills = Array.isArray(worker.contractorProfile?.skills) ? worker.contractorProfile.skills : [];
-  const servicePackages = Array.isArray(worker.contractorProfile?.servicePackages) 
-    ? worker.contractorProfile.servicePackages 
-    : [];
-  const hasServicePackagePrice = servicePackages.some((pkg: { price?: number | string } | null | undefined) => (
-    pkg?.price !== undefined && Number(pkg.price) > 0
-  ));
-
-  return Boolean(
-    title
-    && title !== DEFAULT_MARKETPLACE_TITLE
-    && bio
-    && !DEFAULT_MARKETPLACE_BIOS.has(bio)
-    && Number(rate) > 0
-    && city
-    && country
-    && country.toLowerCase() !== 'unknown'
-    && skills.length > 0
-    && hasServicePackagePrice,
-  );
-}
 
 async function ensureDraftContract(worker: InstanceType<typeof Worker>, company: InstanceType<typeof Company>) {
   const existing = await Contract.findOne({ workerId: worker._id });
@@ -730,6 +704,8 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       ).catch((err) => {
         logger.error('Failed to send marketplace talent request admin notification email', err);
       });
+
+      void sendDemoClientConfirmationEmail(contactEmail, {firstName:contactFirstName,companyName,projectName:data.projectName,requestId:request._id.toString()}).catch(error=>logger.error('Book a Demo client confirmation email failed',{requestId:request._id.toString(),error}));
 
       queueBookDemoSubmissionToGoogleSheets(buildGoogleSheetsPayload(request, 'saved'));
 

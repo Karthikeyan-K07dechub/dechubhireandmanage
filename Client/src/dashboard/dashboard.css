@@ -276,7 +276,11 @@
   display: grid; place-items: center;
   font-size: 13px; font-weight: 700;
   color: #fff; flex-shrink: 0;
+  overflow: hidden;
 }
+
+.db-profile-avatar { overflow: hidden; flex-shrink: 0; }
+.db-company-profile-image { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
 
 .db-user-info { flex: 1; min-width: 0; }
 
@@ -1949,6 +1953,106 @@
 @media (max-width: 560px) { .db-contract-header { flex-wrap: wrap; } .db-contract-header-actions { margin-left: auto; } }
 
 .db-nav-subitem { display: flex; align-items: center; gap: 8px; }
-.db-nav .db-nav-badge { color: #fff; background: #b91c1c; flex-shrink: 0; }
+.db-nav .db-nav-badge { color: #fff; background: transparent; border: 0; box-shadow: none; padding: 0; min-width: auto; border-radius: 0; flex-shrink: 0; }
 
 
+
+.db-payment-proof-form{display:grid;gap:16px;max-width:680px}.db-payment-proof-form label{display:grid;gap:8px;font-size:13px}.db-payment-proof-form input,.db-payment-proof-form select{box-sizing:border-box;width:100%;min-width:0;padding:12px;border:1px solid #dbe4ef;border-radius:8px;background:#fff;color:#0f172a}.db-payment-proof-form small{color:#64748b}.db-payment-proof-form button{justify-self:start}
+
+.db-sidebar .db-nav-label,.db-sidebar .db-nav-subitem,.db-sidebar .db-nav-item:hover .db-nav-label,.db-sidebar .db-nav-subitem:hover,.db-sidebar .db-nav-subitem.active{color:#fff}
+
+.db-payment-success-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 32px));padding:32px;border:1px solid #dbe4ef;border-radius:18px;background:#fff;color:#0f172a;box-shadow:0 24px 70px rgba(15,23,42,.2)}.db-payment-success-dialog::backdrop{background:rgba(15,23,42,.45)}.db-payment-success-dialog h2{margin:8px 24px 12px 0;font-size:21px;line-height:1.4}.db-payment-success-dialog p{margin:0;color:#64748b;font-size:14px;line-height:1.6}.db-payment-success-close{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:8px;background:#f1f5f9;color:#475569;font-size:24px;cursor:pointer}.db-payment-success-close:hover{background:#e2e8f0}
+
+.db-payment-success-dialog{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 32px);overflow-y:auto}
+
+.db-budget-service-note{font-size:12px;font-weight:500;color:#64748b;white-space:normal}
+
+.db-team-access-card>.db-worker-message-action{justify-self:end;align-self:center}.db-worker-message-action button{white-space:nowrap}
+
+.db-worker-chat-row{grid-template-columns:minmax(160px,1.4fr) repeat(3,minmax(100px,1fr)) auto}.db-worker-chat-row.has-account{grid-template-columns:minmax(160px,1.4fr) repeat(4,minmax(85px,1fr)) auto}@media(max-width:1100px){.db-worker-chat-row,.db-worker-chat-row.has-account{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.db-worker-chat-row,.db-worker-chat-row.has-account{grid-template-columns:minmax(0,1fr)}.db-team-access-card>.db-worker-message-action{justify-self:start}}
+.db-project-form .db-task-upload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 3px 12px;
+  padding: 8px 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition: border-color .15s, background .15s;
+}
+.db-project-form .db-task-upload:focus-within {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+.db-task-upload .db-task-upload-title {
+  float: none;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+}
+.db-task-upload .db-task-upload-title span {
+  float: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+}
+.db-project-form .db-task-upload input[type="file"] {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  cursor: pointer;
+}
+.db-task-upload input::file-selector-button {
+  margin-right: 12px;
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #172554;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.db-task-upload input::file-selector-button:hover { background: #e2e8f0; }
+.db-project-form .db-task-upload small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+}
+@media (max-width: 600px) {
+  .db-project-form .db-task-upload { grid-template-columns: minmax(0, 1fr); }
+  .db-project-form .db-task-upload input[type="file"] { grid-column: 1; grid-row: auto; }
+}
+.db-attention-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 9px;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: none;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.db-project-list-item .db-attention-copy,
+.db-project-task .db-attention-copy {
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+  margin-top: 6px;
+}

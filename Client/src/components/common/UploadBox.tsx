@@ -1,4 +1,4 @@
-import { ChangeEvent, DragEvent } from 'react';
+import { ChangeEvent, DragEvent, useId, useRef } from 'react';
 import type { DocState } from '../../types/signup';
 import Tooltip from './Tooltip';
 
@@ -29,14 +29,24 @@ export default function UploadBox({
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   error?: string;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const errorId = useId();
   return (
     <div className="form-group">
       <label>
         {label} {required ? <span className="req">*</span> : null}
         <Tooltip text={tooltip} />
       </label>
-      <div className={`upload-zone ${isDragOver ? 'dragover' : ''} ${state?.uploaded ? 'uploaded' : ''}`} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={onChange} />
+      <div className={`upload-zone ${isDragOver ? 'dragover' : ''} ${state?.uploaded ? 'uploaded' : ''}`}
+        role="button" tabIndex={0} aria-label={`${state?.file ? 'Replace' : 'Upload'} ${label}`} aria-describedby={error ? errorId : undefined} aria-invalid={Boolean(error)}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); inputRef.current?.click(); } }}
+        onDragOver={onDragOver}
+        onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onDragLeave(); }}
+        onDrop={event => { event.preventDefault(); event.stopPropagation(); onDrop(event); }}>
+        <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" tabIndex={-1} aria-label={label}
+          onClick={event => event.stopPropagation()}
+          onChange={event => { onChange(event); event.currentTarget.value = ''; }} />
         {state?.uploaded && state.file ? (
           <>
             <div className="upload-success">✅ {state.file.name}</div>
@@ -50,7 +60,7 @@ export default function UploadBox({
           </>
         )}
       </div>
-      <div className={`field-error ${error ? 'show' : ''}`}>{error}</div>
+      <div id={errorId} className={`field-error ${error ? 'show' : ''}`} role={error ? 'alert' : undefined}>{error}</div>
     </div>
   );
 }

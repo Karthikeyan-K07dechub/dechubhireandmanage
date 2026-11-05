@@ -28,17 +28,10 @@ export default function Step2CompanyIdentity({ state, handlers, initialStep = 1,
         <label>Country of registration <span className="req">*</span></label>
         <select value={formData.companyCountry} onChange={(e) => handleInputChange('companyCountry', e.target.value)} className={errors.companyCountry ? 'error' : ''}>
           <option value="">Select country...</option>
-          <option value="US">🇺🇸 United States</option>
-          <option value="GB">🇬🇧 United Kingdom</option>
-          <option value="DE">🇩🇪 Germany</option>
-          <option value="FR">🇫🇷 France</option>
-          <option value="CA">🇨🇦 Canada</option>
-          <option value="AU">🇦🇺 Australia</option>
-          <option value="SG">🇸🇬 Singapore</option>
-          <option value="NL">🇳🇱 Netherlands</option>
-          <option value="SE">🇸🇪 Sweden</option>
-          <option value="AE">🇦🇪 UAE</option>
-          <option value="OTHER">🌍 Other</option>
+          <option value="IN">India</option>
+          <option value="AE">UAE</option>
+          <option value="US">USA</option>
+          <option value="OTHER">Others</option>
         </select>
         <div className={`field-error ${errors.companyCountry ? 'show' : ''}`}>{errors.companyCountry}</div>
       </div>

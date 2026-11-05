@@ -848,11 +848,11 @@ label {
 }
 
 .upload-zone input[type='file'] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
+  display: none;
 }
+
+.upload-zone:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+.upload-success { overflow-wrap: anywhere; }
 
 .upload-icon {
   font-size: 28px;

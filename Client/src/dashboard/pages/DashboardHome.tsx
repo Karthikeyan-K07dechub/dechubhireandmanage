@@ -1,22 +1,11 @@
-import { useEffect, useState } from 'react';
+import DashboardProjectOverview from '../components/DashboardProjectOverview';
+import { useEffect, useRef, useState } from 'react';
 import type { Worker, Invoice, DashboardStats, Contract } from '../types/dashboard.type';
 import { getDashboardStats, getWorkers, getInvoices, getContracts, approveInvoice } from '../api/dashboard.api';
-import { getCompanyProjects, type DeliveryProject } from '../../api/projects.api';
+import { getCompanyProjects, getCompanyProjectTasks, type DeliveryProject } from '../../api/projects.api';
 import { listCompanyTalentRequests, type CompanyTalentRequestItem } from '../../api/talentRequests.api';
 import { getMyCompany } from '../../api/company.api';
 import { buildPendingActions } from '../utils/pendingActions';
-
-function workerBadge(status: Worker['status']) {
-  const map: Record<Worker['status'], [string, string]> = {
-    active: ['db-badge db-badge-active', 'Active'],
-    invited: ['db-badge db-badge-invited', 'Invited'],
-    kyc_pending: ['db-badge db-badge-kyc', 'KYC Pending'],
-    inactive: ['db-badge db-badge-terminated', 'Inactive'],
-    terminated: ['db-badge db-badge-terminated', 'Terminated'],
-  };
-  const [cls, label] = map[status] ?? ['db-badge db-badge-draft', status];
-  return <span className={cls}>{label}</span>;
-}
 
 function StatCard({
   label,
@@ -26,6 +15,7 @@ function StatCard({
   deltaType = 'neutral',
   onAction,
   actionLabel,
+  className = '',
 }: {
   label: string;
   value: string | number;
@@ -34,9 +24,10 @@ function StatCard({
   deltaType?: 'positive' | 'negative' | 'neutral';
   onAction?: () => void;
   actionLabel?: string;
+  className?: string;
 }) {
   return (
-    <div className="db-stat-card">
+    <div className={`db-stat-card ${className}`}>
       <div className="db-stat-label">
         <span>{icon}</span> {label}
       </div>
@@ -120,11 +111,23 @@ interface Props {
 }
 
 export default function DashboardHome({ onNavigate }: Props) {
+  const quickActionsRef=useRef<HTMLDivElement>(null);
+  const homeLayoutRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    const card=quickActionsRef.current;const layout=homeLayoutRef.current;
+    if(!card||!layout)return;
+    const observer=new ResizeObserver(()=>layout.style.setProperty('--overview-card-height',card.getBoundingClientRect().height+'px'));
+    observer.observe(card);return()=>observer.disconnect();
+  });
+  const [clientName, setClientName] = useState('');
+  const [firstVisit, setFirstVisit] = useState(false);
+  const greetingAccount = useRef('');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [projects, setProjects] = useState<DeliveryProject[]>([]);
+  const [tasksInProgress, setTasksInProgress] = useState<number | null>(null);
   const [requests, setRequests] = useState<CompanyTalentRequestItem[]>([]);
   const [readNoticeIds, setReadNoticeIds] = useState<Set<string>>(new Set());
   const [signupStep, setSignupStep] = useState<number | null>(null);
@@ -156,14 +159,30 @@ export default function DashboardHome({ onNavigate }: Props) {
           listCompanyTalentRequests(),
           getMyCompany(),
         ]);
+        const taskResults = p.status === 'fulfilled'
+          ? await Promise.allSettled(p.value.map(project => getCompanyProjectTasks(project._id)))
+          : null;
         if (cancelled) return;
+        setTasksInProgress(taskResults && taskResults.every(result => result.status === 'fulfilled')
+          ? new Set(taskResults.flatMap(result => result.status === 'fulfilled' ? result.value.filter(task => task.status === 'in_progress').map(task => task._id) : [])).size
+          : null);
         setStats(s.status === 'fulfilled' ? s.value : null);
         setWorkers(w.status === 'fulfilled' ? w.value : []);
         setInvoices(inv.status === 'fulfilled' ? inv.value : []);
         setContracts(c.status === 'fulfilled' ? c.value : []);
         setProjects(p.status === 'fulfilled' ? p.value : []);
         setRequests(r.status === 'fulfilled' ? r.value : []);
+        setClientName(company.status === 'fulfilled' ? company.value.user.firstName?.trim() || String(company.value.company?.companyName || '').trim() : '');
         if (company.status === 'fulfilled') {
+          const account = company.value.user.email.trim().toLowerCase();
+          if (greetingAccount.current !== account) {
+            greetingAccount.current = account;
+            try {
+              const key = 'dechub_dashboard_welcomed:' + account;
+              setFirstVisit(localStorage.getItem(key) !== '1');
+              localStorage.setItem(key, '1');
+            } catch { setFirstVisit(false); }
+          }
           try { setReadNoticeIds(new Set(JSON.parse(localStorage.getItem('dechub_notification_reads:' + company.value.user.email) || '[]'))); } catch { setReadNoticeIds(new Set()); }
         }
         setSignupStep(company.status === 'fulfilled' ? company.value.user?.signupStep ?? null : null);
@@ -198,7 +217,7 @@ export default function DashboardHome({ onNavigate }: Props) {
 
   if (loading) {
     return (
-      <div className="db-page">
+      <div className="db-page db-home-page">
         <div className="db-loading">
           <div className="db-spinner" /> Loading dashboard...
         </div>
@@ -210,58 +229,93 @@ export default function DashboardHome({ onNavigate }: Props) {
     ...project.teamMembers.map(member => member.workerId),
     ...(project.teamAccess ?? []).map(member => member.workerId),
   ]).filter(Boolean)).size;
-  const pendingKyc = workers.filter((w) => w.kycStatus === 'pending').length;
-  const pendingInvoices = invoices.filter((invoice) => invoice.status === 'submitted');
+  const pendingInvoices = invoices.filter((invoice) => ['submitted', 'approved'].includes(invoice.status));
   const pendingActions = buildPendingActions({ contracts, projects, requests, invoices, workers, signupStep, readNoticeIds, contractsExpiring: stats?.contractsExpiring ?? 0 });
 
   return (
     <div className="db-page">
       <div className="db-page-header">
         <div>
-          <div className="db-page-title">Dashboard</div>
-          <div className="db-page-sub">
-            Welcome back. Here&apos;s what&apos;s happening with your team.
-          </div>
+          <div className="db-page-title">Welcome{clientName ? `, ${clientName}` : ''}!</div>
+          <div className="db-page-sub">{firstVisit ? 'Let\u2019s get started\u2014set up your company and bring your first project to life.' : 'See what\u2019s moving forward and what needs your attention.'}</div>
         </div>
       </div>
 
-      <div className="db-stats-row">
+      <div className="db-stats-row db-home-stats">
         <StatCard
           icon="Team"
           label="Total Workers"
+          className="db-worker-total-card"
           value={failedSections.includes('Projects') ? '-' : projectWorkerCount}
           delta={failedSections.includes('Projects') ? 'Unable to load project workers' : 'Across all projects'}
           deltaType="neutral"
         />
         <StatCard
-          icon="Bills"
-          label="Pending Invoices"
-          actionLabel="Invoices"
-          onAction={() => onNavigate('invoices')}
-          value={failedSections.includes('Invoices') ? '-' : pendingInvoices.length}
-          delta={failedSections.includes('Invoices') ? 'Unable to load invoices' : pendingInvoices.length ? 'Need your approval' : 'All clear'}
-          deltaType={pendingInvoices.length ? 'negative' : 'neutral'}
-        />
-        <StatCard
-          icon="Pay"
-          label="Next Payroll"
-          value={stats?.nextPayrollDate
-            ? new Date(stats.nextPayrollDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : failedSections.includes('Dashboard totals') ? '-' : 'Not scheduled'}
-          delta={failedSections.includes('Dashboard totals') ? 'Unable to load payroll status' : stats?.nextPayrollDate ? 'Upcoming payroll' : 'No payroll schedule configured'}
+          icon=""
+          label="Tasks in progress"
+          actionLabel="View projects"
+          onAction={() => onNavigate('projects')}
+          value={tasksInProgress ?? '-'}
+          delta={tasksInProgress === null ? 'Unable to load project tasks' : 'Across all projects'}
           deltaType="neutral"
         />
-        <StatCard
-          icon="Cost"
-          label="Monthly Cost"
-          value={stats ? Object.entries(stats.monthlyCostByCurrency ?? { [stats.currency]: stats.monthlyTotalCost }).map(([currency, amount]) => `${currency} ${amount.toLocaleString()}`).join(' / ') || `${stats.currency} 0` : '-'}
-          delta={stats?.hourlyWorkersExcluded ? `Estimate · ${stats.hourlyWorkersExcluded} hourly workers excluded` : 'Estimated recurring monthly cost'}
-          deltaType="neutral"
-        />
+
+<div className="db-card db-home-invoice-card">
+            <div className="db-card-header">
+              <span className="db-card-title">Pending invoices</span>
+              <button className="db-card-link" onClick={() => onNavigate('invoices')}>
+                {'View all ->'}
+              </button>
+            </div>
+            {approvalError && <p className="db-pending-warning" role="alert">{approvalError}</p>}
+            {failedSections.includes('Invoices') ? <p className="db-pending-warning">Invoices could not be loaded. Use Refresh in Pending actions to retry.</p> : pendingInvoices.length === 0 ? (
+              <div style={{ padding: '20px 24px', fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
+                No pending invoices
+              </div>
+            ) : (
+              <div className="db-action-list">
+                {pendingInvoices.slice(0, 3).map((inv) => (
+                  <div key={inv._id} className="db-action-item">
+                    
+                    <div className="db-action-text">
+                      <div className="db-action-title">{inv.workerName}</div>
+                      <div className="db-action-sub">{inv.status === 'approved' ? 'Awaiting payment' : 'Awaiting approval'}</div>
+                      <div className="db-action-sub">
+                        {inv.currency} {inv.amountGross.toLocaleString()} · {inv.invoiceNumber}
+                      </div>
+                    </div>
+                    {inv.status === 'submitted' ? (
+                    <button
+                      className="db-btn-secondary db-btn-sm db-btn-success"
+                      onClick={() => handleApproveInvoice(inv._id)}
+                      disabled={approvingId === inv._id}
+                    >
+                      {approvingId === inv._id ? '...' : 'Approve'}
+                    </button>
+                    ) : <a className="db-btn-secondary db-btn-sm" href="/dashboard?tab=payroll">Payroll</a>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <section className="db-card db-home-project-card" style={{ padding: 24 }} aria-labelledby="dashboard-projects-title">
+            <h2 id="dashboard-projects-title" className="db-card-title" style={{ margin: '0 0 10px', lineHeight: 1.5 }}>
+              Create and manage your projects in one place
+            </h2>
+            <p style={{ margin: '0 0 18px', color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>
+              Submit project requests, review contracts, assign tasks, and track progress from your dashboard.
+            </p>
+            <button type="button" className="db-btn-primary" onClick={() => onNavigate('projects')}>
+              Go to projects
+            </button>
+          </section>
       </div>
 
-      <div className="db-home-layout">
+
+
+      <div className="db-home-layout" ref={homeLayoutRef}>
         <div style={{ minWidth: 0 }}>
+      <DashboardProjectOverview projects={projects} unavailable={failedSections.includes('Projects')} />
         <section className="db-card db-pending-actions" aria-labelledby="pending-actions-title">
           <div className="db-card-header">
             <h2 id="pending-actions-title" className="db-card-title" style={{ margin: 0 }}>Pending actions</h2>
@@ -282,129 +336,12 @@ export default function DashboardHome({ onNavigate }: Props) {
             </div>
           ) : <p className="db-pending-empty">{failedSections.length ? 'No pending actions found in the sections that loaded.' : 'You’re all caught up. No pending actions.'}</p>}
         </section>
-        <div className="db-card">
-          <div className="db-card-header">
-            <span className="db-card-title">Recent Workers</span>
-            <button className="db-card-link" onClick={() => onNavigate('workers')}>
-              {'View all ->'}
-            </button>
-          </div>
 
-          {workers.length === 0 ? (
-            <div className="db-empty">
-              <div className="db-empty-icon">Team</div>
-              <div className="db-empty-title">No workers yet</div>
-              <div className="db-empty-sub">
-                Approved marketplace hires will appear here once you complete the hiring flow.
-              </div>
-            </div>
-          ) : (
-            <div className="db-table-wrap">
-              <table className="db-table">
-                <thead>
-                  <tr>
-                    <th>Worker</th>
-                    <th>Track</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Last Payment</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {workers.slice(0, 5).map((w) => (
-                    <tr key={w._id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #0a1628, #2563eb)',
-                              display: 'grid',
-                              placeItems: 'center',
-                              color: '#fff',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {w.firstName[0]}{w.lastName[0]}
-                          </div>
-                          <div>
-                            <div className="db-table-name">{w.firstName} {w.lastName}</div>
-                            <div className="db-table-sub">{w.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={w.track === 'track_2_us' ? 'db-track db-track-2' : 'db-track db-track-1'}>
-                          {w.track === 'track_2_us' ? 'US' : 'India'}
-                        </span>
-                      </td>
-                      <td>{w.roleTitle}</td>
-                      <td>{workerBadge(w.status)}</td>
-                      <td style={{ color: '#94a3b8', fontSize: 12 }}>
-                        {w.lastPaymentAt ? new Date(w.lastPaymentAt).toLocaleDateString() : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
         </div>
 
         <div>
-          <section className="db-card" style={{ marginBottom: 16, padding: 24 }} aria-labelledby="dashboard-projects-title">
-            <h2 id="dashboard-projects-title" className="db-card-title" style={{ margin: '0 0 10px', lineHeight: 1.5 }}>
-              Create and manage your projects in one place
-            </h2>
-            <p style={{ margin: '0 0 18px', color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>
-              Submit project requests, review contracts, assign tasks, and track progress from your dashboard.
-            </p>
-            <button type="button" className="db-btn-primary" onClick={() => onNavigate('projects')}>
-              Go to projects
-            </button>
-          </section>
-          <div className="db-card" style={{ marginBottom: 16 }}>
-            <div className="db-card-header">
-              <span className="db-card-title">Invoices to Approve</span>
-              <button className="db-card-link" onClick={() => onNavigate('invoices')}>
-                {'View all ->'}
-              </button>
-            </div>
-            {approvalError && <p className="db-pending-warning" role="alert">{approvalError}</p>}
-            {failedSections.includes('Invoices') ? <p className="db-pending-warning">Invoices could not be loaded. Use Refresh in Pending actions to retry.</p> : pendingInvoices.length === 0 ? (
-              <div style={{ padding: '20px 24px', fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
-                No pending invoices
-              </div>
-            ) : (
-              <div className="db-action-list">
-                {pendingInvoices.slice(0, 3).map((inv) => (
-                  <div key={inv._id} className="db-action-item">
-                    <div className="db-action-icon" style={{ background: '#eff6ff' }}>Bills</div>
-                    <div className="db-action-text">
-                      <div className="db-action-title">{inv.workerName}</div>
-                      <div className="db-action-sub">
-                        {inv.currency} {inv.amountGross.toLocaleString()} · {inv.invoiceNumber}
-                      </div>
-                    </div>
-                    <button
-                      className="db-btn-secondary db-btn-sm db-btn-success"
-                      onClick={() => handleApproveInvoice(inv._id)}
-                      disabled={approvingId === inv._id}
-                    >
-                      {approvingId === inv._id ? '...' : 'Approve'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className="db-card">
+          <div className="db-card" ref={quickActionsRef}>
             <div className="db-card-header">
               <span className="db-card-title">Quick Actions</span>
             </div>
@@ -434,7 +371,7 @@ export default function DashboardHome({ onNavigate }: Props) {
         </div>
       </div>
 
-      {(pendingKyc > 0 || stats?.contractsExpiring) && (
+      {((stats?.contractsExpiring ?? 0) > 0) && (
         <div
           style={{
             marginTop: 20,
@@ -453,7 +390,6 @@ export default function DashboardHome({ onNavigate }: Props) {
               Action required
             </div>
             <div style={{ fontSize: 12.5, color: '#b45309', marginTop: 2 }}>
-              {pendingKyc > 0 && `${pendingKyc} worker${pendingKyc > 1 ? 's' : ''} have pending KYC verification. `}
               {(stats?.contractsExpiring ?? 0) > 0 && `${stats!.contractsExpiring} contract${stats!.contractsExpiring > 1 ? 's' : ''} expiring within 30 days.`}
             </div>
           </div>

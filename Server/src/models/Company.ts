@@ -1,3 +1,4 @@
+import type { VerificationFile } from '../services/verificationStorage.service';
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type KybStatus  = 'pending' | 'verifying' | 'approved' | 'rejected';
@@ -8,6 +9,7 @@ export interface IKybDocument {
   fileName:   string;
   mimeType:   string;
   sizeBytes:  number;
+  privateFile?: VerificationFile;
   storagePath:string;       // relative path under uploads/
   uploadedAt: Date;
 }
@@ -35,6 +37,7 @@ export interface ICompany extends Document {
   // ── Step 4: KYB ───────────────────────────────────────────────────────────
   kybStatus:   KybStatus;
   kybDocuments:IKybDocument[];
+  privateLegacyDocumentPaths: string[];
   kybSubmittedAt: Date | null;
   kybApprovedAt:  Date | null;
 
@@ -70,8 +73,9 @@ const kybDocumentSchema = new Schema<IKybDocument>({
   mimeType:    { type: String, required: true },
   sizeBytes:   { type: Number, required: true },
   storagePath: { type: String, required: true },
+  privateFile: { type: new Schema({ bucket: String, path: String, fileName: String, mimeType: String, size: Number, sha256: String }, { _id: false }), default: undefined },
   uploadedAt:  { type: Date,   default: Date.now },
-}, { _id: false });
+}, { _id: false, toJSON: { transform: (_doc, ret) => { const { privateFile, storagePath, ...metadata } = ret; return metadata; } }, toObject: { transform: (_doc, ret) => { const { privateFile, storagePath, ...metadata } = ret; return metadata; } } });
 
 const companySchema = new Schema<ICompany>(
   {
@@ -96,6 +100,7 @@ const companySchema = new Schema<ICompany>(
     // Step 4
     kybStatus:      { type: String, enum: ['pending', 'verifying', 'approved', 'rejected'], default: 'pending' },
     kybDocuments:   { type: [kybDocumentSchema], default: [] },
+    privateLegacyDocumentPaths: { type: [String], default: [] },
     kybSubmittedAt: { type: Date, default: null },
     kybApprovedAt:  { type: Date, default: null },
 

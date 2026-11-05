@@ -66,7 +66,7 @@ export async function downloadCompanyInvoice(req: Request, res: Response, next: 
     const companyId = await companyIdFor(req);
     const invoice = await Invoice.findOne({ _id: req.params.id, companyId, ...clientVisibleInvoiceFilter });
     if (!invoice) throw Errors.NotFound('Invoice');
-    res.setHeader('Content-Type', 'application/pdf'); res.setHeader('Content-Disposition', 'attachment; filename="' + invoice.invoiceNumber + '.pdf"'); res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Content-Type', invoice.clientDocument?.mimeType || 'application/pdf'); res.setHeader('Content-Disposition', 'attachment; filename="' + (invoice.clientDocument?.fileName || invoice.invoiceNumber + '.pdf') + '"'); res.setHeader('Cache-Control', 'no-store');
     res.send(await clientInvoicePdf(invoice));
   } catch (error) { next(error); }
 }

@@ -182,7 +182,6 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
 
   const activeWorkers = workers.filter((w) => w.status === 'active').length;
   const invitedWorkers = workers.filter((w) => w.status === 'invited').length;
-  const pendingKyc = workers.filter((w) => w.kycStatus === 'pending' && w.status !== 'terminated').length;
 
   return (
     <>
@@ -192,7 +191,6 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
             <div className="db-page-title">Workers</div>
             <div className="db-page-sub">
               {workers.length} total · {activeWorkers} active · {invitedWorkers} invited
-              {pendingKyc > 0 && ` · ${pendingKyc} KYC pending`}
             </div>
           </div>
           <div className="db-page-actions">
@@ -206,7 +204,6 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
             { label: 'All', value: workers.length, filter: '', color: '#0a1628' },
             { label: 'Active', value: activeWorkers, filter: 'active', color: '#16a34a' },
             { label: 'Invited', value: invitedWorkers, filter: 'invited', color: '#ca8a04' },
-            { label: 'KYC Pending', value: pendingKyc, filter: 'kyc_pending', color: '#ea580c' },
           ].map(({ label, value, filter, color }) => (
             <button
               key={label}

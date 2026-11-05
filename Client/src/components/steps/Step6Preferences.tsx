@@ -1,12 +1,27 @@
+import { useState } from 'react';
 import { AppHandlers, AppState } from '../../types/signup';
 import ActionButton from '../common/ActionButton';
 import { UserIcon } from '../common/Icons';
 import RadioCard from '../common/RadioCard';
 import ToggleRow from '../common/ToggleRow';
 
+const companyTimezones = [
+  ['Asia/Kolkata', 'India - Indian Standard Time (IST)'],
+  ['Asia/Dubai', 'UAE - Gulf Standard Time (GST)'],
+  ['America/New_York', 'USA - Eastern Time (ET)'],
+  ['America/Chicago', 'USA - Central Time (CT)'],
+  ['America/Denver', 'USA - Mountain Time (MT)'],
+  ['America/Phoenix', 'USA - Arizona (no daylight saving)'],
+  ['America/Los_Angeles', 'USA - Pacific Time (PT)'],
+  ['America/Anchorage', 'USA - Alaska Time'],
+  ['Pacific/Honolulu', 'USA - Hawaii Time'],
+];
+
 export default function Step6Preferences({ state, handlers }: { state: AppState; handlers: AppHandlers }) {
   const { formData, errors, loadingAction } = state;
   const { handleInputChange, goToStep, completeSignup, validateEmail } = handlers;
+  const [customTimezone, setCustomTimezone] = useState(false);
+  const isOtherTimezone = customTimezone || Boolean(formData.companyTimezone && !companyTimezones.some(([value]) => value === formData.companyTimezone));
 
   return (
     <section className="card screen active">
@@ -41,18 +56,12 @@ export default function Step6Preferences({ state, handlers }: { state: AppState;
         </div>
         <div className="form-group">
           <label>Company timezone <span className="req">*</span></label>
-          <select value={formData.companyTimezone} onChange={(e) => handleInputChange('companyTimezone', e.target.value)}>
+          <select value={isOtherTimezone ? 'OTHER' : formData.companyTimezone} onChange={(e) => { const other = e.target.value === 'OTHER'; setCustomTimezone(other); handleInputChange('companyTimezone', other ? '' : e.target.value); }}>
             <option value="">Select your timezone...</option>
-            {formData.companyTimezone && !['America/New_York', 'America/Chicago', 'America/Los_Angeles', 'Europe/London', 'Europe/Berlin', 'Asia/Kolkata', 'Asia/Singapore', 'Australia/Sydney'].includes(formData.companyTimezone) && <option value={formData.companyTimezone}>{formData.companyTimezone}</option>}
-            <option value="America/New_York">🇺🇸 Eastern (ET)</option>
-            <option value="America/Chicago">🇺🇸 Central (CT)</option>
-            <option value="America/Los_Angeles">🇺🇸 Pacific (PT)</option>
-            <option value="Europe/London">🇬🇧 London (GMT)</option>
-            <option value="Europe/Berlin">🇩🇪 Berlin (CET)</option>
-            <option value="Asia/Kolkata">🇮🇳 India (IST)</option>
-            <option value="Asia/Singapore">🇸🇬 Singapore (SGT)</option>
-            <option value="Australia/Sydney">🇦🇺 Sydney (AEST)</option>
+            {companyTimezones.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            <option value="OTHER">Other</option>
           </select>
+          {isOtherTimezone && <div style={{ marginTop: 10 }}><label htmlFor="custom-company-timezone">Other timezone <span className="req">*</span></label><input id="custom-company-timezone" value={formData.companyTimezone} onChange={e => handleInputChange('companyTimezone', e.target.value)} placeholder="e.g. Europe/London" maxLength={100} required /><div className="field-hint">Enter the timezone name, for example Europe/London.</div></div>}
           {errors.companyTimezone && <div className="field-error show" role="alert">{errors.companyTimezone}</div>}
         </div>
       </div>

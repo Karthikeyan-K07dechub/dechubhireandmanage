@@ -1,3 +1,4 @@
+import { isMarketplaceEligible as hasCompletedMarketplaceProfile } from '../services/marketplaceEligibility.service';
 import { Project } from '../models/Project';
 import { CompanyNotification } from '../models/CompanyNotification';
 import { logger } from '../utils/logger';
@@ -84,32 +85,6 @@ function normalizeServicePackages(value: unknown) {
     .filter(Boolean);
 }
 
-function hasCompletedMarketplaceProfile(worker: any): boolean {
-  const title = worker.contractorProfile?.marketplaceTitle?.trim() ?? '';
-  const bio = worker.contractorProfile?.marketplaceBio?.trim() ?? '';
-  const rate = worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0;
-  const city = worker.contractorProfile?.city?.trim() || worker.contractorProfile?.address?.city?.trim() || '';
-  const country = worker.contractorProfile?.address?.country?.trim() || worker.country?.trim() || '';
-  const skills = Array.isArray(worker.contractorProfile?.skills) ? worker.contractorProfile.skills : [];
-  const servicePackages = Array.isArray(worker.contractorProfile?.servicePackages)
-    ? worker.contractorProfile.servicePackages
-    : [];
-  const hasServicePackagePrice = servicePackages.some((pkg: { price?: number | string } | null | undefined) => (
-    pkg?.price !== undefined && Number(pkg.price) > 0
-  ));
-
-  return Boolean(
-    title
-    && title.toLowerCase() !== 'freelancer'
-    && bio
-    && Number(rate) > 0
-    && city
-    && country
-    && country.toLowerCase() !== 'unknown'
-    && skills.length > 0
-    && hasServicePackagePrice
-  );
-}
 
 function formatTalentProfile(worker: any) {
   if (!worker) {
@@ -519,7 +494,7 @@ export async function listTalentRequests(req: Request, res: Response, next: Next
         const acceptedIds = new Set(project?.contractorAcceptances?.map(entry => entry.workerId.toString()) ?? []);
         return {
           clientContractApprovedAt: project?.clientAcceptedAt ?? null,
-          projectCompleted: Boolean(project?.deliveryCompletedAt && project?.paymentVerifiedAt && project.status === 'completed'),
+          projectCompleted: Boolean(project?.status === 'completed'),
           contractorContractApproved: teamIds.length > 0 && teamIds.every(id => acceptedIds.has(id)),
           contractorAcceptedCount: teamIds.filter(id => acceptedIds.has(id)).length,
           contractorTotalCount: teamIds.length,

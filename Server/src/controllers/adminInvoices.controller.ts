@@ -1,3 +1,8 @@
+import { Worker } from '../models/Worker';
+import { ContractorNotification } from '../models/ContractorNotification';
+import { sendEmail } from '../utils/email';
+import { escapeMessageHtml } from '../services/messageAlerts.service';
+import { env } from '../config/env';
 import { uploadInvoiceDocument, removeInvoiceDocument, invoiceView } from '../services/invoiceStorage.service';
 import { Company } from '../models/Company';
 import { Request, Response, NextFunction } from 'express';
@@ -17,8 +22,8 @@ export async function listAdminInvoices(req: Request, res: Response, next: NextF
 export async function downloadAdminInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const invoice = await Invoice.findById(req.params.id); if (!invoice) throw Errors.NotFound('Invoice');
-    res.setHeader('Content-Type', 'application/pdf'); res.setHeader('Content-Disposition', 'attachment; filename="' + invoice.invoiceNumber + '.pdf"'); res.setHeader('Cache-Control', 'no-store');
-    res.send(invoice.clientSentAt ? await clientInvoicePdf(invoice) : invoicePdf(invoice));
+    res.setHeader('Content-Type', invoice.clientDocument?.mimeType || 'application/pdf'); res.setHeader('Content-Disposition', 'attachment; filename="' + (invoice.clientDocument?.fileName || invoice.invoiceNumber + '.pdf') + '"'); res.setHeader('Cache-Control', 'no-store');
+    res.send(invoice.clientSentAt ? await clientInvoicePdf(invoice) : await invoicePdf(invoice));
   } catch (error) { next(error); }
 }
 export async function sendInvoiceToClient(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -26,7 +31,7 @@ export async function sendInvoiceToClient(req: Request, res: Response, next: Nex
     const data = z.object({ serviceCharge: z.coerce.number().finite().min(0).max(100000000).default(0) }).parse(req.body);
     const original = await Invoice.findById(req.params.id); if (!original) throw Errors.NotFound('Invoice');
     if (original.clientSentAt || !['pending_admin', 'submitted'].includes(original.status)) throw new AppError('Invoice already sent or unavailable for review.', 409, 'INVOICE_ALREADY_REVIEWED');
-    if (!req.file) throw new AppError('Select the final invoice PDF before sending.', 422, 'INVOICE_PDF_REQUIRED');
+    if (!req.file) throw new AppError('Select the final invoice PDF or image before sending.', 422, 'INVOICE_PDF_REQUIRED');
     const document = await uploadInvoiceDocument(req.file, String(original.companyId), String(original._id));
     const serviceCharge = Math.round(data.serviceCharge * 100) / 100;
     const clientTotal = Math.round((original.amountGross + serviceCharge) * 100) / 100;
@@ -54,3 +59,15 @@ export async function retryInvoiceEmail(req: Request, res: Response, next: NextF
     ok(res, invoiceView((await Invoice.findById(invoice._id))!.toObject()));
   } catch (error) { next(error); }
 }
+
+export async function reviewContractorInvoice(req:Request,res:Response,next:NextFunction){try{
+ const data=z.object({decision:z.enum(['approve','changes']),reason:z.string().trim().max(2000).optional()}).parse(req.body);
+ if(data.decision==='changes'&&!data.reason)throw new AppError('Explain which invoice details need correcting.',422,'REASON_REQUIRED');
+ const invoice=await Invoice.findOneAndUpdate({_id:z.string().regex(/^[a-f0-9]{24}$/i).parse(req.params.id),clientSentAt:null,status:{$in:['pending_admin','submitted']},adminReviewStatus:{$ne:'approved'}},{$set:{adminReviewStatus:data.decision==='approve'?'approved':'changes_requested',adminReviewReason:data.reason||null,adminReviewedAt:new Date(),adminReviewedBy:req.user!.email,...(data.decision==='changes'?{status:'disputed',disputeReason:data.reason}:{})}},{new:true,runValidators:true});
+ if(!invoice)throw new AppError('Invoice has already been reviewed or sent. Refresh the list.',409,'INVOICE_ALREADY_REVIEWED');
+ const title=data.decision==='approve'?'Invoice approved by admin':'Invoice changes requested';
+ const message=invoice.invoiceNumber+(data.reason?' - '+data.reason:' has been reviewed and approved by Dechub.');
+ void ContractorNotification.create({workerId:invoice.workerId,type:'general',title,message:message.slice(0,1200),actionUrl:'/contractor/dashboard?tab=invoices'}).catch(error=>logger.error('Invoice decision notification failed',error));
+ void (async()=>{const worker=await Worker.findById(invoice.workerId).select('email');if(worker?.email)await sendEmail(worker.email,title,'<p>'+escapeMessageHtml(message)+'</p><p><a href="'+escapeMessageHtml(env.CLIENT_URL+'/contractor/dashboard?tab=invoices')+'">Open invoices</a></p>');})().catch(error=>logger.error('Invoice decision email failed',error));
+ ok(res,invoiceView(invoice.toObject()));
+}catch(error){next(error);}}

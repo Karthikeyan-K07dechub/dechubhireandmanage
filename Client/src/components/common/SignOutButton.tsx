@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { tokenStore } from '../../api/client';
 import './sign-out-button.css';
 
-export default function SignOutButton({ className }: { className?: string }) {
+export default function SignOutButton({ className, onConfirm }: { className?: string; onConfirm?: () => void }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
@@ -28,7 +28,7 @@ export default function SignOutButton({ className }: { className?: string }) {
       }}>
         <h2 id="signout-title">Sign out?</h2>
         <p id="signout-description">Are you sure you want to sign out of your account?</p>
-        <div className="signout-actions"><button ref={cancel} type="button" className="signout-cancel" onClick={close}>Cancel</button><button ref={confirm} type="button" className="signout-confirm" onClick={() => { tokenStore.clear(); window.location.href = '/'; }}>Sign out</button></div>
+        <div className="signout-actions"><button ref={cancel} type="button" className="signout-cancel" onClick={close}>Cancel</button><button ref={confirm} type="button" className="signout-confirm" onClick={() => { if (onConfirm) { onConfirm(); setOpen(false); } else { tokenStore.clear(); window.location.href = '/'; } }}>Sign out</button></div>
       </section>
     </div>, document.body)}
   </>;

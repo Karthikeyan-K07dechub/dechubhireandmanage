@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'crypto';
 import { env } from '../config/env';
 import { AppError } from '../utils/response';
 
-export type InvoiceDocument = { bucket: string; path: string; fileName: string; size: number; sha256: string };
+export type InvoiceDocument = { bucket: string; path: string; fileName: string; mimeType?: string; size: number; sha256: string };
 const digest = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 function configuration() {
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) throw new AppError('Invoice storage is not configured.', 503, 'STORAGE_UNAVAILABLE');
@@ -23,12 +23,17 @@ async function requirePrivateBucket(bucket: string) {
 }
 const objectPath = (document: InvoiceDocument) => [document.bucket, ...document.path.split('/')].map(encodeURIComponent).join('/');
 export async function uploadInvoiceDocument(file: Express.Multer.File, companyId: string, invoiceId: string): Promise<InvoiceDocument> {
-  if (file.size > 10 * 1024 * 1024 || file.size === 0 || !file.originalname.toLowerCase().endsWith('.pdf') || file.buffer.subarray(0, 5).toString() !== '%PDF-') {
-    throw new AppError('Choose a valid PDF file up to 10 MB.', 422, 'INVALID_INVOICE_PDF');
-  }
-  const document = { bucket: env.SUPABASE_INVOICE_BUCKET, path: `${companyId}/${invoiceId}/${randomUUID()}.pdf`, fileName: file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-160), size: file.buffer.length, sha256: digest(file.buffer) };
+  const bytes = file.buffer;
+  let mimeType = ''; let extension = '';
+  if (bytes.subarray(0, 5).toString() === '%PDF-') { mimeType = 'application/pdf'; extension = 'pdf'; }
+  else if (bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) { mimeType = 'image/png'; extension = 'png'; }
+  else if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) { mimeType = 'image/jpeg'; extension = 'jpg'; }
+  else if (bytes.subarray(0,4).toString() === 'RIFF' && bytes.subarray(8,12).toString() === 'WEBP') { mimeType = 'image/webp'; extension = 'webp'; }
+  const suffix = file.originalname.split('.').pop()?.toLowerCase();
+  if (!bytes.length || bytes.length > 10 * 1024 * 1024 || file.size > 10 * 1024 * 1024 || !mimeType || file.mimetype !== mimeType || !(extension === 'jpg' ? ['jpg','jpeg'].includes(suffix || '') : suffix === extension)) throw new AppError('Choose a valid PDF, PNG, JPEG, or WebP file up to 10 MB.', 422, 'INVALID_INVOICE_FILE');
+  const document = { bucket: env.SUPABASE_INVOICE_BUCKET, path: companyId + '/' + invoiceId + '/' + randomUUID() + '.' + extension, fileName: file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-160), mimeType, size: bytes.length, sha256: digest(bytes) };
   await requirePrivateBucket(document.bucket);
-  await storageRequest(`object/${objectPath(document)}`, { method: 'POST', headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'false' }, body: new Uint8Array(file.buffer) });
+  await storageRequest(`object/${objectPath(document)}`, { method: 'POST', headers: { 'Content-Type': document.mimeType, 'x-upsert': 'false' }, body: new Uint8Array(file.buffer) });
   return document;
 }
 export async function downloadInvoiceDocument(document: InvoiceDocument): Promise<Buffer> {

@@ -1361,3 +1361,5 @@
   .cd-profile-badges { gap: 8px; }
   .cd-profile-badge { width: 100%; justify-content: center; }
 }
+
+.cd-logo{flex-shrink:0}.cd-bridge-logo{display:block;flex-shrink:0;width:150px;height:54px;color:#2563eb;background:none}

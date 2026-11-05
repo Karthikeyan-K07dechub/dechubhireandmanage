@@ -6,7 +6,6 @@ import { INITIAL_ONBOARDING } from '../contractor/types/contractor.types';
 import { contractorTokenStore, getContractorProfile, selfSignupContractor } from '../contractor/api/contractor.api';
 import Step2PersonalDetails from '../contractor/steps/Step2PersonalDetails';
 import Step3KYC from '../contractor/steps/Step3Kyc';
-import Step4BankDetails from '../contractor/steps/Step4BankDetails';
 
 interface FreelancerProfile {
   firstName: string;
@@ -39,51 +38,12 @@ interface FreelancerSignupPageProps {
 }
 
 function inferOnboardingStepFromProfile(profile: {
-  dateOfBirth?: string;
-  nationality?: string;
-  addressLine1?: string;
-  city?: string;
-  postalCode?: string;
-  country?: string;
-  taxId?: string;
-  idType?: string;
-  idNumber?: string;
-  paymentMethod?: string;
-  wiseEmail?: string;
-  bankName?: string;
-  accountNumber?: string;
-  paypalEmail?: string;
+  dateOfBirth?: string; nationality?: string; addressLine1?: string;
+  city?: string; postalCode?: string; country?: string; taxId?: string;
 }): number {
-  const hasPersonalDetails = Boolean(
-    profile.dateOfBirth
-    && profile.nationality?.trim()
-    && profile.addressLine1?.trim()
-    && profile.city?.trim()
-    && profile.postalCode?.trim()
-    && profile.country?.trim()
-    && profile.taxId?.trim(),
-  );
-
-  if (!hasPersonalDetails) {
-    return 1;
-  }
-
-  const hasKycSubmission = Boolean(profile.idType?.trim() && profile.idNumber?.trim());
-  if (!hasKycSubmission) {
-    return 2;
-  }
-
-  const hasPaymentDetails = Boolean(
-    (profile.paymentMethod === 'wise' && profile.wiseEmail?.trim())
-    || (profile.paymentMethod === 'paypal' && profile.paypalEmail?.trim())
-    || (profile.paymentMethod === 'bank_transfer' && profile.bankName?.trim() && profile.accountNumber?.trim()),
-  );
-
-  if (!hasPaymentDetails) {
-    return 3;
-  }
-
-  return 4;
+  return profile.dateOfBirth && profile.nationality?.trim() && profile.addressLine1?.trim()
+    && profile.city?.trim() && profile.postalCode?.trim() && profile.country?.trim()
+    && profile.taxId?.trim() ? 2 : 1;
 }
 
 function LogoMark() {
@@ -100,13 +60,13 @@ const STEPS = [
   { label: 'Create account', desc: 'Set up your freelancer profile' },
   { label: 'Personal details', desc: 'Complete your profile' },
   { label: 'Identity check', desc: 'Verify for payments' },
-  { label: 'Payment details', desc: 'Add payout method' },
 ] as const;
 
 const PHONE_CODES = [
-  { value: '+1', label: 'US +1' },
-  { value: '+44', label: 'UK +44' },
   { value: '+91', label: 'IN +91' },
+  { value: '+1', label: 'US +1' },
+  { value: '+971', label: 'UAE +971' },
+  { value: '+44', label: 'UK +44' },
   { value: '+49', label: 'DE +49' },
   { value: '+33', label: 'FR +33' },
   { value: '+61', label: 'AU +61' },
@@ -183,17 +143,11 @@ export default function FreelancerSignupPage({
           paypalEmail: profile.paypalEmail ?? '',
         }));
 
-        const inferredOnboardingStep =
-          typeof profile.onboardingStep === 'number' && profile.onboardingStep > 0
-            ? profile.onboardingStep
-            : inferOnboardingStepFromProfile(profile);
-
-        if (resumeMode && inferredOnboardingStep > 0 && inferredOnboardingStep < 4) {
-          setStep(inferredOnboardingStep);
-        } else if (resumeMode && inferredOnboardingStep >= 4) {
+        if (profile.kycDocumentsSubmitted) {
           window.location.replace('/contractor/dashboard');
           return;
         }
+        setStep(inferOnboardingStepFromProfile(profile));
       } catch (err) {
         if (cancelled) return;
         setAccountError((err as Error).message ?? 'Failed to load your signup progress.');
@@ -308,7 +262,7 @@ export default function FreelancerSignupPage({
         phone: `${account.phoneCode} ${account.phone.trim()}`,
         password: account.password,
       });
-      window.location.replace('/contractor/dashboard');
+      setStep(1);
     } catch (err) {
       setAccountError((err as Error).message ?? 'Failed to create your account.');
     } finally {
@@ -353,8 +307,8 @@ export default function FreelancerSignupPage({
             <div className="cp-welcome-company">Create your freelancer account</div>
             <div className="cp-welcome-role">
               {resumeMode
-                ? 'Complete the remaining setup steps and keep your freelancer profile ready for payments.'
-                : 'Create your account first, then finish the remaining setup later from your dashboard.'}
+                ? 'Submit your identity documents to finish signup, then complete your public profile in the dashboard.'
+                : 'Create your account, add personal details, and submit KYC documents before entering your dashboard.'}
             </div>
 
             <div className="cp-progress-steps">
@@ -428,7 +382,7 @@ export default function FreelancerSignupPage({
               </div>
 
               <div className="cp-field">
-                <label className="cp-label">Contact number <span className="cp-req">*</span></label>
+                <label className="cp-label" htmlFor="contractor-signup-phone">Contact number <span className="cp-req">*</span></label>
                 <div className="fsp-phone-row">
                   <select
                     className="cp-input fsp-phone-code"
@@ -442,14 +396,18 @@ export default function FreelancerSignupPage({
                   </select>
                   <input
                     type="tel"
+                    id="contractor-signup-phone"
+                    inputMode="tel"
+                    aria-invalid={Boolean(errors.phone)}
+                    aria-describedby={errors.phone ? 'contractor-signup-phone-error' : undefined}
                     className={`cp-input ${errors.phone ? 'error' : ''}`}
                     value={account.phone}
                     onChange={(e) => updateAccountField('phone', e.target.value)}
-                    placeholder="555 123 4567"
-                    autoComplete="tel"
+                    placeholder="Phone number"
+                    autoComplete="tel-national"
                   />
                 </div>
-                {errors.phone && <p className="cp-field-error">{errors.phone}</p>}
+                {errors.phone && <p id="contractor-signup-phone-error" className="cp-field-error" role="alert">{errors.phone}</p>}
               </div>
 
               <div className="cp-field">
@@ -477,11 +435,11 @@ export default function FreelancerSignupPage({
               </div>
 
               <p className="fsp-note">
-                Step {step + 1} of {STEPS.length}. Once your account is created, you&apos;ll be taken to your dashboard and can finish the remaining setup later.
+                Step {step + 1} of {STEPS.length}. Complete your personal details and submit KYC documents before entering your dashboard.
               </p>
 
               <button type="button" className="cp-btn-primary" onClick={handleFirstStepContinue} disabled={accountLoading}>
-                {accountLoading ? 'Creating account...' : 'Create account and go to dashboard'}
+                {accountLoading ? 'Creating account...' : 'Create account and continue'}
               </button>
             </div>
           )}
@@ -501,20 +459,12 @@ export default function FreelancerSignupPage({
               data={form}
               onChange={(key, value) => updateFormField(key, value as ContractorOnboardingData[typeof key])}
               onBack={handleBack}
-              onNext={() => setStep(3)}
-              submitLabel="Continue to payment details →"
+              onNext={finishSignup}
+              submitLabel="Submit KYC and go to dashboard"
             />
           )}
 
-          {step === 3 && (
-            <Step4BankDetails
-              data={form}
-              onChange={updateStringField}
-              onBack={handleBack}
-              onNext={finishSignup}
-              submitLabel="Finish signup and go to dashboard"
-            />
-          )}
+
         </div>
       </div>
     </div>

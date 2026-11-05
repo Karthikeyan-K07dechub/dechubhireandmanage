@@ -1,5 +1,7 @@
+import BridgeLogo from '../components/common/BridgeLogo';
 import { useEffect, useState } from 'react';
 import './login.css';
+import './bridge-login.css';
 import { api, tokenStore } from '../api/client';
 import type { ApiError } from '../api/client';
 import { contractorTokenStore } from '../contractor/api/contractor.api';
@@ -24,18 +26,7 @@ interface LoginSuccess {
   signupStep?: number;
 }
 
-function LogoMark({ size = 36 }: { size?: number }) {
-  return (
-    <div className="login-logo-mark" style={{ width: size, height: size }}>
-      <svg
-        viewBox="0 0 24 24"
-        style={{ width: size * 0.55, height: size * 0.55 }}
-      >
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    </div>
-  );
-}
+
 
 function GoogleIcon() {
   return (
@@ -119,9 +110,15 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
 }
 
 const stats = [
-  { icon: '🌍', bg: 'rgba(0,201,167,0.15)', value: '170+ countries', label: 'Contractor payment coverage' },
-  { icon: '📄', bg: 'rgba(37,99,235,0.15)', value: 'Auto-generated', label: 'Contracts and onboarding' },
-  { icon: '⚡', bg: 'rgba(245,158,11,0.15)', value: 'Same-day', label: 'Contractor activation flow' },
+  { icon: '01', bg: 'rgba(196,181,253,0.18)', value: 'Find your team', label: 'Review shortlisted talent and approve contracts' },
+  { icon: '02', bg: 'rgba(196,181,253,0.18)', value: 'Manage delivery', label: 'Assign tasks, share files, and review completed work' },
+  { icon: '03', bg: 'rgba(196,181,253,0.18)', value: 'Track payments', label: 'Review invoices and upload payment proof' },
+];
+
+const contractorStats = [
+  { icon: '01', bg: 'rgba(196,181,253,0.18)', value: 'Show your skills', label: 'Complete your profile and showcase your services' },
+  { icon: '02', bg: 'rgba(196,181,253,0.18)', value: 'Deliver your work', label: 'Accept contracts, collaborate, and submit tasks for review' },
+  { icon: '03', bg: 'rgba(196,181,253,0.18)', value: 'Track your invoices', label: 'Submit invoices after client approval and follow admin review' },
 ];
 
 export default function LoginPage({
@@ -275,28 +272,26 @@ export default function LoginPage({
   };
 
   return (
-    <div className="login-root">
+    <div className="login-root bridge-client-login">
       <div className="login-left">
         <div className="login-left-grid" />
 
         <div className="login-logo">
-          <LogoMark size={36} />
-          <span className="login-logo-name">Dechub</span>
+          <BridgeLogo className="bridge-login-logo" />
         </div>
 
         <div className="login-left-body">
-          <div className="login-left-tag">Trusted globally</div>
+          <div className="login-left-tag">{role === 'contractor' ? 'Your contractor workspace' : 'Your project workspace'}</div>
           <h1 className="login-left-title">
-            Your global team,<br />
-            <span>managed in one place.</span>
+            {role === 'contractor' ? 'Your skills, your projects,' : 'Your projects and team,'}<br />
+            <span>{role === 'contractor' ? 'your next opportunity.' : 'connected in one place.'}</span>
           </h1>
           <p className="login-left-sub">
-            Onboard contractors, generate contracts, collect e-signatures,
-            and process payments via Wise all from one dashboard.
+            {role === 'contractor' ? 'Build your profile, review your contracts, and manage assigned projects. Share work with clients, collaborate with teammates, and track your invoices in one place.' : 'Find the right talent, approve contracts, assign tasks, and share feedback. Keep project conversations, invoices, and payment updates together in Bridge.'}
           </p>
 
           <div className="login-left-stats">
-            {stats.map(({ icon, bg, value, label }) => (
+            {(role === 'contractor' ? contractorStats : stats).map(({ icon, bg, value, label }) => (
               <div key={label} className="login-stat-card">
                 <div className="login-stat-icon" style={{ background: bg }}>
                   {icon}
@@ -309,29 +304,11 @@ export default function LoginPage({
 
           {role === 'contractor' && (
             <div className="login-signup-row" style={{ color: '#888', fontSize: 13, marginTop: 12 }}>
-              Contractor sign up is currently by invitation only.
+              New contractors can sign up, submit KYC documents, and complete their profile to become eligible for the marketplace.
             </div>
           )}
         </div>
 
-        <div className="login-left-footer">
-          <div className="login-testimonial-text">
-            "We hired 3 US contractors in one afternoon. The contract was auto-generated,
-            they signed via DocuSign the same day, and payment went through Wise without any issues."
-          </div>
-          <div className="login-testimonial-author">
-            <div
-              className="login-testimonial-avatar"
-              style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)' }}
-            >
-              RK
-            </div>
-            <div>
-              <div className="login-testimonial-name">Ravi Kumar</div>
-              <div className="login-testimonial-role">CEO, BuildAI Bengaluru</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="login-right">
@@ -342,7 +319,7 @@ export default function LoginPage({
 
         <div className="login-card">
           <div className="login-card-title">Welcome back</div>
-          <div className="login-card-sub">Sign in to your Dechub account</div>
+          <div className="login-card-sub">Sign in to your Bridge account</div>
 
           {allowedRoles.length > 1 ? (
             <div className="login-role-tabs">

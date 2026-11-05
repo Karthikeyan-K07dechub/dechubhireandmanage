@@ -5,3 +5,5 @@
 .cp-project-invoice-modal .cp-modal-header, .cp-project-invoice-modal .cp-modal-footer { flex-shrink: 0; }
 
 .cpi-card .cpi-invoice-sent { color: #15803d; font-weight: 600; margin-top: 20px; }
+
+.cpi-waiting-approval,.ctp-invoice-wait{padding:10px 12px;border-radius:8px;background:#fffbeb;color:#92400e!important;font-size:13px;line-height:1.5}

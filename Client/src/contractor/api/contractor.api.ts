@@ -205,6 +205,7 @@ export async function uploadKyc(
   selfie:    File,
 ): Promise<void> {
   try {
+    if ([frontFile, backFile, selfie].some(file => file && file.size > 2 * 1024 * 1024)) throw new Error('Each verification file must be no larger than 2 MB.');
     const form = new FormData();
     form.append('idType',   idType);
     form.append('idNumber', idNumber);

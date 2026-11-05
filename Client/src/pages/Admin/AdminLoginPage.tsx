@@ -1,7 +1,9 @@
+import BridgeLogo from '../../components/common/BridgeLogo';
 import { useState } from 'react';
 import { api, adminTokenStore } from '../../api/client';
 import type { ApiError } from '../../api/client';
 import '../login.css';
+import './admin-login.css';
 
 interface AdminLoginPageProps {
   onLogin: () => void;
@@ -43,16 +45,11 @@ export default function AdminLoginPage({ onLogin, onBack }: AdminLoginPageProps)
   };
 
   return (
-    <div className="login-root">
+    <div className="login-root bridge-admin-login">
       <div className="login-left">
         <div className="login-left-grid" />
         <div className="login-logo">
-          <div className="login-logo-mark" style={{ width: 36, height: 36 }}>
-            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20 }}>
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <span className="login-logo-name">Dechub Admin</span>
+          <BridgeLogo className="admin-bridge-logo" />
         </div>
         <div className="login-left-body">
           <div className="login-left-tag">Internal access only</div>
@@ -71,7 +68,7 @@ export default function AdminLoginPage({ onLogin, onBack }: AdminLoginPageProps)
         </div>
 
         <div className="login-card">
-          <div className="login-card-title">Dechub Admin Sign In</div>
+          <div className="login-card-title">Bridge Admin Sign In</div>
           <div className="login-card-sub">Enter your admin email and password.</div>
 
           {error && (

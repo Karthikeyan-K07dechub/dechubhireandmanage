@@ -1,3 +1,7 @@
+import PaymentProofUpload from './components/PaymentProofUpload';
+import AnalyticsPage, { ANALYTICS_VIEWS, getAnalyticsView, type AnalyticsView } from './pages/AnalyticsPage';
+import { resolveImageUrl } from '../utils/imageUrl';
+import DocumentsPage from './pages/DocumentsPage';
 import SettingsPage from './pages/SettingsPage';
 import SignOutButton from '../components/common/SignOutButton';
 import DashboardHelp from './components/DashboardHelp';
@@ -19,6 +23,12 @@ import MarketplaceTalentProfilePage from '../pages/MarketplaceTalentProfilePage'
 import MarketplaceProjectConsultationPage from '../pages/MarketplaceProjectConsultationPage';
 import type { MarketplaceCheckoutSelection } from '../api/marketplace.api';
 
+function CompanyAvatar({ name, logo }: { name: string; logo: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [logo]);
+  return logo && !failed ? <img className="db-company-profile-image" src={resolveImageUrl(logo)} alt={name + ' logo'} onError={() => setFailed(true)} /> : <>{Array.from(name.trim())[0]?.toUpperCase() || 'C'}</>;
+}
+
 interface NavItem {
   id: DashboardPage;
   icon: string;
@@ -32,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'workers', icon: '👥', label: 'Workers' },
   { id: 'hiring', icon: '🎯', label: 'Hiring' },
   { id: 'contracts', icon: '📄', label: 'Contracts' },
+  { id: 'analytics', icon: '', label: 'Analytics' },
   { id: 'payroll', icon: '💵', label: 'Payroll' },
   { id: 'invoices', icon: '🧾', label: 'Invoices' },
   { id: 'documents', icon: '📁', label: 'Documents' },
@@ -41,6 +52,7 @@ const NAV_ITEMS: NavItem[] = [
 NAV_ITEMS.splice(1, 0, { id: 'projects', icon: 'P', label: 'Projects' });
 
 const PAGE_TITLES: Record<DashboardPage, string> = {
+  analytics: 'Analytics',
   home: 'Dashboard',
   projects: 'Projects',
   marketplace: 'Marketplace',
@@ -70,6 +82,7 @@ function getDashboardPageFromQuery(initialPage: DashboardPage, hireRequestId: st
   if (tab === 'invoices') return 'invoices';
   if (tab === 'documents') return 'documents';
   if (tab === 'settings') return 'settings';
+  if (tab === 'analytics') return 'analytics';
   if (tab === 'home') return 'home';
 
   return hireRequestId ? 'workers' : initialPage;
@@ -85,28 +98,6 @@ function getHiringViewFromQuery(): HiringView {
   if (hiringView === 'marketplace') return 'marketplace';
   if (hiringView === 'requests') return 'requests';
   return 'overview';
-}
-
-function DocumentsPage() {
-  return (
-    <div className="db-page">
-      <div className="db-page-header">
-        <div>
-          <div className="db-page-title">Documents</div>
-          <div className="db-page-sub">All contracts, invoices, KYC files, and payslips</div>
-        </div>
-      </div>
-      <div className="db-card">
-        <div className="db-empty">
-          <div className="db-empty-icon">📁</div>
-          <div className="db-empty-title">No documents yet</div>
-          <div className="db-empty-sub">
-            Documents are stored here when workers complete KYC, sign contracts, and submit invoices.
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function HiringOverviewPage({ onSelectView }: { onSelectView: (next: HiringView) => void }) {
@@ -348,6 +339,7 @@ function PayrollPage() {
         </div>
       </div>
 
+      <PaymentProofUpload />
       <div className="db-card db-payroll-shell">
         <div className="db-payroll-topline">
           <div>
@@ -422,9 +414,13 @@ export default function Dashboard({
   userRole = 'Company Admin',
   initialPage = 'home',
 }: DashboardProps) {
+  const [companyIdentity, setCompanyIdentity] = useState({ name: companyName, logo: '' });
   const [sectionCounts, setSectionCounts] = useState<Record<string, number>>({});
   const initialHireRequestId = new URLSearchParams(window.location.search).get('hireRequest')?.trim() ?? '';
   const [page, setPage] = useState<DashboardPage>(() => getDashboardPageFromQuery(initialPage, initialHireRequestId));
+  const [analyticsView, setAnalyticsView] = useState<AnalyticsView>(() => getAnalyticsView());
+  const [analyticsOpen, setAnalyticsOpen] = useState(() => new URLSearchParams(window.location.search).get('tab') === 'analytics');
+  const [hiringOpen, setHiringOpen] = useState(() => ['hiring', 'marketplace'].includes(new URLSearchParams(window.location.search).get('tab') || ''));
   const [hiringView, setHiringView] = useState<HiringView>(() => getHiringViewFromQuery());
   const [selectedMarketplaceProfileId, setSelectedMarketplaceProfileId] = useState('');
   const [marketplaceCheckoutSelection, setMarketplaceCheckoutSelection] = useState<MarketplaceCheckoutSelection | null>(null);
@@ -448,6 +444,7 @@ export default function Dashboard({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     params.set('tab', page);
+    if (page === 'analytics') params.set('analyticsView', analyticsView); else params.delete('analyticsView');
     if (page === 'hiring' && hiringView !== 'overview') {
       const queryHiringView = hiringView === 'requests' ? 'requests' : 'marketplace';
       params.set('hiringView', queryHiringView);
@@ -463,7 +460,9 @@ export default function Dashboard({
     if (currentUrl !== nextUrl) {
       window.history.replaceState({}, '', nextUrl);
     }
-  }, [hiringView, page]);
+  }, [hiringView, page, analyticsView]);
+
+  useEffect(() => { if (page === 'hiring') setHiringOpen(true); if (page === 'analytics') setAnalyticsOpen(true); }, [page]);
 
   useEffect(() => {
     if (!mobileNavOpen) {
@@ -497,6 +496,7 @@ export default function Dashboard({
         if (cancelled) return;
         const nextSignupStep = typeof company.user?.signupStep === 'number' ? company.user.signupStep : null;
         setSignupStep(nextSignupStep);
+        setCompanyIdentity({ name: String(company.company.companyName || companyName), logo: String(company.company.companyLogoUrl || '') });
       } catch {
         if (cancelled) return;
         setSignupStep(null);
@@ -507,12 +507,15 @@ export default function Dashboard({
       }
     }
 
-    void loadCompanySetupStatus();
-
-    return () => {
-      cancelled = true;
+    const updateIdentity = (event: Event) => {
+      const details = (event as CustomEvent<{ companyName?: string | null; companyLogoUrl?: string | null }>).detail;
+      if (!details) return;
+      setCompanyIdentity(previous => ({ name: typeof details.companyName === 'string' && details.companyName.trim() ? details.companyName : previous.name, logo: 'companyLogoUrl' in details ? String(details.companyLogoUrl || '') : previous.logo }));
     };
-  }, []);
+    window.addEventListener('dechub:company-profile-updated', updateIdentity);
+    void loadCompanySetupStatus();
+    return () => { cancelled = true; window.removeEventListener('dechub:company-profile-updated', updateIdentity); };
+  }, [companyName]);
 
 
 
@@ -536,13 +539,7 @@ export default function Dashboard({
     window.location.href = '/company/onboarding';
   };
 
-  const initials = userName
-    .split(' ')
-    .map((name) => name[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  const companyInitial = companyName[0]?.toUpperCase() ?? 'C';
+  const companyInitial = Array.from(companyIdentity.name.trim())[0]?.toUpperCase() || 'C';
   const isSetupIncomplete = typeof signupStep === 'number' && signupStep < 7;
   const completedSteps = useMemo(() => {
     if (!isSetupIncomplete || typeof signupStep !== 'number') return 0;
@@ -565,7 +562,7 @@ export default function Dashboard({
     : PAGE_TITLES[page];
 
   const workspaceItems = NAV_ITEMS.filter((item) =>
-    ['home', 'projects', 'workers', 'hiring', 'contracts', 'payroll'].includes(item.id),
+    ['home', 'projects', 'workers', 'hiring', 'contracts', 'payroll', 'analytics'].includes(item.id),
   );
   const operationsItems = NAV_ITEMS.filter((item) => ['invoices', 'documents', 'settings'].includes(item.id));
 
@@ -588,27 +585,28 @@ export default function Dashboard({
 
         <div className="db-company-switcher">
           <div className="db-company-avatar">{companyInitial}</div>
-          <span className="db-company-name">{companyName}</span>
+          <span className="db-company-name">{companyIdentity.name}</span>
           <span className="db-company-chevron">⌄</span>
         </div>
 
         <nav className="db-nav" aria-label="Main navigation">
-          <div className="db-nav-section">Workspace</div>
+
           {workspaceItems.map((item) => (
             item.id === 'hiring' ? (
               <div key={item.id} className={`db-nav-group ${page === 'hiring' ? 'active' : ''}`}>
                 <button
                   className={`db-nav-item ${page === 'hiring' ? 'active' : ''}`}
                   onClick={() => {
-                    setPage('hiring');
-                    setHiringView('overview');
-                    setMobileNavOpen(false);
+                    setHiringOpen(open => !open);
                   }}
-                  aria-current={page === 'hiring' && hiringView === 'overview' ? 'page' : undefined}
+                  aria-expanded={hiringOpen}
+                  aria-controls="hiring-navigation"
                 >
                   <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <span className="db-nav-badge" aria-label={sectionCounts[item.id] + " pending actions or unread notifications"}>{sectionCounts[item.id]}</span>}
+                <span className={`db-nav-chevron ${hiringOpen ? 'expanded' : ''}`} aria-hidden="true" />
                 </button>
-                <div className="db-nav-sublist">
+                {hiringOpen && <div className="db-nav-sublist" id="hiring-navigation">
+                  <button className={`db-nav-subitem ${page === 'hiring' && hiringView === 'overview' ? 'active' : ''}`} onClick={() => { setPage('hiring'); setHiringView('overview'); setMobileNavOpen(false); }}>Hiring overview</button>
                   <button
                     className={`db-nav-subitem ${page === 'hiring' && (hiringView === 'marketplace' || hiringView === 'profile' || hiringView === 'consultation') ? 'active' : ''}`}
                     onClick={() => {
@@ -629,7 +627,12 @@ export default function Dashboard({
                   >
                     Manage Requests {sectionCounts.hiring > 0 && <span className="db-nav-badge">{sectionCounts.hiring}</span>}
                   </button>
-                </div>
+                </div>}
+              </div>
+            ) : item.id === 'analytics' ? (
+              <div key={item.id} className="db-nav-group">
+                <button className={`db-nav-item ${page === 'analytics' ? 'active' : ''}`} onClick={() => setAnalyticsOpen(open => !open)} aria-expanded={analyticsOpen} aria-controls="analytics-navigation"><span className="db-nav-label">Analytics</span><span className={`db-nav-chevron ${analyticsOpen ? 'expanded' : ''}`} aria-hidden="true" /></button>
+                {analyticsOpen && <div id="analytics-navigation" className="db-nav-sublist">{ANALYTICS_VIEWS.map(([view, title]) => <button key={view} className={`db-nav-subitem ${page === 'analytics' && analyticsView === view ? 'active' : ''}`} aria-current={page === 'analytics' && analyticsView === view ? 'page' : undefined} onClick={() => { setPage('analytics'); setAnalyticsView(view); setMobileNavOpen(false); }}>{title}</button>)}</div>}
               </div>
             ) : (
               <button
@@ -647,7 +650,6 @@ export default function Dashboard({
             )
           ))}
 
-          <div className="db-nav-section">Operations</div>
           {operationsItems.map((item) => (
             <button
               key={item.id}
@@ -664,7 +666,7 @@ export default function Dashboard({
         </nav>
 
         <div className="db-sidebar-user">
-          <a href="/company/profile" className="db-user-avatar" aria-label="Open company profile">{initials}</a>
+          <a href="/company/profile" className="db-user-avatar" aria-label="Open company profile"><CompanyAvatar name={companyIdentity.name} logo={companyIdentity.logo} /></a>
           <a href="/company/profile" className="db-user-info">
             <div className="db-user-name">{userName}</div>
             <div className="db-user-role">{userRole}</div>
@@ -702,7 +704,7 @@ export default function Dashboard({
           <div className="db-topbar-actions">
             <DashboardNotifications onCountsChange={setSectionCounts} activeSection={page === 'hiring' && hiringView !== 'requests' ? 'marketplace' : page} />
             <DashboardHelp />
-            <a href="/company/profile" aria-label="Open company profile"
+            <a href="/company/profile" className="db-profile-avatar" aria-label="Open company profile"
               style={{
                 width: 32,
                 height: 32,
@@ -715,9 +717,9 @@ export default function Dashboard({
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
-              title={userName}
+              title={companyIdentity.name}
             >
-              {initials}
+              <CompanyAvatar name={companyIdentity.name} logo={companyIdentity.logo} />
             </a>
           </div>
         </header>
@@ -759,6 +761,7 @@ export default function Dashboard({
             </section>
           )}
 
+          {page === 'analytics' && <AnalyticsPage view={analyticsView} onView={setAnalyticsView} />}
           {page === 'home' && <DashboardHome onNavigate={(nextPage) => setPage(nextPage as DashboardPage)} />}
           {page === 'projects' && <ProjectsPage onRequestCreated={() => {
             setHiringView('requests');

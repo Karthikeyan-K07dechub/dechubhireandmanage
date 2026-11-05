@@ -45,3 +45,5 @@
   .db-notification-overlay { padding: 12px; }
   .db-notification-dialog { padding: 18px; max-height: calc(100dvh - 24px); }
 }
+
+.db-notification-row{position:relative;min-width:0}.db-notification-row .db-notification-item{padding-right:48px}.db-notification-dismiss{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:7px;background:#f1f5f9;color:#475569;font-size:22px;cursor:pointer}.db-notification-dismiss:hover{background:#fee2e2;color:#b91c1c}.db-notification-dismiss:focus-visible{outline:2px solid #6d4aff;outline-offset:2px}

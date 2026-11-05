@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.middleware';
+import { listDocuments, documentFile, replaceProjectDocument } from '../controllers/documents.controller';
+import multer from 'multer';
+const router = Router();
+router.use(requireAuth);
+router.get('/', listDocuments);
+router.get('/:key/file', documentFile);
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 0 } }).single('document');
+router.post('/:key/replace', upload, replaceProjectDocument);
+export default router;

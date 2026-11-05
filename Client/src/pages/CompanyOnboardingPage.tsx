@@ -19,7 +19,7 @@ import Step4Kyb from '../components/steps/Step4Kyb';
 import Step5Billing from '../components/steps/Step5Billing';
 import Step6Preferences from '../components/steps/Step6Preferences';
 import { initialData, initialDocs, stepConfig } from '../constants/signup';
-import type { AppHandlers, AppState, Step } from '../types/signup';
+import type { AppHandlers, AppState, Step, DocKey } from '../types/signup';
 import { validateEmail, validateStep } from '../utils/validators';
 import './company-onboarding.css';
 
@@ -431,6 +431,12 @@ export default function CompanyOnboardingPage({
     }
   };
 
+  const selectVerificationFile = (docKey: DocKey, file?: File) => {
+    if (!file) return;
+    const message = !/\.(pdf|jpe?g|png)$/i.test(file.name) ? 'Choose a PDF, JPG, or PNG file.' : !file.size || file.size > 2 * 1024 * 1024 ? 'Choose a file between 1 byte and 2 MB.' : '';
+    setState(previous => ({ ...previous, dragOver: { ...previous.dragOver, [docKey]: false }, uploadedDocs: message ? previous.uploadedDocs : { ...previous.uploadedDocs, [docKey]: { file, uploaded: true } }, errors: { ...previous.errors, [docKey]: message } }));
+  };
+
   const handlers: AppHandlers = {
     handleInputChange,
     goToStep,
@@ -439,15 +445,7 @@ export default function CompanyOnboardingPage({
     goBillingAfterKyb,
     completeSignup,
     goBack,
-    handleFileInput: (docKey) => (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setState((prev) => ({
-        ...prev,
-        uploadedDocs: { ...prev.uploadedDocs, [docKey]: { file, uploaded: true } },
-        errors: { ...prev.errors, [docKey]: '' },
-      }));
-    },
+    handleFileInput: (docKey) => (e) => selectVerificationFile(docKey, e.target.files?.[0]),
     onDragOver: (docKey) => (e) => {
       e.preventDefault();
       setState((prev) => ({ ...prev, dragOver: { ...prev.dragOver, [docKey]: true } }));
@@ -455,17 +453,7 @@ export default function CompanyOnboardingPage({
     onDragLeave: (docKey) => () => {
       setState((prev) => ({ ...prev, dragOver: { ...prev.dragOver, [docKey]: false } }));
     },
-    onDrop: (docKey) => (e) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files?.[0];
-      if (!file) return;
-      setState((prev) => ({
-        ...prev,
-        dragOver: { ...prev.dragOver, [docKey]: false },
-        uploadedDocs: { ...prev.uploadedDocs, [docKey]: { file, uploaded: true } },
-        errors: { ...prev.errors, [docKey]: '' },
-      }));
-    },
+    onDrop: (docKey) => (e) => { e.preventDefault(); selectVerificationFile(docKey, e.dataTransfer.files?.[0]); },
     setShowPassword: (updater) => {
       setState((prev) => ({
         ...prev,

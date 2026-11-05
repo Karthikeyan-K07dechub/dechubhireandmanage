@@ -1,3 +1,4 @@
+import type { VerificationFile } from '../services/verificationStorage.service';
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type WorkerStatus  = 'invited' | 'kyc_pending' | 'active' | 'inactive' | 'terminated';
@@ -87,6 +88,7 @@ export interface IWorker extends Document {
   kycData: {
     idType: string;
     idNumber: string;
+    privateFiles?: Partial<Record<'idFront' | 'idBack' | 'selfie', VerificationFile>>;
     idFrontPath: string;
     idBackPath: string | null;
     selfiePath: string | null;
@@ -144,6 +146,11 @@ const workerSchema = new Schema<IWorker>(
   },
   { timestamps: true },
 );
+
+workerSchema.set('toJSON', { transform: (_doc, ret) => {
+  if (ret.kycData) ret.kycData = { submittedAt: ret.kycData.submittedAt } as typeof ret.kycData;
+  return ret;
+} });
 
 workerSchema.index({ companyId: 1, email: 1 }, { unique: true });
 workerSchema.index({ status: 1 });

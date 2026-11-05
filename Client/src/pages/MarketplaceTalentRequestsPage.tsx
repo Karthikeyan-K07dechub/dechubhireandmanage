@@ -98,19 +98,19 @@ export default function MarketplaceTalentRequestsPage({
       ) : null}
 
       {!loading && !error && items.length > 0 ? (
-        <div style={{ display: 'grid', gap: 18 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
           {items.map((item) => (
-            <article id={`talent-request-${item._id}`} key={item._id} style={{ ...cardStyle, padding: 24 }}>
+            <article id={`talent-request-${item._id}`} key={item._id} style={{ ...cardStyle, padding: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
                     <span style={statusPillStyle(item.status)}>{item.clientSelectionSubmittedAt ? 'Worker list updated' : item.status === 'shortlisted_sent' ? 'Review candidates' : STATUS_LABELS[item.status] ?? item.status}</span>
                     <span style={{ color: '#64748b', fontSize: 13 }}>
                       Submitted {new Date(item.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <h2 style={{ margin: 0, fontSize: 26, color: '#0f172a' }}>{item.projectName || item.workerName}</h2>
-                  <p style={{ margin: '8px 0 0', color: '#475569' }}>{item.workerRole} · {item.projectType}</p>
+                  <h2 style={{ margin: 0, fontSize: 21, color: '#0f172a' }}>{item.projectName || item.workerName}</h2>
+                  <p style={{ margin: '6px 0 0', color: '#475569', fontSize: 13 }}>{item.workerRole} · {item.projectType}</p>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -147,12 +147,12 @@ export default function MarketplaceTalentRequestsPage({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginTop: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginTop: 12 }}>
                 <div style={innerCardStyle}>
                   <div style={sectionLabelStyle}>Request summary</div>
-                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>{item.companyName}</div>
-                  <div style={{ color: '#475569', lineHeight: 1.7 }}>{item.projectDescription}</div>
-                  {(item.expectedStartDate || item.expectedEndDate) && <p style={{ color: '#475569', fontSize: 13 }}>Expected dates: {item.expectedStartDate ? new Date(item.expectedStartDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not set'} – {item.expectedEndDate ? new Date(item.expectedEndDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not set'}</p>}
+                  <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 5 }}>{item.companyName}</div>
+                  <div style={{ color: '#475569', lineHeight: 1.5 }}>{item.projectDescription}</div>
+                  {(item.expectedStartDate || item.expectedEndDate) && <p style={{ color: '#475569', fontSize: 12, margin: '6px 0 0' }}>Expected dates: {item.expectedStartDate ? new Date(item.expectedStartDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not set'} – {item.expectedEndDate ? new Date(item.expectedEndDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not set'}</p>}
                 </div>
 
                 {!item.shortlistedTalentProfiles?.length && <div style={innerCardStyle}>
@@ -233,7 +233,7 @@ export default function MarketplaceTalentRequestsPage({
             style={{
               border: '1px solid #cbd5e1',
               borderRadius: 999,
-              padding: '12px 18px',
+              padding: '9px 14px',
               background: '#fff',
               color: '#0f172a',
               fontWeight: 700,
@@ -266,15 +266,16 @@ export default function MarketplaceTalentRequestsPage({
 const cardStyle: CSSProperties = {
   background: '#fff',
   border: '1px solid #e2e8f0',
-  borderRadius: 24,
+  borderRadius: 16,
   boxShadow: '0 20px 45px rgba(15, 23, 42, 0.06)',
-  padding: 28,
+  padding: 18,
 };
 
 const innerCardStyle: CSSProperties = {
   background: '#f8fafc',
-  borderRadius: 18,
-  padding: 18,
+  borderRadius: 12,
+  padding: 12,
+  fontSize: 13,
   border: '1px solid #e2e8f0',
 };
 
@@ -325,7 +326,7 @@ function statusPillStyle(status: string): CSSProperties {
     display: 'inline-flex',
     alignItems: 'center',
     borderRadius: 999,
-    padding: '8px 12px',
+    padding: '5px 10px',
     fontSize: 12,
     fontWeight: 700,
     background: tone.background,

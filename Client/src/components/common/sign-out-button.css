@@ -7,3 +7,5 @@
 .signout-cancel { background: #fff; color: #0a1628; }
 .signout-confirm { background: #0a1628; color: #fff; }
 .signout-actions button:focus-visible { outline: 2px solid #6d42d8; outline-offset: 3px; }
+.contractor-signout-button { background:#fff; border:1px solid #dce3ee; border-radius:8px; cursor:pointer; color:#334155; font-size:13px; font-weight:600; padding:8px 12px; white-space:nowrap; flex-shrink:0; }
+.contractor-signout-button:hover { background:#f1f5f9; }

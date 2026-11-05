@@ -1,11 +1,14 @@
+import type { TaskAttachmentFile } from '../services/taskAttachment.service';
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type ProjectTaskStatus = 'todo' | 'in_progress' | 'completed';
+export type ProjectTaskStatus = 'todo' | 'in_progress' | 'submitted' | 'completed';
 
 export interface IProjectTask extends Document {
   _id: mongoose.Types.ObjectId;
   projectId: mongoose.Types.ObjectId;
   companyId: mongoose.Types.ObjectId;
+  attachmentName: string | null;
+  assignmentAttachment?: TaskAttachmentFile | null;
   title: string;
   description: string;
   assigneeWorkerIds: mongoose.Types.ObjectId[];
@@ -23,10 +26,12 @@ const projectTaskSchema = new Schema<IProjectTask>(
   {
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    attachmentName: { type: String, default: null },
+    assignmentAttachment: { type: Schema.Types.Mixed, default: null, select: false },
     title: { type: String, required: true, trim: true, maxlength: 240 },
     description: { type: String, default: '', trim: true, maxlength: 5000 },
     assigneeWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'Worker', required: true }],
-    status: { type: String, enum: ['todo', 'in_progress', 'completed'], default: 'todo', index: true },
+    status: { type: String, enum: ['todo', 'in_progress', 'submitted', 'completed'], default: 'todo', index: true },
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
     dueDate: { type: Date, default: null },
     completionNote: { type: String, default: null, trim: true, maxlength: 3000 },

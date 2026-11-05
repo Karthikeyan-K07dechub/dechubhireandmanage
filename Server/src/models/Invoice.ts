@@ -4,6 +4,9 @@ import mongoose, { Document, Schema } from 'mongoose';
 export type InvoiceStatus = 'pending_admin' | 'draft' | 'submitted' | 'approved' | 'paid' | 'disputed';
 
 export interface IInvoice extends Document {
+  adminReviewStatus: 'pending' | 'approved' | 'changes_requested';
+  adminReviewReason: string | null;
+  adminReviewedAt: Date | null;
   _id:           mongoose.Types.ObjectId;
   companyId:     mongoose.Types.ObjectId;
   workerId:      mongoose.Types.ObjectId;
@@ -42,6 +45,9 @@ export interface IInvoice extends Document {
 
 const invoiceSchema = new Schema<IInvoice>(
   {
+    adminReviewStatus: { type: String, enum: ['pending','approved','changes_requested'], default: 'pending' },
+    adminReviewReason: { type: String, default: null },
+    adminReviewedAt: { type: Date, default: null },
     companyId:      { type: Schema.Types.ObjectId, ref: 'Company',  required: true, index: true },
     workerId:       { type: Schema.Types.ObjectId, ref: 'Worker',   required: true, index: true },
     contractId:     { type: Schema.Types.ObjectId, ref: 'Contract', default: null },
@@ -57,7 +63,7 @@ const invoiceSchema = new Schema<IInvoice>(
     projectName:    { type: String, trim: true, maxlength: 180, default: '' },
     serviceCharge: { type: Number, min: 0, default: 0 },
     clientTotal: { type: Number, min: 0, default: null },
-    clientDocument: { type: new Schema({ bucket: String, path: String, fileName: String, size: Number, sha256: String }, { _id: false }), default: null },
+    clientDocument: { type: new Schema({ bucket: String, path: String, fileName: String, mimeType: String, size: Number, sha256: String }, { _id: false }), default: null },
     clientSentAt: { type: Date, default: null },
     adminReviewedBy: { type: String, default: null },
     adminEmailSentAt: { type: Date, default: null },

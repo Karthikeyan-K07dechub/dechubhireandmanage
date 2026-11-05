@@ -262,7 +262,7 @@ export function InvoicesPage() {
     try {
       const result = await api.get('/invoices/' + invoice._id + '/pdf', { responseType: 'blob' });
       const url = URL.createObjectURL(result.data); const link = document.createElement('a'); link.href = url; link.download = invoice.documentName || invoice.invoiceNumber + '.pdf'; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 10000);
-    } catch { setDownloadError('Unable to download the invoice PDF. Please try again.'); }
+    } catch { setDownloadError('Unable to download the invoice document. Please try again.'); }
     finally { setDownloading(''); }
   };
 
@@ -441,7 +441,7 @@ export function InvoicesPage() {
                         </td>
                         <td><span className={badgeCls}>{badgeLabel}</span></td>
                         <td>
-                          <button type="button" className="db-btn-secondary db-btn-sm" disabled={Boolean(downloading)} onClick={() => void downloadInvoice(inv)}>{downloading === inv._id ? 'Downloading...' : 'Download PDF'}</button>
+                          <button type="button" className="db-btn-secondary db-btn-sm" disabled={Boolean(downloading)} onClick={() => void downloadInvoice(inv)}>{downloading === inv._id ? 'Downloading...' : 'Download invoice'}</button>
                           {inv.status === 'paid' ? <span className="db-badge db-badge-active" style={{ marginLeft: 8 }}>Paid</span> : <a href="/dashboard?tab=payroll" className="db-btn-secondary db-btn-sm" style={{ marginLeft: 8 }}>Payroll</a>}
                           {inv.status === 'submitted' && (
                             <div style={{ display: 'flex', gap: 6 }}>

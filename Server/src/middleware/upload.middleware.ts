@@ -62,9 +62,9 @@ function imageFileFilter(
 }
 
 export const kybUpload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
-  limits: { fileSize: MAX_BYTES },
+  limits: { fileSize: 2 * 1024 * 1024, files: 4, fields: 0 },
 }).fields([
   { name: 'doc1', maxCount: 1 },  // Certificate of Incorporation
   { name: 'doc2', maxCount: 1 },  // Tax ID

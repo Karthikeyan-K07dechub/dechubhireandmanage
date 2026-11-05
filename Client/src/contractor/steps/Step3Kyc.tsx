@@ -51,7 +51,7 @@ function UploadZone({ label, hint, file, onFile, accept = 'image/*,.pdf' }: Uplo
           <div className="cp-upload-label">{label}</div>
           <div className="cp-upload-sub">{hint}</div>
           <div className="cp-upload-sub" style={{ marginTop: 6 }}>
-            PNG, JPG, or PDF · Max 10MB
+            PNG, JPG, or PDF · Max 2 MB
           </div>
         </>
       )}
