@@ -118,6 +118,8 @@ function queueDemoNotifications(input: {
   phone: string;
   projectType: string;
   projectDescription: string;
+  channel: 'chat' | 'voice';
+  conversationId: string;
 }): void {
   const payload = {
     requestId: input.requestId,
@@ -151,6 +153,8 @@ function queueDemoNotifications(input: {
     requestId: input.requestId,
     source: 'AI assistant',
     requestType: 'demo',
+    channel: input.channel,
+    conversationId: input.conversationId,
   });
 }
 
@@ -218,6 +222,8 @@ export async function createAiDemoRequest(req: Request, res: Response, _next: Ne
       phone: request.phoneNumber,
       projectType: request.projectType,
       projectDescription: request.projectDescription,
+      channel: data.channel,
+      conversationId: data.conversation_id || '',
     });
     res.status(200).json({ ok: true, request_id: aiRequestId });
   } catch (error) {
@@ -274,7 +280,7 @@ export async function createAiCallbackRequest(req: Request, res: Response, _next
       submittedAt: callback.createdAt.toISOString(), companyName: '', companyWebsite: '', contactName: callback.contactName,
       workEmail: callback.workEmail, phoneNumber: callback.phone, projectType: 'Callback request',
       projectDescription: callback.question, requestedServices: [], dbSaveStatus: 'saved', requestId: callback.requestId,
-      source: 'AI assistant', requestType: 'callback',
+      source: 'AI assistant', requestType: 'callback', channel: callback.channel, conversationId: callback.conversationId,
     });
     res.status(200).json({ ok: true, request_id: callback.requestId });
   } catch (error) {

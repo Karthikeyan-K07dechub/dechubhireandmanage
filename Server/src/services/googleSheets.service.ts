@@ -15,6 +15,8 @@ type TalentRequestSheetPayload = {
   requestId: string | null;
   source?: string;
   requestType?: 'demo' | 'callback';
+  channel?: 'chat' | 'voice';
+  conversationId?: string;
 };
 
 function isGoogleSheetsEnabled(): boolean {

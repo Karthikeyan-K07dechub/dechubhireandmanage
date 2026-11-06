@@ -61,9 +61,11 @@ $webhook = @{
 
 $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $hmac = [System.Security.Cryptography.HMACSHA256]::new([Text.Encoding]::UTF8.GetBytes($ElevenLabsWebhookSecret))
-$signatureBytes = $hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes("$timestamp.$webhook"))
+$webhookBytes = [Text.Encoding]::UTF8.GetBytes($webhook)
+$signedBytes = [Text.Encoding]::UTF8.GetBytes("$timestamp.") + $webhookBytes
+$signatureBytes = $hmac.ComputeHash($signedBytes)
 $signature = ([BitConverter]::ToString($signatureBytes) -replace '-', '').ToLowerInvariant()
 $webhookHeaders = @{ 'ElevenLabs-Signature' = "t=$timestamp,v0=$signature"; 'Content-Type' = 'application/json' }
 
 Write-Host 'Signed ElevenLabs webhook:'
-(Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/ai/webhooks/elevenlabs" -Headers $webhookHeaders -Body $webhook) | ConvertTo-Json
+(Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/ai/webhooks/elevenlabs" -Headers $webhookHeaders -Body $webhookBytes) | ConvertTo-Json
