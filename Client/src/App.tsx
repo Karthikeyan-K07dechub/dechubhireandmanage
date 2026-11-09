@@ -1,5 +1,5 @@
 import CompanyProfilePage from './pages/CompanyProfilePage';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import './styles.css';
 import CompanyAuthPage from './pages/CompanyAuthPage';
 import CompanyChoicePage from './pages/CompanyChoicePage';
@@ -34,6 +34,7 @@ import LoginPage from './pages/LoginPage';
 import FreelancerSignupPage from './pages/FreelancerSignupPage';
 import FreelancerSignupSuccessPage from './pages/FreelancerSignupSuccessPage';
 import StandaloneDocumentPage from './components/common/StandaloneDocumentPage';
+import AskAiWidget from './components/AskAiWidget';
 import { tokenStore, adminTokenStore } from './api/client';
 import { handleGoogleCallback } from './api/auth.api';
 import { getMyCompany } from './api/company.api';
@@ -91,6 +92,10 @@ type AppPage =
 
 type AuthMode = 'login' | 'signup';
 type CompanyDestination = 'marketplace' | 'dashboard' | 'marketplace-profile';
+
+function MarketingPage({ children }: { children: ReactNode }) {
+  return <>{children}<AskAiWidget /></>;
+}
 
 const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
 const MARKETPLACE_CHECKOUT_SELECTION_KEY = 'dechub_marketplace_checkout_selection';
@@ -854,14 +859,16 @@ export default function App() {
 
   if (page === 'landing' || page === 'landing-react' || page === 'landing-react-new') {
     return (
-      <LandingPage
-        onGetStarted={() => setPage('role-select')}
-        onMarketplace={() => setPage('marketplace')}
-        onMarketplaceSearch={(query) => {
-          setMarketplaceQuery(query);
-          setPage('marketplace');
-        }}
-      />
+      <MarketingPage>
+        <LandingPage
+          onGetStarted={() => setPage('role-select')}
+          onMarketplace={() => setPage('marketplace')}
+          onMarketplaceSearch={(query) => {
+            setMarketplaceQuery(query);
+            setPage('marketplace');
+          }}
+        />
+      </MarketingPage>
     );
   }
 
@@ -870,59 +877,59 @@ export default function App() {
   }
 
   if (page === 'dechub-bridge-vs-competitors') {
-    return <DeelVsCompetitorsPage />;
+    return <MarketingPage><DeelVsCompetitorsPage /></MarketingPage>;
   }
 
   if (page === 'deel-it') {
-    return <DeelItPage />;
+    return <MarketingPage><DeelItPage /></MarketingPage>;
   }
 
   if (page === 'deel-hire') {
-    return <DeelHirePage />;
+    return <MarketingPage><DeelHirePage /></MarketingPage>;
   }
 
   if (page === 'deel-hr') {
-    return <DeelHrPage />;
+    return <MarketingPage><DeelHrPage /></MarketingPage>;
   }
 
   if (page === 'deel-embedded') {
-    return <DeelEmbeddedPage />;
+    return <MarketingPage><DeelEmbeddedPage /></MarketingPage>;
   }
 
   if (page === 'deel-benefits') {
-    return <DeelBenefitsPage />;
+    return <MarketingPage><DeelBenefitsPage /></MarketingPage>;
   }
 
   if (page === 'deel-mobility') {
-    return <DeelMobilityPage />;
+    return <MarketingPage><DeelMobilityPage /></MarketingPage>;
   }
 
   if (page === 'deel-services') {
-    return <DeelServicesPage />;
+    return <MarketingPage><DeelServicesPage /></MarketingPage>;
   }
 
   if (page === 'deel-eor') {
-    return <DeelEorPage />;
+    return <MarketingPage><DeelEorPage /></MarketingPage>;
   }
 
   if (page === 'deel-contractors') {
-    return <DeelContractorsPage />;
+    return <MarketingPage><DeelContractorsPage /></MarketingPage>;
   }
 
   if (page === 'payroll-solutions') {
-    return <PayrollSolutionsPage />;
+    return <MarketingPage><PayrollSolutionsPage /></MarketingPage>;
   }
 
   if (page === 'pricing') {
-    return <PricingPage />;
+    return <MarketingPage><PricingPage /></MarketingPage>;
   }
 
   if (page === 'deel-integrations') {
-    return <DeelIntegrationsPage />;
+    return <MarketingPage><DeelIntegrationsPage /></MarketingPage>;
   }
 
   if (page === 'deel-open-api') {
-    return <DeelOpenApiPage />;
+    return <MarketingPage><DeelOpenApiPage /></MarketingPage>;
   }
 
   if (page === 'landing-blog') {

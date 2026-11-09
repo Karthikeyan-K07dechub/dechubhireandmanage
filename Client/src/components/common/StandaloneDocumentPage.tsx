@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { mountAskAiWidget } from '../AskAiWidget';
 import {
   STANDALONE_LIGHT_THEME_CLASS,
   STANDALONE_LIGHT_THEME_CSS,
@@ -150,6 +151,7 @@ function rewriteInternalLinks(documentFragment: Document) {
 export default function StandaloneDocumentPage({ sourcePath }: StandaloneDocumentPageProps) {
   useEffect(() => {
     let isCancelled = false;
+    let removeAskAiWidget = () => undefined;
     const shouldApplyLightTheme = shouldApplyStandaloneLightTheme(sourcePath);
 
     const renderStandaloneDocument = async () => {
@@ -178,6 +180,7 @@ export default function StandaloneDocumentPage({ sourcePath }: StandaloneDocumen
       document.open();
       document.write(`<!doctype html>\n${parsed.documentElement.outerHTML}`);
       document.close();
+      removeAskAiWidget = mountAskAiWidget();
     };
 
     renderStandaloneDocument().catch(() => {
@@ -194,6 +197,7 @@ export default function StandaloneDocumentPage({ sourcePath }: StandaloneDocumen
 
     return () => {
       isCancelled = true;
+      removeAskAiWidget();
     };
   }, [sourcePath]);
 
