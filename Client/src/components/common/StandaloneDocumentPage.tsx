@@ -151,7 +151,7 @@ function rewriteInternalLinks(documentFragment: Document) {
 export default function StandaloneDocumentPage({ sourcePath }: StandaloneDocumentPageProps) {
   useEffect(() => {
     let isCancelled = false;
-    let removeAskAiWidget = () => undefined;
+    let removeAskAiWidget: () => void = () => undefined;
     const shouldApplyLightTheme = shouldApplyStandaloneLightTheme(sourcePath);
 
     const renderStandaloneDocument = async () => {
