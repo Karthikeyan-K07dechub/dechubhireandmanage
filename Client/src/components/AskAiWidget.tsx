@@ -68,6 +68,7 @@ export function mountAskAiWidget(targetDocument = document): () => void {
     widget = targetDocument.createElement('elevenlabs-convai');
     widget.id = WIDGET_ID;
     widget.setAttribute('agent-id', agentId);
+    widget.setAttribute('markdown-link-allowed-hosts', 'calendar.app.google,bridge.dechub.ai');
     targetDocument.body.appendChild(widget);
   });
 

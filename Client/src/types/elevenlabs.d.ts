@@ -5,6 +5,7 @@ declare global {
     interface IntrinsicElements {
       'elevenlabs-convai': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         'agent-id': string;
+        'markdown-link-allowed-hosts'?: string;
       };
     }
   }
