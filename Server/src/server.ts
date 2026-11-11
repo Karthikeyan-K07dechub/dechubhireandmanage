@@ -1,3 +1,5 @@
+import {startStripeReconciliation} from './services/monthlyStripe.service';
+import {startStripePaymentEmails} from './services/stripePaymentEmails.service';
 import {startMonthlyInvoiceEmails} from './services/monthlyInvoiceEmail.service';
 import app from './app';
 import { connectDB } from './config/db';
@@ -22,6 +24,8 @@ async function bootstrap(): Promise<void> {
   configureDns();
   await connectDB();
   startMonthlyInvoiceEmails();
+  startStripePaymentEmails();
+  startStripeReconciliation();
 
   let server: Server;
 

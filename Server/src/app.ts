@@ -1,3 +1,4 @@
+import {monthlyStripeWebhook} from './services/monthlyStripe.service';
 import { blockPublicVerificationFiles } from './middleware/verificationPrivacy.middleware';
 import documentsRoutes from './routes/documents.routes';
 import express, { Request, Response, NextFunction } from 'express';
@@ -66,6 +67,7 @@ app.post(
   receiveElevenLabsWebhook,
 );
 
+app.post('/api/stripe/webhook',express.raw({type:'application/json',limit:'1mb'}),monthlyStripeWebhook);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

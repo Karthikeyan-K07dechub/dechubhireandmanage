@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+process.chdir(require('node:path').join(__dirname,'..'));
+const {MonthlyInvoice}=require('../dist/models/MonthlyInvoice');
+require('../dist/models/Company').Company.findById=async()=>({ownerId:'owner',billingEmail:'client@example.test'});
+require('../dist/models/CompanyAuth').CompanyAuth.findById=async()=>null;
+require('../dist/config/env').env.DECHUB_ADMIN_EMAILS='admin@example.test';
+const row={_id:'invoice',receiptDelivered:[],invoiceNumber:'INV-001',companyName:'Client',projectName:'Support',billingMonth:'2026-10',currency:'AED',amount:5000,stripeInvoiceId:'in_fixture'};
+let available=true,failed=true,sent=[],completed=false;
+MonthlyInvoice.findOneAndUpdate=async()=>{if(!available)return null;available=false;return row};
+MonthlyInvoice.updateOne=async(q,u)=>{if(u.$addToSet)row.receiptDelivered.push(u.$addToSet.receiptDelivered);if(u.$set?.receiptPending===false)completed=true;};
+require('../dist/utils/email').sendEmail=async recipient=>{if(recipient==='admin@example.test'&&failed)throw Error('Mock email outage');sent.push(recipient)};
+require('../dist/utils/logger').logger.error=()=>{};
+const {processStripePaymentEmails}=require('../dist/services/stripePaymentEmails.service');
+(async()=>{await processStripePaymentEmails();assert.deepEqual(sent,['client@example.test']);assert.equal(completed,false);failed=false;available=true;await processStripePaymentEmails();assert.deepEqual(sent,['client@example.test','admin@example.test']);assert.equal(completed,true);console.log('PASS: client/admin receipts, persistent partial progress and retry without resending to successful recipient. No actual email.');process.exit(0);})().catch(error=>{console.error(error);process.exit(1)});
