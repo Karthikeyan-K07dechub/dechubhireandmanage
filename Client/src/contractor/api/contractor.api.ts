@@ -356,6 +356,7 @@ export async function updateContractorProfile(data: {
   firstName: string;
   lastName: string;
   marketplaceTitle: string;
+  yearsOfExperience: number;
   marketplaceBio: string;
   marketplaceAvailability: 'available_now' | 'this_week' | 'two_weeks' | 'next_month' | 'not_available';
   marketplaceRate: number;

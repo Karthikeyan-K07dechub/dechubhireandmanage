@@ -214,6 +214,8 @@ type TalentRequestAdminNotificationInput = {
   requestedServices: string[];
   dbSaveSucceeded: boolean;
   source?: string;
+  aiMatchStatus?: 'matched' | 'closest' | 'sourcing_needed';
+  aiShownProfiles?: Array<{ name: string; role: string; adminLink: string }>;
 };
 
 export async function sendTalentRequestAdminNotificationEmail(
@@ -230,6 +232,14 @@ export async function sendTalentRequestAdminNotificationEmail(
         .map((service) => `<li>${service}</li>`)
         .join('')}</ul>`
     : '<p style="margin:8px 0 16px;font-size:15px;color:#475569;">None selected</p>';
+  const escape = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character] || character));
+  const aiMatchesMarkup = input.aiShownProfiles?.length
+    ? `<ul style="margin:8px 0 16px;padding-left:20px;color:#475569;font-size:15px;line-height:1.8;">${input.aiShownProfiles
+      .map((profile) => `<li>${escape(profile.name)} - ${escape(profile.role)} - <a href="${escape(profile.adminLink)}">Open in admin</a></li>`)
+      .join('')}</ul>`
+    : '<p style="margin:8px 0 16px;font-size:15px;color:#475569;">No marketplace profiles shown; sourcing needed.</p>';
 
   const html = baseTemplate(`
     <h1>New Book a demo request</h1>
@@ -237,6 +247,7 @@ export async function sendTalentRequestAdminNotificationEmail(
     <p><strong>DB save status:</strong> ${input.dbSaveSucceeded ? 'Saved successfully' : 'Email fallback only'}</p>
     ${input.source ? `<p><strong>Source:</strong> ${input.source}</p>` : ''}
     ${input.requestId ? `<p><strong>Request ID:</strong> ${input.requestId}</p>` : ''}
+    ${input.aiMatchStatus ? `<p><strong>AI match status:</strong> ${input.aiMatchStatus}</p><p><strong>Profiles shown by AI:</strong></p>${aiMatchesMarkup}` : ''}
     <p><strong>Company name:</strong> ${input.companyName}</p>
     <p><strong>Company website:</strong> ${input.companyWebsite}</p>
     <p><strong>Contact name:</strong> ${contactName}</p>

@@ -17,6 +17,8 @@ type TalentRequestSheetPayload = {
   requestType?: 'demo' | 'callback';
   channel?: 'chat' | 'voice';
   conversationId?: string;
+  aiMatchStatus?: 'matched' | 'closest' | 'sourcing_needed';
+  aiShownProfiles?: string;
 };
 
 function isGoogleSheetsEnabled(): boolean {

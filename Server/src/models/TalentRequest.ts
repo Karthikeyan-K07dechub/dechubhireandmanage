@@ -60,6 +60,8 @@ export interface ITalentRequest extends Document {
   consentMarketingWhatsapp?: boolean;
   aiRequestId?: string;
   aiCompanyNameNormalized?: string;
+  aiMatchStatus?: 'matched' | 'closest' | 'sourcing_needed';
+  aiShownWorkerIds?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,6 +126,8 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     consentMarketingWhatsapp: { type: Boolean, default: undefined },
     aiRequestId: { type: String, default: '', index: true },
     aiCompanyNameNormalized: { type: String, default: '', index: true },
+    aiMatchStatus: { type: String, enum: ['matched', 'closest', 'sourcing_needed'], default: undefined },
+    aiShownWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'Worker' }],
   },
   { timestamps: true },
 );

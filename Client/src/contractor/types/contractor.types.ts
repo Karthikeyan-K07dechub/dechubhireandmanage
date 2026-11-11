@@ -183,6 +183,7 @@ export interface ContractorProfile {
   payFrequency: string;
   skills: string[];
   marketplaceTitle: string;
+  yearsOfExperience: number | null;
   marketplaceBio: string;
   marketplaceAvailability: 'available_now' | 'this_week' | 'two_weeks' | 'next_month' | 'not_available';
   marketplaceAvailabilityLabel: string;

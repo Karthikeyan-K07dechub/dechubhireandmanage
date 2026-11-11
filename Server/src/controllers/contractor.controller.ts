@@ -267,6 +267,7 @@ function getMarketplaceProfile(worker: InstanceType<typeof Worker>) {
 
   return {
     marketplaceTitle: worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer',
+    yearsOfExperience: worker.contractorProfile?.yearsOfExperience ?? null,
     marketplaceBio:
       worker.contractorProfile?.marketplaceBio?.trim()
       || worker.scopeOfWork?.trim()
@@ -628,6 +629,7 @@ const profileUpdateSchema = z.object({
   firstName: z.string().trim().min(1).max(50),
   lastName: z.string().trim().min(1).max(50),
   marketplaceTitle: z.string().trim().min(1).max(120),
+  yearsOfExperience: z.number().int().min(0).max(50),
   marketplaceBio: z.string().trim().min(2).max(600),
   marketplaceAvailability: z.enum(['available_now', 'this_week', 'two_weeks', 'next_month', 'not_available']),
   marketplaceRate: z.number().min(0).max(100000),
@@ -654,6 +656,7 @@ export async function savePersonalDetails(req: Request, res: Response, next: Nex
       dateOfBirth:  new Date(data.dateOfBirth),
       nationality:  data.nationality,
       marketplaceTitle: worker.contractorProfile?.marketplaceTitle ?? worker.roleTitle,
+      yearsOfExperience: worker.contractorProfile?.yearsOfExperience ?? null,
       marketplaceBio: worker.contractorProfile?.marketplaceBio ?? worker.scopeOfWork ?? '',
       marketplaceAvailability: worker.contractorProfile?.marketplaceAvailability ?? 'available_now',
       marketplaceRate: worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0,
@@ -846,6 +849,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       dateOfBirth: worker.contractorProfile?.dateOfBirth ?? new Date('2000-01-01'),
       nationality: worker.contractorProfile?.nationality ?? '',
       marketplaceTitle: data.marketplaceTitle,
+      yearsOfExperience: data.yearsOfExperience,
       marketplaceBio: data.marketplaceBio,
       marketplaceAvailability: data.marketplaceAvailability,
       marketplaceRate: data.marketplaceRate,
@@ -897,6 +901,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       skills: marketplaceProfile.skills,
       onboardingStep: getSelfSignupOnboardingStep(worker),
       marketplaceTitle: marketplaceProfile.marketplaceTitle,
+      yearsOfExperience: marketplaceProfile.yearsOfExperience,
       marketplaceBio: marketplaceProfile.marketplaceBio,
       marketplaceAvailability: marketplaceProfile.marketplaceAvailability,
       marketplaceAvailabilityLabel: marketplaceProfile.marketplaceAvailabilityLabel,
@@ -1097,6 +1102,7 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
       payFrequency:  worker.payFrequency,
       skills:        marketplaceProfile.skills,
       marketplaceTitle: marketplaceProfile.marketplaceTitle,
+      yearsOfExperience: marketplaceProfile.yearsOfExperience,
       marketplaceBio: marketplaceProfile.marketplaceBio,
       marketplaceAvailability: marketplaceProfile.marketplaceAvailability,
       marketplaceAvailabilityLabel: marketplaceProfile.marketplaceAvailabilityLabel,

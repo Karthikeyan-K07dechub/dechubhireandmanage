@@ -212,6 +212,7 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
     payFrequency: profile.payFrequency ?? 'monthly',
     skills: Array.isArray(profile.skills) ? profile.skills : [],
     marketplaceTitle: profile.marketplaceTitle ?? DEFAULT_MARKETPLACE_TITLE,
+    yearsOfExperience: typeof profile.yearsOfExperience === 'number' ? profile.yearsOfExperience : null,
     marketplaceBio: profile.marketplaceBio ?? '',
     marketplaceAvailability: availabilityOption ? availabilityOption.value : 'available_now',
     marketplaceAvailabilityLabel: profile.marketplaceAvailabilityLabel ?? (availabilityOption?.label ?? 'Available now'),
@@ -889,6 +890,7 @@ function ProfilePage({
     firstName: string;
     lastName: string;
     marketplaceTitle: string;
+    yearsOfExperience: number;
     marketplaceBio: string;
     marketplaceAvailability: ContractorProfile['marketplaceAvailability'];
     marketplaceRate: number;
@@ -909,6 +911,7 @@ function ProfilePage({
     firstName: profile.firstName,
     lastName: profile.lastName,
     marketplaceTitle: profile.marketplaceTitle,
+    yearsOfExperience: profile.yearsOfExperience === null || profile.yearsOfExperience === undefined ? '' : String(profile.yearsOfExperience),
     marketplaceBio: profile.marketplaceBio,
     marketplaceAvailability: profile.marketplaceAvailability,
     marketplaceRate: String(profile.marketplaceRate ?? 0),
@@ -1023,6 +1026,17 @@ function ProfilePage({
   }, [message]);
 
   const handleSave = async () => {
+    const yearsOfExperience = Number(form.yearsOfExperience);
+    if (
+      form.yearsOfExperience.trim() === ''
+      || !Number.isInteger(yearsOfExperience)
+      || yearsOfExperience < 0
+      || yearsOfExperience > 50
+    ) {
+      setError('Please enter your years of experience as a whole number between 0 and 50.');
+      return;
+    }
+
     const skills = Array.from(
       new Set(
         form.skillsInput
@@ -1073,6 +1087,7 @@ function ProfilePage({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         marketplaceTitle: form.marketplaceTitle.trim(),
+        yearsOfExperience,
         marketplaceBio: form.marketplaceBio.trim(),
         marketplaceAvailability: form.marketplaceAvailability,
         marketplaceRate: Number(form.marketplaceRate) || 0,
@@ -1310,9 +1325,25 @@ function ProfilePage({
           </div>
         </div>
 
-        <div className="cp-field">
-          <label className="cp-label">Professional domain</label>
-          <input className="cp-input" value={form.marketplaceTitle} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceTitle: e.target.value }))} />
+        <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
+          <div className="cp-field">
+            <label className="cp-label">Professional title</label>
+            <input className="cp-input" value={form.marketplaceTitle} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceTitle: e.target.value }))} />
+          </div>
+          <div className="cp-field">
+            <label className="cp-label">Years of experience</label>
+            <input
+              className="cp-input"
+              type="number"
+              min="0"
+              max="50"
+              step="1"
+              inputMode="numeric"
+              value={form.yearsOfExperience}
+              onChange={(e) => setForm((prev) => ({ ...prev, yearsOfExperience: e.target.value }))}
+            />
+            {!form.yearsOfExperience && <small style={{ color: '#64748b' }}>Please add your years of experience.</small>}
+          </div>
         </div>
 
         <div className="cp-profile-upload-grid">
@@ -1919,6 +1950,7 @@ export default function ContractorDashboard({
     firstName: string;
     lastName: string;
     marketplaceTitle: string;
+    yearsOfExperience: number;
     marketplaceBio: string;
     marketplaceAvailability: ContractorProfile['marketplaceAvailability'];
     marketplaceRate: number;

@@ -43,6 +43,7 @@ const envSchema = z.object({
   GOOGLE_SHEETS_WEBHOOK_URL:z.string().default(''),
   // Optional until the ElevenLabs Bridge Visitor agent is configured.
   AI_TOOL_SECRET:           z.string().default(''),
+  AI_TALENT_REQUIRE_VERIFIED: z.string().default('false'),
   ELEVENLABS_WEBHOOK_SECRET:z.string().default(''),
 }).refine(
   (value) => Boolean(value.RESEND_API_KEY) || Boolean(value.SMTP_HOST && value.SMTP_USER && value.SMTP_PASS),

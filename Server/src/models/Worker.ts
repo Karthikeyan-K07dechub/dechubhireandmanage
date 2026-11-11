@@ -48,6 +48,7 @@ export interface IWorker extends Document {
     dateOfBirth: Date;
     nationality: string;
     marketplaceTitle?: string;
+    yearsOfExperience?: number | null;
     marketplaceBio?: string;
     marketplaceAvailability?: 'available_now' | 'this_week' | 'two_weeks' | 'next_month' | 'not_available';
     marketplaceRate?: number | null;
@@ -158,5 +159,15 @@ workerSchema.index({ companyId: 1, email: 1 }, { unique: true });
 workerSchema.index({ status: 1 });
 workerSchema.index({ inviteToken: 1 }, { sparse: true });
 workerSchema.index({ passwordResetToken: 1 }, { sparse: true });
+
+// contractorProfile is intentionally flexible for legacy freelancer records.
+// Keep this field optional, but validate it whenever a value is supplied.
+workerSchema.pre('validate', function validateYearsOfExperience(next) {
+  const years = this.contractorProfile?.yearsOfExperience;
+  if (years !== undefined && years !== null && (!Number.isInteger(years) || years < 0 || years > 50)) {
+    this.invalidate('contractorProfile.yearsOfExperience', 'Years of experience must be a whole number between 0 and 50.');
+  }
+  next();
+});
 
 export const Worker = mongoose.model<IWorker>('Worker', workerSchema);

@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { env } from '../config/env';
 import { AiCallbackRequest } from '../models/AiCallbackRequest';
 import { AiConversation } from '../models/AiConversation';
+import { AiTalentSearch, type AiTalentMatchType } from '../models/AiTalentSearch';
 import { TalentRequest } from '../models/TalentRequest';
+import { Worker } from '../models/Worker';
+import { isMarketplaceEligible } from '../services/marketplaceEligibility.service';
 import { queueBookDemoSubmissionToGoogleSheets } from '../services/googleSheets.service';
 import { sendAiCallbackAdminNotificationEmail, sendTalentRequestAdminNotificationEmail } from '../utils/email';
 import { logger } from '../utils/logger';
@@ -20,6 +23,7 @@ const PROJECT_TYPES = [
   'Mobile App',
   'Ongoing support',
 ] as const;
+const PUBLIC_EMAIL_DOMAINS = new Set(['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'icloud.com', 'proton.me', 'protonmail.com']);
 
 function booleanInput(value: unknown): unknown {
   if (typeof value !== 'string') return value;
@@ -41,6 +45,7 @@ const websiteSchema = z.string().trim().min(1).max(300).transform((value, ctx) =
     return z.NEVER;
   }
 });
+const optionalWebsiteSchema = z.union([websiteSchema, z.literal('')]).optional().default('');
 const projectTypeSchema = z.string().trim().min(1).max(100).transform((value, ctx) => {
   const match = PROJECT_TYPES.find((item) => item.toLowerCase() === value.toLowerCase());
   if (!match) {
@@ -51,8 +56,8 @@ const projectTypeSchema = z.string().trim().min(1).max(100).transform((value, ct
 });
 
 const demoRequestSchema = z.object({
-  company_name: z.string().trim().min(1).max(150),
-  company_website: websiteSchema,
+  company_name: z.string().trim().max(150).optional().default(''),
+  company_website: optionalWebsiteSchema,
   contact_name: z.string().trim().min(1).max(100),
   work_email: z.string().trim().toLowerCase().email('work_email is not valid').max(200),
   project_type: projectTypeSchema,
@@ -62,6 +67,14 @@ const demoRequestSchema = z.object({
   consent_marketing_email: booleanSchema.optional().default(false),
   consent_marketing_whatsapp: booleanSchema.optional().default(false),
   channel: z.enum(['chat', 'voice']).optional().default('chat'),
+  conversation_id: z.string().trim().max(200).optional(),
+  search_id: z.string().trim().max(80).optional(),
+});
+
+const talentSearchSchema = z.object({
+  role: z.string().trim().min(2).max(100),
+  skills: z.array(z.string().trim().min(1).max(50)).max(10).optional().default([]),
+  level: z.string().trim().min(1).max(50).optional(),
   conversation_id: z.string().trim().max(200).optional(),
 });
 
@@ -88,9 +101,52 @@ function hasSensitiveKey(value: unknown): boolean {
   ));
 }
 
-function requestId(prefix: 'DR' | 'CB'): string {
+function requestId(prefix: 'DR' | 'CB' | 'TS'): string {
   const suffix = crypto.randomBytes(3).toString('hex').toUpperCase();
   return `${prefix}-${new Date().getUTCFullYear()}-${suffix}`;
+}
+
+function matchWords(value: string): string[] {
+  return Array.from(new Set(value.toLowerCase().match(/[a-z0-9+#.]+/g) ?? [])).filter((word) => word.length > 1);
+}
+
+function requiresVerifiedTalent(): boolean {
+  return env.AI_TALENT_REQUIRE_VERIFIED.trim().toLowerCase() === 'true';
+}
+
+function anonymizedName(firstName: string, lastName: string): string {
+  const first = firstName.trim();
+  const initial = lastName.trim().slice(0, 1).toUpperCase();
+  return initial ? `${first} ${initial}.` : first;
+}
+
+function deriveAiCompanyDetails(companyName: string, companyWebsite: string, workEmail: string) {
+  const domain = workEmail.split('@')[1]?.trim().toLowerCase() ?? '';
+  const isBusinessDomain = Boolean(domain) && !PUBLIC_EMAIL_DOMAINS.has(domain);
+  return {
+    companyName: companyName.trim() || (isBusinessDomain ? domain : 'Not provided'),
+    companyWebsite: companyWebsite.trim() || (isBusinessDomain ? `https://${domain}` : ''),
+  };
+}
+
+type InternalShownProfile = { name: string; role: string; adminLink: string };
+
+async function findShownProfiles(workerIds: unknown[], adminRequestId: string): Promise<InternalShownProfile[]> {
+  if (!workerIds.length) return [];
+  const workers = await Worker.find({ _id: { $in: workerIds } })
+    .select('firstName lastName roleTitle contractorProfile.marketplaceTitle')
+    .lean();
+  const byId = new Map(workers.map((worker) => [worker._id.toString(), worker]));
+  const adminLink = `${env.CLIENT_URL.replace(/\/$/, '')}/admin/talent-requests/${adminRequestId}`;
+  return workerIds.flatMap((id) => {
+    const worker = byId.get(String(id));
+    if (!worker) return [];
+    return [{
+      name: `${worker.firstName} ${worker.lastName}`.trim(),
+      role: worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer',
+      adminLink,
+    }];
+  });
 }
 
 function splitContactName(contactName: string): { firstName: string; lastName: string } {
@@ -120,11 +176,13 @@ function queueDemoNotifications(input: {
   projectDescription: string;
   channel: 'chat' | 'voice';
   conversationId: string;
+  aiMatchStatus: 'matched' | 'closest' | 'sourcing_needed';
+  shownProfiles: InternalShownProfile[];
 }): void {
   const payload = {
     requestId: input.requestId,
     companyName: htmlSafe(input.companyName),
-    companyWebsite: htmlSafe(input.companyWebsite),
+    companyWebsite: htmlSafe(input.companyWebsite || 'Not provided'),
     contactFirstName: htmlSafe(input.contactFirstName),
     contactLastName: htmlSafe(input.contactLastName),
     contactEmail: htmlSafe(input.email),
@@ -134,20 +192,25 @@ function queueDemoNotifications(input: {
     requestedServices: [],
     dbSaveSucceeded: true,
     source: 'AI assistant',
+    aiMatchStatus: input.aiMatchStatus,
+    aiShownProfiles: input.shownProfiles,
   };
 
   void sendTalentRequestAdminNotificationEmail(ADMIN_NOTIFICATION_TO, payload).catch(() => {
     logger.error('Failed to send AI demo notification email', { requestId: input.requestId });
   });
+  const sheetMatchSummary = input.shownProfiles.length
+    ? input.shownProfiles.map((profile) => `${profile.name} - ${profile.role} - ${profile.adminLink}`).join(' | ')
+    : 'No marketplace profiles shown; sourcing needed.';
   queueBookDemoSubmissionToGoogleSheets({
     submittedAt: new Date().toISOString(),
     companyName: input.companyName,
-    companyWebsite: input.companyWebsite,
+    companyWebsite: input.companyWebsite || 'Not provided',
     contactName: `${input.contactFirstName} ${input.contactLastName}`.trim(),
     workEmail: input.email,
     phoneNumber: input.phone,
     projectType: input.projectType,
-    projectDescription: input.projectDescription,
+    projectDescription: `${input.projectDescription}\n\nAI match status: ${input.aiMatchStatus}\nAI shown profiles: ${sheetMatchSummary}`,
     requestedServices: [],
     dbSaveStatus: 'saved',
     requestId: input.requestId,
@@ -155,7 +218,96 @@ function queueDemoNotifications(input: {
     requestType: 'demo',
     channel: input.channel,
     conversationId: input.conversationId,
+    aiMatchStatus: input.aiMatchStatus,
+    aiShownProfiles: input.shownProfiles.map((profile) => `${profile.name} - ${profile.role} - ${profile.adminLink}`).join(' | '),
   });
+}
+
+export async function searchAiTalent(req: Request, res: Response): Promise<void> {
+  const parsed = talentSearchSchema.safeParse(req.body);
+  const validationError = firstError(parsed);
+  if (validationError || !parsed.success) {
+    res.status(400).json({ ok: false, error: validationError || 'request is not valid' });
+    return;
+  }
+
+  const data = parsed.data;
+  const searchId = requestId('TS');
+  try {
+    const workers = await Worker.find({
+      workerType: 'contractor',
+      status: { $nin: ['invited', 'terminated'] },
+    })
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .lean();
+
+    const roleText = data.role.toLowerCase().trim();
+    const roleWords = matchWords(roleText);
+    const requestedSkills = Array.from(new Set(data.skills.map((skill) => skill.toLowerCase().trim()).filter(Boolean)));
+    const levelWords = matchWords(data.level ?? '');
+
+    const scored = workers
+      .filter((worker) => isMarketplaceEligible(worker))
+      .filter((worker) => !requiresVerifiedTalent() || (worker.status === 'active' && worker.kycStatus === 'approved'))
+      .map((worker) => {
+        const title = (worker.contractorProfile?.marketplaceTitle?.trim() || worker.roleTitle || 'Freelancer').toLowerCase();
+        const titleWords = matchWords(title);
+        const skills = Array.isArray(worker.contractorProfile?.skills)
+          ? worker.contractorProfile.skills.map((skill) => skill.toLowerCase().trim()).filter(Boolean)
+          : [];
+        const titleMatches = title === roleText || title.includes(roleText) || roleText.includes(title);
+        const titleWordScore = roleWords.filter((word) => titleWords.includes(word)).length * 15;
+        const skillOverlap = Array.from(new Set([...requestedSkills, ...roleWords]))
+          .filter((wanted) => skills.some((skill) => skill === wanted || skill.includes(wanted) || wanted.includes(skill))).length;
+        const levelBonus = levelWords.filter((word) => titleWords.includes(word)).length * 2;
+        return {
+          worker,
+          titleMatches,
+          skillOverlap,
+          score: (titleMatches ? 200 : 0) + titleWordScore + (skillOverlap * 20) + levelBonus,
+        };
+      });
+
+    const exact = scored.filter((candidate) => candidate.titleMatches);
+    const closest = exact.length ? [] : scored.filter((candidate) => candidate.skillOverlap > 0);
+    const selected = (exact.length ? exact : closest)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, 3);
+    const matchType: AiTalentMatchType = exact.length ? 'exact' : closest.length ? 'closest' : 'none';
+
+    await AiTalentSearch.create({
+      searchId,
+      conversationId: data.conversation_id ?? '',
+      role: data.role,
+      skills: data.skills,
+      level: data.level ?? '',
+      matchType,
+      workerIds: selected.map((candidate) => candidate.worker._id),
+    });
+
+    res.status(200).json({
+      ok: true,
+      search_id: searchId,
+      match_type: matchType,
+      matches: selected.map((candidate) => ({
+        name: anonymizedName(candidate.worker.firstName, candidate.worker.lastName),
+        role: candidate.worker.contractorProfile?.marketplaceTitle?.trim() || candidate.worker.roleTitle || 'Freelancer',
+        years_of_experience: candidate.worker.contractorProfile?.yearsOfExperience ?? null,
+      })),
+    });
+  } catch (error) {
+    logger.error('AI talent search failed', { error: error instanceof Error ? error.name : 'unknown', searchId });
+    await AiTalentSearch.create({
+      searchId,
+      conversationId: data.conversation_id ?? '',
+      role: data.role,
+      skills: data.skills,
+      level: data.level ?? '',
+      matchType: 'none',
+      workerIds: [],
+    }).catch((storageError) => logger.error('Failed to store AI talent search failure', { error: storageError instanceof Error ? storageError.name : 'unknown', searchId }));
+    res.status(200).json({ ok: true, search_id: searchId, match_type: 'none', matches: [] });
+  }
 }
 
 export async function createAiDemoRequest(req: Request, res: Response, _next: NextFunction): Promise<void> {
@@ -172,7 +324,8 @@ export async function createAiDemoRequest(req: Request, res: Response, _next: Ne
 
   try {
     const data = parsed.data;
-    const companyNameNormalized = normalized(data.company_name);
+    const companyDetails = deriveAiCompanyDetails(data.company_name, data.company_website, data.work_email);
+    const companyNameNormalized = normalized(companyDetails.companyName);
     const cutoff = new Date(Date.now() - TEN_MINUTES_MS);
     const existing = await TalentRequest.findOne({
       source: 'ai_assistant',
@@ -187,14 +340,26 @@ export async function createAiDemoRequest(req: Request, res: Response, _next: Ne
 
     const contact = splitContactName(data.contact_name);
     const aiRequestId = requestId('DR');
+    const aiSearch = data.search_id
+      ? await AiTalentSearch.findOne({ searchId: data.search_id }).sort({ createdAt: -1 })
+      : null;
+    const linkedSearch = aiSearch ?? (data.conversation_id
+      ? await AiTalentSearch.findOne({ conversationId: data.conversation_id }).sort({ createdAt: -1 })
+      : null);
+    const aiMatchStatus = linkedSearch?.matchType === 'exact'
+      ? 'matched'
+      : linkedSearch?.matchType === 'closest'
+      ? 'closest'
+      : 'sourcing_needed';
+    const aiShownWorkerIds = linkedSearch?.workerIds ?? [];
     const request = await TalentRequest.create({
       companyId: null,
       workerId: null,
       workerName: 'Open talent request',
       workerRole: 'Best-fit marketplace candidate to be suggested',
       workerProfileUrl: '',
-      companyName: data.company_name,
-      companyWebsite: data.company_website,
+      companyName: companyDetails.companyName,
+      companyWebsite: companyDetails.companyWebsite,
       contactFirstName: contact.firstName,
       contactLastName: contact.lastName,
       phoneNumber: data.phone || '',
@@ -210,7 +375,10 @@ export async function createAiDemoRequest(req: Request, res: Response, _next: Ne
       consentMarketingWhatsapp: data.consent_marketing_whatsapp,
       aiRequestId,
       aiCompanyNameNormalized: companyNameNormalized,
+      aiMatchStatus,
+      aiShownWorkerIds,
     });
+    const shownProfiles = await findShownProfiles(aiShownWorkerIds, request._id.toString());
 
     queueDemoNotifications({
       requestId: aiRequestId,
@@ -224,6 +392,8 @@ export async function createAiDemoRequest(req: Request, res: Response, _next: Ne
       projectDescription: request.projectDescription,
       channel: data.channel,
       conversationId: data.conversation_id || '',
+      aiMatchStatus,
+      shownProfiles,
     });
     res.status(200).json({ ok: true, request_id: aiRequestId });
   } catch (error) {
