@@ -1,3 +1,4 @@
+import {sendProjectEquipmentCompletionEmail} from '../services/projectEquipmentCompletionEmail.service';
 import { uploadTaskAttachmentFile, removeTaskAttachmentFile } from '../services/taskAttachment.service';
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
@@ -577,6 +578,7 @@ export async function closeCompanyProject(req: Request, res: Response, next: Nex
     if (!await ProjectTask.exists({projectId:project._id}) || await ProjectTask.exists({projectId:project._id,status:{$ne:'completed'}})) throw new AppError('Approve all project tasks before closing the project.',409,'TASKS_NOT_COMPLETED');
     const updated = await Project.findOneAndUpdate({_id:project._id,companyId:company._id,status:project.status},{$set:{status:'completed',completedAt:new Date()}},{new:true,runValidators:true});
     if (!updated) throw new AppError('Project changed. Refresh and try again.',409,'PROJECT_CHANGED');
+    void sendProjectEquipmentCompletionEmail(updated,company).catch(error=>logger.error('Project completion equipment email failed',error));
     await notifyWorkers(updated,'Project completed',updated.title + ' has been closed and completed by the client.');
     ok(res,serializeProject(updated));
   } catch(error) { next(error); }

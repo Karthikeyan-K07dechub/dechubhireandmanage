@@ -1,3 +1,4 @@
+import {startMonthlyInvoiceEmails} from './services/monthlyInvoiceEmail.service';
 import app from './app';
 import { connectDB } from './config/db';
 import { env } from './config/env';
@@ -20,6 +21,7 @@ function configureDns(): void {
 async function bootstrap(): Promise<void> {
   configureDns();
   await connectDB();
+  startMonthlyInvoiceEmails();
 
   let server: Server;
 

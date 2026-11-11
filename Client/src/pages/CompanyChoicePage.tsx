@@ -1,19 +1,10 @@
+import BridgeLogo from '../components/common/BridgeLogo';
 import './role-selection.css';
 
 interface CompanyChoicePageProps {
   onBack: () => void;
   onMarketplace: () => void;
   onDashboard: () => void;
-}
-
-function LogoMark() {
-  return (
-    <div className="rsp-logo-mark">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    </div>
-  );
 }
 
 export default function CompanyChoicePage({
@@ -26,8 +17,7 @@ export default function CompanyChoicePage({
       <div className="rsp-shell">
         <div className="rsp-header">
           <div className="rsp-brand">
-            <LogoMark />
-            <span>Dechub</span>
+            <BridgeLogo className="company-choice-bridge-logo" />
           </div>
           <button className="rsp-back" onClick={onBack}>
             Back

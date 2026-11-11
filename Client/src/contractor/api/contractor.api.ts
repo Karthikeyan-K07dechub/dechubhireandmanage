@@ -431,3 +431,5 @@ export async function markContractorNotificationRead(id: string): Promise<void> 
     await contractorApi.post(`/notifications/${id}/read`);
   } catch (err) { throw normalizeError(err); }
 }
+
+export async function getContractorInvoiceEligibility(month:string):Promise<{projectId:string;approvedTasks:number}[]>{try{return (await contractorApi.get('/invoices/eligibility',{params:{month}})).data.data;}catch(error){throw normalizeError(error);}}

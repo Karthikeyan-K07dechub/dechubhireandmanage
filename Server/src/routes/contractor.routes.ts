@@ -1,3 +1,9 @@
+import {getMonthlyInvoiceEligibility} from '../controllers/contractor.controller';
+import {equipmentDeliveryFile,readEquipmentDelivery,updateEquipmentDelivery,confirmEquipmentDelivery,respondEquipmentReturn} from '../controllers/equipmentDelivery.controller';
+import {createEquipmentRequest,listContractorEquipment} from '../controllers/equipmentRequests.controller';
+import {requestITAccess} from '../controllers/itAccessRequests.controller';
+import rateLimit from 'express-rate-limit';
+import {downloadContractorPaymentProof,contractorPaymentProofInfo,approveContractorPayment} from '../controllers/contractorPaymentProof.controller';
 import { listTeamMessages, sendTeamMessage, downloadTeamAttachment } from '../controllers/projectTeamMessages.controller';
 import { listTaskMessages, postTaskMessage, taskAttachment, downloadAssignmentAttachment } from '../controllers/taskMessages.controller';
 import { AppError as TaskUploadError } from '../utils/response';
@@ -59,6 +65,12 @@ router.post('/docusign/webhook', docusignWebhook);
 // ── Protected routes (contractor JWT required) ───────────────────────────────
 
 router.use(requireContractorAuth);
+router.get('/equipment-requests',listContractorEquipment);
+router.get('/equipment-requests/:id/delivery-file',equipmentDeliveryFile('contractor'));
+router.post('/equipment-requests/:id/delivery-read',readEquipmentDelivery('contractor'));
+router.post('/equipment-requests/:id/delivery-confirm',confirmEquipmentDelivery);
+router.post('/equipment-requests/:id/return-response',respondEquipmentReturn);
+router.post('/equipment-requests',rateLimit({windowMs:60*60*1000,max:10,keyGenerator:req=>req.worker!.sub,message:{success:false,error:{message:'Too many equipment requests. Please try again later.'}}}),createEquipmentRequest);
 
 // Onboarding
 router.post('/onboarding/personal-details', savePersonalDetails);
@@ -76,6 +88,7 @@ router.post('/contract/signing-url', getSigningUrl);
 
 // Project delivery workspace
 router.get('/projects', listWorkerProjects);
+router.post('/projects/:id/it-access-requests',rateLimit({windowMs:60*60*1000,max:10,keyGenerator:req=>req.worker!.sub,message:{success:false,error:{message:'Too many IT access requests. Please try again later.'}}}),requestITAccess);
 router.post('/projects/:id/accept-contract', acceptWorkerProjectContract);
 router.post('/projects/:id/complete', (_req,res) => { res.status(403).json({error:{message:'The client must approve your assigned tasks to complete delivery.'}}); });
 router.get('/projects/:id/tasks', listWorkerProjectTasks);
@@ -87,6 +100,10 @@ router.get('/notifications', listMyNotifications);
 router.post('/notifications/:id/read', markNotificationRead);
 
 // Invoices
+router.get('/invoices/:id/payment-proof/info',contractorPaymentProofInfo);
+router.post('/invoices/:id/payment-proof/approve',approveContractorPayment);
+router.get('/invoices/:id/payment-proof',downloadContractorPaymentProof);
+router.get('/invoices/eligibility',getMonthlyInvoiceEligibility);
 router.get ('/invoices',       getMyInvoices);
 router.post('/invoices',       submitInvoice);
 

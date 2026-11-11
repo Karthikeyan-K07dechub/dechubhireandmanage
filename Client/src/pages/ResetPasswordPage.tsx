@@ -1,20 +1,9 @@
+import BridgeLogo from '../components/common/BridgeLogo';
+import './bridge-login.css';
 import { useMemo, useState } from 'react';
 import './login.css';
 import { api } from '../api/client';
 import type { ApiError } from '../api/client';
-
-function LogoMark({ size = 36 }: { size?: number }) {
-  return (
-    <div className="login-logo-mark" style={{ width: size, height: size }}>
-      <svg
-        viewBox="0 0 24 24"
-        style={{ width: size * 0.55, height: size * 0.55 }}
-      >
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    </div>
-  );
-}
 
 function getPasswordStrength(password: string): {
   score: number;
@@ -107,13 +96,12 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="login-root">
+    <div className="login-root bridge-client-login bridge-reset-password">
       <div className="login-left">
         <div className="login-left-grid" />
 
         <div className="login-logo">
-          <LogoMark size={36} />
-          <span className="login-logo-name">Dechub</span>
+          <BridgeLogo className="bridge-login-logo" />
         </div>
 
         <div className="login-left-body">
@@ -123,20 +111,20 @@ export default function ResetPasswordPage() {
             <span>get back to work.</span>
           </h1>
           <p className="login-left-sub">
-            Choose a new password for your Dechub account. For your security,
+            Choose a new password for your Bridge account. For your security,
             this link expires after a short time.
           </p>
 
           <div className="login-left-stats">
             <div className="login-stat-card">
-              <div className="login-stat-icon" style={{ background: 'rgba(37,99,235,0.15)' }}>
+              <div className="login-stat-icon" style={{ background: 'rgba(124,58,237,0.12)' }}>
                 🔐
               </div>
               <div className="login-stat-value">Encrypted</div>
               <div className="login-stat-label">Password reset requests are protected</div>
             </div>
             <div className="login-stat-card">
-              <div className="login-stat-icon" style={{ background: 'rgba(0,201,167,0.15)' }}>
+              <div className="login-stat-icon" style={{ background: 'rgba(124,58,237,0.12)' }}>
                 ⚡
               </div>
               <div className="login-stat-value">1 minute</div>

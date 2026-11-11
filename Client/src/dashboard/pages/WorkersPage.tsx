@@ -1,3 +1,4 @@
+import TaskConversation from '../../components/TaskConversation';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import type { Worker, WorkerStatus, Track, AddWorkerFormData } from '../types/dashboard.type';
 import { getWorkers, terminateWorker } from '../api/dashboard.api';
@@ -90,6 +91,7 @@ interface WorkersPageProps {
 }
 
 export default function WorkersPage({ initialHireRequestId = '' }: WorkersPageProps) {
+  const [chat,setChat]=useState<{projectId:string;workerId:string;title:string}|null>(null);
   const [workers, setWorkers] = useState<WorkerListEntry[]>([]);
   const [projects, setProjects] = useState<DeliveryProject[]>([]);
   const [loadError, setLoadError] = useState('');
@@ -289,7 +291,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
                 <thead>
                   <tr>
                     <th>Worker name</th><th>Role</th><th>Country</th><th>Assigned project</th>
-                    <th>Start date</th><th>End date</th><th>Project status</th><th aria-label="Worker actions"></th>
+                    <th>Start date</th><th>End date</th><th>Project status</th><th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -315,7 +317,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
                           : row.project?.status === 'completed' ? 'db-worker-project-status completed'
                           : 'db-worker-project-status'
                       }>{!row.project && loadError ? 'Unavailable' : row.status}</span></td>
-                      <td>{row.worker.canManage !== false && <RowMenu worker={row.worker} onTerminate={handleTerminate} />}</td>
+                      <td><div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:8}}>{row.project&&<button type="button" className="db-btn-secondary db-btn-sm" aria-label={'Message '+row.worker.firstName+' about '+row.project.title} onClick={()=>setChat({projectId:row.project!._id,workerId:row.worker._id,title:row.worker.firstName+' '+row.worker.lastName+' - '+row.project!.title})}>Message</button>}{row.worker.canManage !== false && <RowMenu worker={row.worker} onTerminate={handleTerminate} />}</div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -325,6 +327,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
         </div>
       </div>
 
+      {chat&&<TaskConversation taskId={chat.workerId} peer={{projectId:chat.projectId,workerId:chat.workerId}} title={chat.title} status="chat" onClose={()=>setChat(null)} onUpdate={()=>{}}/>}
       {showModal ? (
         <AddWorkerModal
           onClose={() => {

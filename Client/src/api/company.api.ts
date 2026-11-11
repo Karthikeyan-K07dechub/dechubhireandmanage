@@ -34,6 +34,7 @@ export interface BusinessPayload {
   addressLine1:    string;
   addressCity:     string;
   addressZip:      string;
+  itManagement: string;
   referralSource?: string;
 }
 

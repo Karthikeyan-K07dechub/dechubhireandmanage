@@ -1,3 +1,8 @@
+import {currentContractorMonth,contractorInvoiceMonth,shiftContractorMonth} from './invoiceMonth';
+import AttentionDot from '../components/AttentionDot';
+import EquipmentSection from '../components/EquipmentSection';
+import DashboardHelp from '../dashboard/components/DashboardHelp';
+import ContractorPaymentProof from '../components/ContractorPaymentProof';
 import BridgeLogo from '../components/common/BridgeLogo';
 import ContractorNotificationPopup from './ContractorNotificationPopup';
 import ContractorProfileReminder from './ContractorProfileReminder';
@@ -15,6 +20,7 @@ import type {
   SubmitInvoicePayload,
 } from './types/contractor.types';
 import {
+  getContractorInvoiceEligibility,
   contractorTokenStore,
   getContractorNotifications,
   getContractorProfile,
@@ -39,6 +45,7 @@ function getContractorPageFromQuery(initialPage: ContractorPage): ContractorPage
   const tab = new URLSearchParams(window.location.search).get('tab')?.trim() ?? '';
 
   if (tab === 'contract') return 'contract';
+  if (tab === 'equipment') return 'equipment';
   if (tab === 'projects') return 'projects';
   if (tab === 'invoices') return 'invoices';
   if (tab === 'profile') return 'profile';
@@ -49,17 +56,17 @@ function getContractorPageFromQuery(initialPage: ContractorPage): ContractorPage
 }
 
 const INVOICE_BADGE: Record<InvoiceStatus, { cls: string; label: string }> = {
-  pending_admin: { cls: 'inv-badge inv-badge-submitted', label: 'Awaiting admin review' },
+  pending_admin: { cls: 'inv-badge inv-badge-submitted', label: 'Sent' },
   draft: { cls: 'inv-badge inv-badge-draft', label: 'Draft' },
-  submitted: { cls: 'inv-badge inv-badge-submitted', label: 'Submitted' },
+  submitted: { cls: 'inv-badge inv-badge-submitted', label: 'Sent' },
   approved: { cls: 'inv-badge inv-badge-approved', label: 'Approved' },
   paid: { cls: 'inv-badge inv-badge-paid', label: 'Paid' },
   disputed: { cls: 'inv-badge inv-badge-disputed', label: 'Disputed' },
 };
 
 function contractorInvoiceBadge(invoice:ContractorInvoice){
- if(invoice.status==='paid')return INVOICE_BADGE.paid;
- if(invoice.adminReviewStatus==='approved')return {cls:'inv-badge inv-badge-approved',label:'Approved by admin'};
+ if(invoice.contractorPaymentProofSentAt||invoice.status==='paid')return INVOICE_BADGE.paid;
+ if(invoice.adminReviewStatus==='approved')return {cls:'inv-badge inv-badge-approved',label:'Approved'};
  if(invoice.adminReviewStatus==='changes_requested')return {cls:'inv-badge inv-badge-disputed',label:'Changes requested'};
  return INVOICE_BADGE[invoice.status];
 }
@@ -282,9 +289,9 @@ function SubmitInvoiceModal({
   onSuccess: (invoice: ContractorInvoice) => void;
 }) {
   const [form, setForm] = useState<SubmitInvoicePayload>({
-    periodStart: '',
-    periodEnd: '',
-    amountGross: initialProject?.agreedAmount ?? 0,
+    billingMonth:initialProject?.invoiceBillingMonth||currentContractorMonth(),
+    periodStart:'',periodEnd:'',
+    amountGross:0,
     projectName: initialProject?.title || '',
     projectId: initialProject?._id || '',
     description: initialProject ? [initialProject.assignedRole, initialProject.description].filter(Boolean).join(' - ') : '',
@@ -299,19 +306,18 @@ function SubmitInvoiceModal({
   const invoiceProject = completedProjects.find(project => project._id === form.projectId) ?? (initialProject?._id === form.projectId ? initialProject : null);
   useEffect(() => {
     let active = true;
-    getTeamMemberProjects().then(items => { if (active) setCompletedProjects(items.filter(item => item.contractorCompletedAt && item.contractorAcceptedAt)); }).catch(() => { if (active) setError('Unable to load completed projects. Please try again.'); }).finally(() => { if (active) setProjectsLoading(false); });
+    getTeamMemberProjects().then(items => { if (active) setCompletedProjects(items.filter(item => item.contractorAcceptedAt&&['active','payment_submitted','completed'].includes(item.status))); }).catch(() => { if (active) setError('Unable to load accepted projects. Please try again.'); }).finally(() => { if (active) setProjectsLoading(false); });
     return () => { active = false; };
   }, []);
 
+  const [monthlyApproved,setMonthlyApproved]=useState<number|null>(null);
+  useEffect(()=>{let active=true;setMonthlyApproved(null);if(!form.projectId||!form.billingMonth)return;getContractorInvoiceEligibility(form.billingMonth).then(rows=>{if(active)setMonthlyApproved(rows.find(row=>row.projectId===form.projectId)?.approvedTasks||0);}).catch(()=>{if(active){setMonthlyApproved(0);setError('Unable to check monthly approvals. Please reopen the form to try again.');}});return()=>{active=false;};},[form.projectId,form.billingMonth]);
   const validate = () => {
     const next: Record<string, string> = {};
-    if (!form.periodStart) next.periodStart = 'Required';
-    if (!form.periodEnd) next.periodEnd = 'Required';
-    if (form.periodEnd && form.periodStart && form.periodEnd < form.periodStart) {
-      next.periodEnd = 'End must be after start';
-    }
+    if(!form.billingMonth||form.billingMonth>currentContractorMonth())next.billingMonth='Choose the current or a past billing month';
+    if(monthlyApproved===null||monthlyApproved===0)next.billingMonth='This month needs client-approved work before invoicing.';
     if (!form.amountGross || form.amountGross <= 0) next.amountGross = 'Enter a valid amount';
-    if (!form.projectId) next.projectName = 'Select a completed project';
+    if (!form.projectId) next.projectName = 'Select an accepted project';
     if (!form.description.trim()) next.description = 'Required';
     if (isHourly && !form.hoursWorked) next.hoursWorked = 'Required for hourly contracts';
     return next;
@@ -344,19 +350,19 @@ function SubmitInvoiceModal({
           <div>
             <div className="cp-modal-title">Submit Invoice</div>
             <div className="cp-modal-sub">
-              {profile.payCurrency} {profile.payRate?.toLocaleString()} / {profile.payFrequency}
+              Monthly billing ? {invoiceProject?.currency||profile.payCurrency}
             </div>
           </div>
           <button className="cp-modal-close" onClick={onClose}>×</button>
         </div>
 
         <div className="cp-modal-body">
-          <p style={{ color: '#526580', fontSize: 13 }}>You can submit an invoice only after the client approves completion of your assigned tasks. Your invoice goes to Dechub for review before it reaches the client.</p>
+          <p style={{ color: '#526580', fontSize: 13 }}>Submit one invoice per project and billing month for work approved by the client in that month. The project can remain active. Admin reviews your amount before payment.</p>
           {error && <div className="cp-error">Warning: {error}</div>}
-          {!projectsLoading && completedProjects.length === 0 && <p className="cp-error" role="status">Wait until client completion approval. No approved projects are available for invoicing yet.</p>}
+          {!projectsLoading && completedProjects.length === 0 && <p className="cp-error" role="status">No accepted projects are available for monthly invoicing.</p>}
           <div className="cp-field" style={{ marginBottom: 16 }}>
             <label className="cp-label" htmlFor="invoice-project-name">Project name <span className="cp-req">*</span></label>
-            <select id="invoice-project-name" className={`cp-input ${errors.projectName ? 'error' : ''}`} value={form.projectId} disabled={projectsLoading || Boolean(initialProject)} onChange={event => { const project = completedProjects.find(item => item._id === event.target.value); setForm(previous => ({ ...previous, projectId: project?._id || '', projectName: project?.title || '', amountGross: project?.agreedAmount ?? 0, description: project ? [project.assignedRole, project.description].filter(Boolean).join(' - ') : '' })); }}><option value="">{projectsLoading ? 'Loading completed projects...' : 'Select a completed project'}</option>{completedProjects.map(project => <option key={project._id} value={project._id}>{project.title}</option>)}</select>
+            <select id="invoice-project-name" className={`cp-input ${errors.projectName ? 'error' : ''}`} value={form.projectId} disabled={projectsLoading || Boolean(initialProject)} onChange={event => { const project = completedProjects.find(item => item._id === event.target.value); setForm(previous => ({ ...previous, projectId: project?._id || '', projectName: project?.title || '', amountGross:0, description: project ? [project.assignedRole, project.description].filter(Boolean).join(' - ') : '' })); }}><option value="">{projectsLoading ? 'Loading accepted projects...' : 'Select an accepted project'}</option>{completedProjects.map(project => <option key={project._id} value={project._id}>{project.title}</option>)}</select>
             {errors.projectName && <p className="cp-field-error">{errors.projectName}</p>}
           </div>
 
@@ -369,29 +375,7 @@ function SubmitInvoiceModal({
             <div><small>Your role</small><span>{invoiceProject.assignedRole || profile.roleTitle}</span></div>
             <div className="cpi-wide"><small>Project scope</small><span>{invoiceProject.scope}</span></div>
           </section>}
-          <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
-            <div className="cp-field">
-              <label className="cp-label">Period start <span className="cp-req">*</span></label>
-              <input
-                type="date"
-                className={`cp-input ${errors.periodStart ? 'error' : ''}`}
-                value={form.periodStart}
-                onChange={(e) => setForm((prev) => ({ ...prev, periodStart: e.target.value }))}
-              />
-              {errors.periodStart && <p className="cp-field-error">{errors.periodStart}</p>}
-            </div>
-            <div className="cp-field">
-              <label className="cp-label">Period end <span className="cp-req">*</span></label>
-              <input
-                type="date"
-                className={`cp-input ${errors.periodEnd ? 'error' : ''}`}
-                value={form.periodEnd}
-                onChange={(e) => setForm((prev) => ({ ...prev, periodEnd: e.target.value }))}
-              />
-              {errors.periodEnd && <p className="cp-field-error">{errors.periodEnd}</p>}
-            </div>
-          </div>
-
+          <div className="cp-field" style={{marginBottom:16}}><label className="cp-label">Billing month <span className="cp-req">*</span></label><input type="month" className="cp-input" max={currentContractorMonth()} value={form.billingMonth} onChange={e=>setForm(previous=>({...previous,billingMonth:e.target.value}))}/>{errors.billingMonth&&<p className="cp-field-error">{errors.billingMonth}</p>}<p className="cp-modal-sub">{monthlyApproved===null?'Checking approved work...':monthlyApproved+' client-approved task(s) in this month.'} Invoice only the approved work for this month. New work in other months does not block submission.</p></div>
           {isHourly && (
             <div className="cp-field">
               <label className="cp-label">Hours worked <span className="cp-req">*</span></label>
@@ -413,7 +397,7 @@ function SubmitInvoiceModal({
           )}
 
           <div className="cp-field">
-            <label className="cp-label">Invoice amount ({profile.payCurrency}) <span className="cp-req">*</span></label>
+            <label className="cp-label">Invoice amount ({invoiceProject?.currency||profile.payCurrency}) <span className="cp-req">*</span></label>
             <input
               type="number"
               className={`cp-input ${errors.amountGross ? 'error' : ''}`}
@@ -462,9 +446,9 @@ function SubmitInvoiceModal({
             className="cp-btn-primary"
             style={{ flex: 2, height: 44, borderRadius: 10 }}
             onClick={handleSubmit}
-            disabled={loading || projectsLoading || !form.projectId}
+            disabled={loading || projectsLoading || !form.projectId || !monthlyApproved}
           >
-            {loading ? 'Submitting...' : 'Submit Invoice'}
+            {loading ? 'Submitting...' : 'Submit monthly invoice'}
           </button>
         </div>
       </div>
@@ -483,8 +467,9 @@ function DashboardHome({
   onSubmitInvoice: () => void;
   onNavigate: (page: ContractorPage) => void;
 }) {
-  const totalPaid = invoices.filter((invoice) => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amountGross, 0);
-  const totalPending = invoices.filter((invoice) => ['pending_admin', 'submitted'].includes(invoice.status)).reduce((sum, invoice) => sum + invoice.amountGross, 0);
+  const summarize=(rows:ContractorInvoice[])=>{const totals=new Map<string,number>();rows.forEach(invoice=>totals.set(invoice.currency,(totals.get(invoice.currency)||0)+invoice.amountGross));return [...totals].map(([currency,total])=>currency+' '+total.toLocaleString()).join(' / ')||profile.payCurrency+' 0';};
+  const totalPaid=summarize(invoices.filter(invoice=>invoice.status==='paid'));
+  const totalPending=summarize(invoices.filter(invoice=>['pending_admin','submitted'].includes(invoice.status)));
   const nextPayment = invoices.find((invoice) => invoice.status === 'approved');
   const recentInvoices = invoices.slice(0, 4);
 
@@ -503,18 +488,18 @@ function DashboardHome({
         </div>
         <div className="cd-stat">
           <div className="cd-stat-label">Total earned</div>
-          <div className="cd-stat-value">{profile.payCurrency} {totalPaid.toLocaleString()}</div>
+          <div className="cd-stat-value">{totalPaid}</div>
           <div className="cd-stat-hint">All paid invoices</div>
         </div>
         <div className="cd-stat">
           <div className="cd-stat-label">Pending approval</div>
-          <div className="cd-stat-value">{profile.payCurrency} {totalPending.toLocaleString()}</div>
+          <div className="cd-stat-value">{totalPending}</div>
           <div className="cd-stat-hint">{invoices.filter((invoice) => ['pending_admin', 'submitted'].includes(invoice.status)).length} invoice(s)</div>
         </div>
         <div className="cd-stat">
           <div className="cd-stat-label">Next payment</div>
           <div className="cd-stat-value" style={{ fontSize: 18 }}>
-            {nextPayment ? `${profile.payCurrency} ${nextPayment.amountGross.toLocaleString()}` : '-'}
+            {nextPayment ? `${nextPayment.currency} ${nextPayment.amountGross.toLocaleString()}` : '-'}
           </div>
           <div className="cd-stat-hint">{nextPayment ? 'Processing after approval' : 'No approved invoices'}</div>
         </div>
@@ -556,9 +541,9 @@ function DashboardHome({
                 <tbody>
                   {recentInvoices.map((invoice) => (
                     <tr key={invoice._id} style={{ borderBottom: '1px solid #f1f4f9' }}>
-                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>{invoice.invoiceNumber}</td>
+                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>{invoice.invoiceNumber}{invoice.contractorPaymentProofSentAt&&<div style={{marginTop:8}}><ContractorPaymentProof id={invoice._id} sent/></div>}</td>
                       <td style={{ padding: '12px 16px', fontSize: 12.5, color: '#64748b' }}>
-                        {new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}
+                        {contractorInvoiceMonth(invoice)}
                       </td>
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: '#0f172a' }}>{invoice.currency} {invoice.amountGross.toLocaleString()}</td>
                       <td style={{ padding: '12px 16px' }}>
@@ -779,12 +764,14 @@ function InvoicesPage({
   onSubmit: (project?: DeliveryProject) => void;
   readOnly: boolean;
 }) {
+  const [historyMonth,setHistoryMonth]=useState('');
+  const visibleInvoices=invoices.filter(invoice=>!historyMonth||contractorInvoiceMonth(invoice)===historyMonth);
   return (
     <div className="cd-page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
           <div className="cd-page-title">My Invoices</div>
-          <div className="cd-page-sub">{invoices.length} total</div><p className="cd-page-sub">You can submit an invoice only after project completion. Complete your delivery in Projects, then select the completed project when invoicing.</p>
+          <div className="cd-page-sub">{invoices.length} total</div><p className="cd-page-sub">Submit monthly invoices for client-approved work while your project stays active. Each month has its own invoice and payment status.</p>
         </div>
         {!readOnly && (
           <button className="cp-btn-primary" style={{ width: 'auto', padding: '0 20px', height: 42 }} onClick={() => onSubmit()}>
@@ -795,8 +782,8 @@ function InvoicesPage({
 
       <CompletedProjectsForInvoicing invoices={invoices} onSend={project => onSubmit(project)} readOnly={readOnly} />
       <h2 className="cd-page-title" style={{ fontSize: 20, marginBottom: 16 }}>Invoice history</h2>
-      <div className="cd-card cd-invoice-table">
-        {invoices.length === 0 ? (
+      <div className="cpi-month"><span>History month</span><div className="cpi-month-controls"><button type="button" aria-label="Previous history month" onClick={()=>setHistoryMonth(shiftContractorMonth(historyMonth,-1))}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><input aria-label="History month" type="month" value={historyMonth} max={currentContractorMonth()} onChange={e=>setHistoryMonth(e.target.value)}/><button type="button" aria-label="Next history month" disabled={!!historyMonth&&historyMonth>=currentContractorMonth()} onClick={()=>setHistoryMonth(historyMonth?shiftContractorMonth(historyMonth,1):currentContractorMonth())}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div><button type="button" className="cp-btn-secondary cpi-all-months" onClick={()=>setHistoryMonth('')}>All months</button></div><div className="cd-card cd-invoice-table">
+        {visibleInvoices.length === 0 ? (
           <div style={{ padding: '64px 32px', textAlign: 'center', color: '#94a3b8' }}>
             No invoices yet.
           </div>
@@ -804,7 +791,7 @@ function InvoicesPage({
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Invoice #', 'Period', 'Description', 'Amount', 'Status'].map((heading) => (
+                {['Invoice #', 'Billing month', 'Description', 'Amount', 'Status'].map((heading) => (
                   <th key={heading} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', background: '#f8fafc', borderBottom: '1px solid #e8ecf2' }}>
                     {heading}
                   </th>
@@ -812,7 +799,7 @@ function InvoicesPage({
               </tr>
             </thead>
             <tbody>
-              {invoices.map((invoice) => (
+              {visibleInvoices.map((invoice) => (
                 <tr key={invoice._id} style={{ borderBottom: '1px solid #f1f4f9' }}>
                   <td style={{ padding: '13px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>{invoice.invoiceNumber}</td>
                   <td style={{ padding: '13px 16px', fontSize: 12.5, color: '#64748b' }}>{new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}</td>
@@ -1907,7 +1894,7 @@ export default function ContractorDashboard({
   }, [isPreviewMode]);
 
   const handleInvoiceSuccess = useCallback((invoice: ContractorInvoice) => {
-    setInvoices((prev) => [invoice, ...prev]);
+    setInvoices((prev) => [invoice, ...prev.filter(item=>item._id!==invoice._id)]);
     setShowInvoice(false);
     setPage('invoices');
   }, []);
@@ -2005,12 +1992,13 @@ export default function ContractorDashboard({
     { id: 'projects', label: 'Projects' },
     { id: 'invoices', label: 'Invoices' },
     { id: 'contract', label: 'Contracts' },
+    { id: 'equipment', label: 'My Equipment' },
     { id: 'profile', label: 'Profile' },
     { id: 'notifications', label: unreadNotificationCount > 0 ? `Notifications (${unreadNotificationCount})` : 'Notifications' },
   ];
 
   return (
-    <div className="cd-shell">
+    <div className="cd-shell"><DashboardHelp audience="contractor"/>
       <header className="cd-topbar">
         <div className="cd-logo"><BridgeLogo className="cd-bridge-logo" /></div>
 
@@ -2021,7 +2009,7 @@ export default function ContractorDashboard({
               className={`cd-nav-item ${page === item.id ? 'active' : ''}`}
               onClick={() => setPage(item.id)}
             >
-              {item.label}
+              {item.label}{notifications.some(notification=>!notification.readAt&&(item.id==='notifications'||new URL(notification.actionUrl||'',window.location.origin).searchParams.get('tab')===item.id))&&<AttentionDot/>}
             </button>
           ))}
         </nav>
@@ -2053,7 +2041,8 @@ export default function ContractorDashboard({
         />
       )}
 
-      {page === 'projects' && <ProjectTasksPage readOnly={isPreviewMode} onNavigate={(tab, projectId) => { const params = new URLSearchParams(window.location.search); params.set('project', projectId); params.set('tab', tab); window.history.replaceState({}, '', window.location.pathname + '?' + params.toString()); setPage(tab); }} />}
+      {page === 'equipment' && <main className="cd-page"><EquipmentSection role="contractor" readOnly={isPreviewMode} unreadIds={notifications.filter(n=>!n.readAt&&n.actionUrl?.includes('tab=equipment')).map(n=>new URL(n.actionUrl!,window.location.origin).searchParams.get('request')||'')} onViewed={id=>{notifications.filter(n=>!n.readAt&&n.actionUrl?.includes('request='+id)).forEach(n=>{void markContractorNotificationRead(n._id).then(()=>setNotifications(rows=>rows.map(row=>row._id===n._id?{...row,readAt:new Date().toISOString()}:row)));});}}/></main>}
+      {page === 'projects' && <ProjectTasksPage unreadProjectIds={notifications.filter(n=>!n.readAt&&n.actionUrl?.includes('tab=projects')).map(n=>new URL(n.actionUrl!,window.location.origin).searchParams.get('project')||'')} readOnly={isPreviewMode} onNavigate={(tab, projectId) => { const params = new URLSearchParams(window.location.search); params.set('project', projectId); params.set('tab', tab); window.history.replaceState({}, '', window.location.pathname + '?' + params.toString()); setPage(tab); }} />}
 
       {page === 'invoices' && (
         <InvoicesPage

@@ -1,3 +1,4 @@
+import {notifyAdminLogin} from '../services/adminActivityEmail.service';
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -68,6 +69,8 @@ async function createAndStoreOtp(account: InstanceType<typeof CompanyAuth>): Pro
 }
 
 const companySignupSchema = z.object({
+  termsAccepted:z.literal(true),
+  termsVersion:z.literal('2026-11-09'),
   firstName: z.string().min(2).max(50),
   lastName: z.string().min(2).max(50),
   workEmail: z.string().email().refine(isWorkEmail, {
@@ -118,6 +121,7 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
       email: normalizedEmail,
       passwordHash: password,
       phone: phone ?? null,
+      termsAcceptedAt:new Date(),termsVersion:parsed.data.termsVersion,
       provider: 'local',
       isEmailVerified: true,
       emailVerificationToken: null,
@@ -172,6 +176,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const { accessToken, refreshToken } = buildTokenPair(account);
     account.refreshTokenHash = await hashToken(refreshToken);
     await account.save();
+    notifyAdminLogin('client',String(account._id));
 
     ok(res, {
       accessToken,

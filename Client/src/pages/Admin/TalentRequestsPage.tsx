@@ -1,4 +1,8 @@
-import { useEffect, useState } from 'react';
+import MonthlyInvoices from './MonthlyInvoices';
+import AttentionDot from '../../components/AttentionDot';
+import {api,unwrapApiData} from '../../api/client';
+import EquipmentSection from '../../components/EquipmentSection';
+import { useEffect, useRef, useState } from 'react';
 import { listTalentRequests, unreadCount, type TalentRequestItem } from '../../api/admin.api';
 import './admin-talent-requests.css';
 
@@ -8,8 +12,14 @@ interface TalentRequestsPageProps {
 }
 
 export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRequestsPageProps) {
+  const [showInvoices,setShowInvoices]=useState(new URLSearchParams(window.location.search).has('invoices'));
+  const [showEquipment,setShowEquipment]=useState(new URLSearchParams(window.location.search).has('equipment'));
   const [items, setItems] = useState<TalentRequestItem[]>([]);
   const [badge, setBadge] = useState(0);
+  const [loading,setLoading]=useState(true);
+  const [loadError,setLoadError]=useState('');
+  const fetching=useRef(false);
+  const [equipmentUnread,setEquipmentUnread]=useState(false);
 
   const statusTone: Record<string, string> = {
     pending_review: 'new',
@@ -24,14 +34,20 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   };
 
   async function load() {
-    try {
-      const data = await listTalentRequests({ perPage: 50 });
-      setItems(data.items || []);
-      const unread = await unreadCount();
-      setBadge(unread.unread || 0);
-    } catch (err) {
-      // ignore
-    }
+    if(fetching.current)return;
+    fetching.current=true;
+    await Promise.allSettled([
+      listTalentRequests({perPage:50}).then(data=>{
+        setItems(data.items||[]);
+        setLoadError('');
+      }).catch(()=>setLoadError('Unable to load talent requests. Check your connection or sign in again if your session has expired.')).finally(()=>setLoading(false)),
+      unreadCount().then(data=>setBadge(data.unread||0)),
+      api.get('/admin/equipment-requests').then(response=>{
+        const equipment=unwrapApiData<Array<{adminReadAt?:string;reviewedAt?:string;createdAt:string}>>(response.data);
+        setEquipmentUnread(equipment.some(row=>!row.adminReadAt||new Date(row.adminReadAt)<new Date(row.reviewedAt||row.createdAt)));
+      }),
+    ]);
+    fetching.current=false;
   }
 
   useEffect(() => {
@@ -39,7 +55,8 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
     const refresh = () => { void load(); };
     const timer = window.setInterval(refresh, 15000);
     window.addEventListener('focus', refresh);
-    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+    window.addEventListener('equipment-attention-changed',refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); window.removeEventListener('equipment-attention-changed',refresh); };
   }, []);
 
   const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'Unknown');
@@ -49,6 +66,8 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   const approvedCount = items.filter((item) => !isHired(item) && ['approved', 'candidate_selected', 'hire_started'].includes(item.status)).length;
   const hiredCount = items.filter(isHired).length;
 
+  if(showInvoices)return <div className="atr-root"><header className="atr-hero"><div className="atr-hero-copy"><span className="atr-kicker">Admin cockpit</span><h1>Invoices</h1><p>Monthly client billing across your projects.</p></div><div className="atr-hero-actions"><button className="atr-logout" onClick={()=>{setShowInvoices(false);window.history.replaceState({},'','/admin/talent-requests');}}>Back to talent requests</button><button className="atr-logout" onClick={onLogout}>Logout</button></div></header><main className="atr-main"><MonthlyInvoices/></main></div>;
+  if(showEquipment)return <div className="atr-root"><header className="atr-hero"><div className="atr-hero-copy"><span className="atr-kicker">Admin cockpit</span><h1>Equipment</h1></div><div className="atr-hero-actions"><button className="atr-logout" type="button" onClick={()=>{setShowEquipment(false);const params=new URLSearchParams(window.location.search);params.delete('equipment');window.history.replaceState({},'','/admin/talent-requests'+(params.size?'?'+params.toString():''));}}>Back to talent requests</button><button className="atr-logout" onClick={onLogout}>Logout</button></div></header><main className="atr-main"><EquipmentSection role="admin"/></main></div>;
   return (
     <div className="atr-root">
       <div className="atr-background" aria-hidden="true">
@@ -60,7 +79,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
       <header className="atr-hero">
         <div className="atr-hero-copy">
           <span className="atr-kicker">Admin cockpit</span>
-          <h1>Talent requests</h1>
+          <h1>Talent requests{badge>0&&<AttentionDot/>}</h1>
           <p>
             Review incoming hiring demand, track pipeline movement, and respond quickly with a cleaner
             premium workspace.
@@ -72,7 +91,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
             <span className="atr-badge-label">Unread queue</span>
             <strong>{badge}</strong>
           </div>
-          <button className="atr-logout" onClick={onLogout}>Logout</button>
+          <button className="atr-logout" type="button" onClick={()=>{setShowInvoices(true);window.history.replaceState({},'','/admin/talent-requests?invoices=all');}}>Invoices</button><button className="atr-logout" type="button" onClick={()=>{setShowEquipment(true);window.history.replaceState({},'','/admin/talent-requests?equipment=all');}}>Equipment{equipmentUnread&&<AttentionDot label="New equipment request or client decision"/>}</button><button className="atr-logout" onClick={onLogout}>Logout</button>
         </div>
       </header>
       <section className="atr-stats" aria-label="Summary">
@@ -107,6 +126,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
             </div>
           </div>
 
+          {loadError&&<p role="alert">{loadError} <button className="atr-btn" type="button" onClick={()=>void load()}>Retry</button></p>}
           <div className="atr-table-wrap">
             <table>
               <thead>
@@ -121,6 +141,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
                 </tr>
               </thead>
               <tbody>
+                {items.length===0&&<tr><td colSpan={7}>{loading?'Loading talent requests?':loadError?'Requests could not be loaded.':'No talent requests yet.'}</td></tr>}
                 {items.map((it) => (
                   <tr
                     key={it._id}
@@ -134,7 +155,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
                         <span>{it.email}</span>
                       </div>
                     </td>
-                    <td><div className="atr-person-cell"><strong>{it.projectName?.trim() || it.deliveryProject?.title || 'Project name not provided'}</strong></div></td>
+                    <td><div className="atr-person-cell"><strong>{it.projectName?.trim() || it.deliveryProject?.title || 'Project name not provided'}{it.unread&&<AttentionDot/>}</strong></div></td>
                     <td>
                       <div className="atr-person-cell">
                         <strong>{it.workerName}</strong>

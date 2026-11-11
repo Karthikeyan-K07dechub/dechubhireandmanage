@@ -7,3 +7,15 @@
 .cpi-card .cpi-invoice-sent { color: #15803d; font-weight: 600; margin-top: 20px; }
 
 .cpi-waiting-approval,.ctp-invoice-wait{padding:10px 12px;border-radius:8px;background:#fffbeb;color:#92400e!important;font-size:13px;line-height:1.5}
+.cpi-grid .cpi-card { display: flex; flex-direction: column; }
+.cpi-card .cpi-invoice-footer { margin-top: auto; padding-top: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cpi-card .cpi-invoice-footer .cpi-invoice-sent { margin: 0; }
+.cpi-card .cpi-paid-text { color: #2563eb; }
+.cpi-title .cpi-paid-badge { color: #1d4ed8; background: #eff6ff; }
+.cpi-invoice-footer .payout-proof { margin-left: auto; }
+.cpi-invoice-footer .payout-proof button { padding: 8px 12px; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff; color: #1d4ed8; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.cpi-invoice-footer .payout-proof button:hover { background: #dbeafe; }
+.cpi-invoice-footer .payout-proof button:disabled { opacity: .6; cursor: wait; }
+.cpi-month{display:flex;align-items:center;gap:12px;margin:20px 0;color:#475569;font-size:14px;font-weight:600}.cpi-month input{font:inherit;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#0f172a}.cpi-card summary{cursor:pointer;color:#6d28d9;font-weight:600}.cpi-card button:disabled{opacity:.5;cursor:default}
+
+.cpi-month{flex-wrap:wrap;gap:12px}.cpi-month>span{white-space:nowrap;flex:0 0 auto}.cpi-month-controls{display:flex;align-items:center;gap:8px;min-width:0}.cpi-month .cpi-month-controls input{width:190px;max-width:calc(100vw - 160px);height:44px;flex:0 1 190px;margin:0}.cpi-month-controls>button{display:grid;place-items:center;flex:0 0 40px;width:40px!important;height:44px!important;padding:0!important;border:1px solid #d8c9f4;border-radius:9px;background:#f3edff;color:#6d28d9;font-size:24px;font-weight:600;cursor:pointer}.cpi-month-controls>button:disabled{opacity:.4;cursor:default}.cpi-month>.cpi-all-months{width:auto!important;min-width:0;flex:0 0 auto;padding:10px 16px!important;height:44px!important}

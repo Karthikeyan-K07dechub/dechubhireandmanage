@@ -455,7 +455,8 @@ function navigateToInternalPath(href) {
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
-function Header() {
+function Header({showOfferBanner=false}={}) {
+  const [offerDismissed,setOfferDismissed]=useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [closingDropdown, setClosingDropdown] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -613,7 +614,7 @@ function Header() {
   return (
     <div style={{ height: headerHeight }}>
     <header ref={headerRef} className="deel-scroll-header w-full" onFocusCapture={() => setNavVisible(true)} style={{ transform: navVisible || activeDropdown || mobileMenuOpen ? 'translateY(0)' : 'translateY(-100%)' }}>
-      <div className="banner-wrapper-opt" />
+      {showOfferBanner&&!offerDismissed&&<aside className="bridge-home-offer" aria-label="Special offer"><span className="bridge-home-offer__badge">SPECIAL OFFER</span><strong>Get 10 days free trial</strong><a href="/book-demo" onClick={event=>{event.preventDefault();event.stopPropagation();navigateToInternalPath('/book-demo');}}>Claim offer</a><button type="button" aria-label="Dismiss special offer" onClick={()=>setOfferDismissed(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></aside>}
       <nav className="mui-8qiahu" ref={navRef}>
         <div className="MuiBox-root mui-n9ndkr">
           <a href="/" id="navbar-logo-link" className="mui-1betn9n">

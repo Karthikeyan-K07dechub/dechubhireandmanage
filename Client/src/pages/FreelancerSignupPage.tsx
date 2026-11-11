@@ -1,3 +1,4 @@
+import BridgeLogo from '../components/common/BridgeLogo';
 import { useEffect, useMemo, useState } from 'react';
 import '../contractor/contractor.css';
 import './freelancer-signup.css';
@@ -44,16 +45,6 @@ function inferOnboardingStepFromProfile(profile: {
   return profile.dateOfBirth && profile.nationality?.trim() && profile.addressLine1?.trim()
     && profile.city?.trim() && profile.postalCode?.trim() && profile.country?.trim()
     && profile.taxId?.trim() ? 2 : 1;
-}
-
-function LogoMark() {
-  return (
-    <div className="cp-logo-mark">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    </div>
-  );
 }
 
 const STEPS = [
@@ -294,12 +285,11 @@ export default function FreelancerSignupPage({
   }
 
   return (
-    <div className="cp-root">
+    <div className="cp-root bridge-freelancer-signup">
       <div className="cp-onboarding">
         <aside className="cp-left">
           <div className="cp-logo">
-            <LogoMark />
-            <span className="cp-logo-name">Dechub</span>
+            <BridgeLogo className="fsp-bridge-logo" />
           </div>
 
           <div className="cp-welcome">

@@ -63,6 +63,14 @@ export default function Step3BusinessDetails({ state, handlers }: { state: AppSt
       </div>
 
       <div className="form-group">
+        <label htmlFor="company-it-management">Does your company have IT management? <span className="req">*</span></label>
+        <p style={{fontSize:13,color:'#64748b',margin:'0 0 10px'}}>An internal IT team or external provider who manages access to company tools and accounts.</p>
+        <select id="company-it-management" value={formData.itManagement} onChange={e=>handleInputChange('itManagement',e.target.value)} className={errors.itManagement?'error':''} aria-invalid={Boolean(errors.itManagement)} required>
+          <option value="">Select an option...</option><option value="Yes">Yes, we have IT management</option><option value="No">No, we do not have IT management</option>
+        </select>
+        {errors.itManagement&&<div className="field-error show" role="alert">{errors.itManagement}</div>}
+      </div>
+      <div className="form-group">
         <label>How did you hear about Dechub?</label>
         <select value={formData.referralSource} onChange={(e) => handleInputChange('referralSource', e.target.value)}>
           <option value="">Select source...</option>

@@ -1,3 +1,5 @@
+import BridgePrivacyPage from './pages/BridgePrivacyPage';
+import BookDemoPage from './pages/BookDemoPage';
 import CompanyProfilePage from './pages/CompanyProfilePage';
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import './styles.css';
@@ -47,6 +49,7 @@ import {
 } from './api/talentRequests.api';
 
 type AppPage =
+  | 'book-demo'
   | 'landing'
   | 'landing-react'
   | 'landing-react-new'
@@ -128,6 +131,7 @@ function writeSessionJson<T>(key: string, value: T | null): void {
 
 function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+  if(normalizedPath==='/book-demo'||normalizedPath==='/request-a-demo')return {page:'book-demo',mode:'login'};
 
   if (/^\/blog\/[^/]+$/.test(normalizedPath)) {
     return { page: 'landing-blog-post', mode: 'login' };
@@ -209,7 +213,7 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
     return { page: 'landing-contact', mode: 'login' };
   }
 
-  if (normalizedPath === '/legal-pages/privacy-policy') {
+  if (['/legal-pages/privacy-policy','/legal/privacy-policy'].includes(normalizedPath)) {
     return { page: 'landing-privacy', mode: 'login' };
   }
 
@@ -414,7 +418,8 @@ export default function App() {
   const [authMode, setAuthMode] = useState<AuthMode>(initialRoute.mode);
   const [userName, setUserName] = useState<string>(() => getUserNameFromToken());
   const [freelancerFirstName, setFreelancerFirstName] = useState('');
-  const [companyOnboardingStep, setCompanyOnboardingStep] = useState<Step>(1);
+  const [reviewCompanyIdentity] = useState(() => new URLSearchParams(window.location.search).get('start') === 'identity');
+  const [companyOnboardingStep, setCompanyOnboardingStep] = useState<Step>(() => new URLSearchParams(window.location.search).get('start') === 'identity' ? 2 : 1);
   const [companyOnboardingFromMarketplace, setCompanyOnboardingFromMarketplace] = useState(false);
   const [marketplaceQuery, setMarketplaceQuery] = useState<string>(() => getMarketplaceQueryFromUrl());
   const [selectedMarketplaceProfileId, setSelectedMarketplaceProfileId] = useState<string>(() => getMarketplaceProfileIdFromUrl());
@@ -523,6 +528,8 @@ export default function App() {
       return;
     }
 
+    if (reviewCompanyIdentity) { setCompanyOnboardingStep(2); return; }
+
     let cancelled = false;
 
     void (async () => {
@@ -563,6 +570,7 @@ export default function App() {
     const shortlistClaimQuery = buildShortlistClaimQuery(getActiveShortlistClaimContext());
 
     switch (page) {
+      case 'book-demo': targetPath='/book-demo'+window.location.search;break;
       case 'landing':
         targetPath = '/';
         break;
@@ -642,7 +650,7 @@ export default function App() {
         targetPath = '/company/profile';
         break;
       case 'company-onboarding':
-        targetPath = '/company/onboarding';
+        targetPath = reviewCompanyIdentity ? '/company/onboarding?start=identity' : '/company/onboarding';
         break;
       case 'auth':
         targetPath = `/company/signup${shortlistClaimQuery}`;
@@ -660,7 +668,7 @@ export default function App() {
         targetPath = '/admin/login';
         break;
       case 'admin-talent-requests':
-        targetPath = '/admin/talent-requests';
+        targetPath = '/admin/talent-requests' + (new URLSearchParams(window.location.search).get('equipment') ? '?equipment=' + encodeURIComponent(new URLSearchParams(window.location.search).get('equipment')!) : '');
         break;
       case 'admin-talent-request-detail':
         targetPath = `/admin/talent-requests/${encodeURIComponent(selectedAdminRequestId)}`;
@@ -946,7 +954,7 @@ export default function App() {
   }
 
   if (page === 'landing-privacy') {
-    return <StandaloneDocumentPage sourcePath="/legal-pages/privacy-policy/index.html" />;
+    return <BridgePrivacyPage/>;
   }
 
   if (page === 'role-select') {
@@ -997,6 +1005,8 @@ export default function App() {
     setPage('auth');
     setAuthMode('signup');
   };
+
+  if(page==='book-demo')return <BookDemoPage/>;
 
   if (page === 'company-dashboard-auth') {
     return (

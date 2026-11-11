@@ -3,7 +3,7 @@ import { wrapText } from './contractPdf.service';
 export function buildInvoicePdf(invoice: IInvoice, client: boolean, billing: { name: string; email?: string; address?: string }) {
  const escape = (s: string) => s.replace(/[^\x20-\x7e]/g, '-').replace(/[\\()]/g, c => '\\' + c);
  const money = (n: number) => n.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2});
- const date = (d: Date) => new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
+ const date = (d: Date) => new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:invoice.billingMonth?'Asia/Kolkata':'UTC'});
  const pages: string[][] = []; let ops: string[] = []; let y = 600;
  const text = (s: string,x: number,yy: number,size=10,bold=false,color='0.19 0.16 0.27') => ops.push(color+' rg BT /'+(bold?'F2':'F1')+' '+size+' Tf 1 0 0 1 '+x+' '+yy+' Tm ('+escape(s)+') Tj ET');
  const line = (yy: number) => ops.push('0.87 0.88 0.90 RG 42 '+yy+' m 553 '+yy+' l S');

@@ -47,3 +47,23 @@
     width: 100%;
   }
 }
+.bridge-freelancer-signup .cp-left { background:linear-gradient(150deg,#5933c4 0%,#3d208b 55%,#25105f 100%); }
+.bridge-freelancer-signup .cp-left::before { background:radial-gradient(circle,rgba(196,181,253,.24),transparent 65%); }
+.bridge-freelancer-signup .fsp-bridge-logo { display:block;width:180px;height:76px;color:#fff;flex-shrink:0; }
+.bridge-freelancer-signup .cp-right { background:#f7f5fc; }
+.bridge-freelancer-signup .cp-welcome-tag { color:#ede9fe;background:rgba(255,255,255,.12);border:1px solid rgba(221,214,254,.25); }
+.bridge-freelancer-signup .cp-welcome-role,
+.bridge-freelancer-signup .cp-step-desc,
+.bridge-freelancer-signup .cp-step-desc.active,
+.bridge-freelancer-signup .cp-step-label.pending,
+.bridge-freelancer-signup .cp-left-footer { color:#ddd6fe; }
+.bridge-freelancer-signup .cp-step-num.done { background:#c4b5fd;color:#3b0764; }
+.bridge-freelancer-signup .cp-step-num.active { background:#fff;color:#5b21b6; }
+.bridge-freelancer-signup .cp-step-num.pending { color:#ddd6fe;border-color:rgba(221,214,254,.3); }
+.bridge-freelancer-signup .cp-progress-step::after { background:rgba(221,214,254,.3); }
+.bridge-freelancer-signup .cp-btn-primary { background:#6d28d9;color:#fff;box-shadow:0 4px 14px rgba(109,40,217,.16); }
+.bridge-freelancer-signup .cp-btn-primary:hover:not(:disabled) { background:#5b21b6; }
+.bridge-freelancer-signup .cp-input:focus,
+.bridge-freelancer-signup textarea:focus,
+.bridge-freelancer-signup select:focus { border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.12); }
+.bridge-freelancer-signup .fsp-back:hover { color:#6d28d9; }

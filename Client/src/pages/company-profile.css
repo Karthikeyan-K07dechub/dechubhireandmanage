@@ -5,3 +5,18 @@
 
 .cp-signout { display: flex; justify-content: flex-end; margin-top: 24px; }
 .cp-signout button { padding: 8px 14px; font-size: 13px; }
+.cp-page { background:#f7f5fc; }
+.cp-page .cp-header { align-items:center;border-bottom-color:#e9e3f5;gap:20px; }
+.cp-page .cp-brand-link { display:inline-flex;flex-shrink:0;align-items:center;text-decoration:none; }
+.cp-page .cp-profile-bridge-logo { display:block;width:155px;height:62px;color:#6335d4; }
+.cp-page .cp-header-actions { display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end; }
+.cp-page .cp-back,.cp-page button { background:#6d28d9;border-color:#6d28d9;color:#fff; }
+.cp-page .cp-back:hover,.cp-page button:hover:not(:disabled) { background:#5b21b6;border-color:#5b21b6; }
+.cp-page .cp-card { border-color:#e9e3f5;box-shadow:0 4px 20px rgba(62,32,126,.04); }
+.cp-page .cp-card a { color:#6d28d9; }
+.cp-page input:focus,.cp-page select:focus,.cp-page textarea:focus { border-color:#8b5cf6;outline:2px solid #ede9fe; }
+@media(max-width:640px) {
+  .cp-page .cp-header { align-items:flex-start;gap:12px; }
+  .cp-page .cp-header-actions { width:100%;justify-content:flex-start; }
+  .cp-page .cp-header-actions .cp-back { flex:1;font-size:12px;padding:10px; }
+}

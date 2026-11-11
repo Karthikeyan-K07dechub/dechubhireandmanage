@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import LandingTalentRequestModal from '../components/common/LandingTalentRequestModal';
 import '../landing_deel/landing.css';
 import '../landing_deel/overrides.css';
+import '../landing_deel/home-offer.css';
 import Header from '../landing_deel/components/Header.jsx';
 import Section01 from '../landing_deel/components/Section01.jsx';
 import Section02 from '../landing_deel/components/Section02.jsx';
@@ -61,13 +61,25 @@ export default function LandingPageDeel({
   onMarketplace,
 }: LandingPageDeelProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
-  const [requestedServices, setRequestedServices] = useState<string[]>([]);
-  const [heroSelectionResetKey, setHeroSelectionResetKey] = useState(0);
+  const [expertVisible,setExpertVisible]=useState(false);
+  const [expertDismissed,setExpertDismissed]=useState(false);
+  const [expertMounted,setExpertMounted]=useState(false);
+  const expertShouldShow=expertVisible&&!expertDismissed;
+  useEffect(()=>{
+    if(expertShouldShow){setExpertMounted(true);return;}
+    const delay=window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:240;
+    const timer=window.setTimeout(()=>setExpertMounted(false),delay);
+    return()=>window.clearTimeout(timer);
+  },[expertShouldShow]);
+  useEffect(()=>{
+    const hero=rootRef.current?.querySelector('.deel-clone-band--hero');if(!hero)return;
+    const observer=new IntersectionObserver(([entry])=>setExpertVisible(entry.boundingClientRect.top<0&&entry.intersectionRatio<0.05),{threshold:[0,0.05]});
+    observer.observe(hero);return()=>observer.disconnect();
+  },[]);
 
   const openTalentRequestModal = (services?: string[]) => {
-    setRequestedServices(Array.isArray(services) ? services.filter((item): item is string => typeof item === 'string') : []);
-    setIsTalentRequestModalOpen(true);
+    if(Array.isArray(services))sessionStorage.setItem('dechub_hero_requested_services',JSON.stringify(services));
+    window.history.pushState({},'','/book-demo');window.dispatchEvent(new PopStateEvent('popstate'));window.scrollTo(0,0);
   };
 
   useEffect(() => {
@@ -230,12 +242,12 @@ export default function LandingPageDeel({
 
   return (
     <div ref={rootRef} className="deel-clone-root">
-      <Header />
+      <Header showOfferBanner />
       <main className="m-0 p-0">
         <div className="relative">
           <div data-ab-page="true" className="bg-surface-secondary flex flex-col items-center">
             <div className="deel-clone-band deel-clone-band--hero">
-              <Section01 onBookDemo={openTalentRequestModal} resetKey={heroSelectionResetKey} />
+              <Section01 onBookDemo={openTalentRequestModal} resetKey={0} />
             </div>
             <div id="deel-proof" className="deel-clone-band deel-clone-band--proof">
               <div className="deel-clone-shell">
@@ -276,23 +288,12 @@ export default function LandingPageDeel({
           </div>
         </div>
       </main>
+      {expertMounted&&<aside className={"bridge-expert-banner"+(expertShouldShow?"":" is-leaving")} aria-hidden={!expertShouldShow} aria-label="Speak with a Bridge expert"><span className="bridge-expert-banner__avatar" aria-hidden="true"><img src="/dechub-assets/bridge-demo-expert.jpg" alt="" width="512" height="544"/></span><strong>Build your team with ease</strong><a href="/book-demo" tabIndex={expertShouldShow?0:-1} onClick={event=>{event.preventDefault();event.stopPropagation();navigateToInternalPath('/book-demo');}}>Speak with a trusted expert</a><button type="button" aria-label="Dismiss expert banner" tabIndex={expertShouldShow?0:-1} onClick={()=>setExpertDismissed(true)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></aside>}
       <div id="deel-footer" className="deel-clone-band deel-clone-band--footer">
         <div className="deel-clone-shell">
           <Footer />
         </div>
       </div>
-      <LandingTalentRequestModal
-        isOpen={isTalentRequestModalOpen}
-        onClose={() => {
-          setIsTalentRequestModalOpen(false);
-          setRequestedServices([]);
-        }}
-        requestedServices={requestedServices}
-        onSuccess={() => {
-          setRequestedServices([]);
-          setHeroSelectionResetKey((currentValue) => currentValue + 1);
-        }}
-      />
     </div>
   );
 }

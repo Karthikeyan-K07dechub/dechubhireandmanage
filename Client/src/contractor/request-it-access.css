@@ -1,0 +1,21 @@
+.ctp-tasks-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:24px 0 12px; }
+.ctp-card .ctp-tasks-heading h4 { margin:0; }
+.ctp-tasks-heading .ctp-request-it-button { padding:9px 14px;border:1px solid #c4b5fd;border-radius:8px;background:#f5f3ff;color:#5b21b6;font:inherit;font-size:13px;font-weight:600;cursor:pointer; }
+.ctp-tasks-heading .ctp-request-it-button:hover:not(:disabled) { background:#ede9fe; }
+.ctp-tasks-heading .ctp-request-it-button:disabled { opacity:.5;cursor:not-allowed; }
+.it-access-dialog { position:fixed;inset:0;margin:auto;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto;box-sizing:border-box;padding:24px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;color:#0f172a;box-shadow:0 24px 80px #0f172a40;font-family:'DM Sans',sans-serif; }
+.it-access-dialog::backdrop { background:#0f172a99; }
+.it-access-dialog header,.it-access-dialog footer { display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+.it-access-dialog h2 { margin:0;font-size:20px; }
+.it-access-dialog p { color:#64748b;font-size:13px;line-height:1.6; }
+.it-access-dialog .it-access-project { color:#5b21b6;font-weight:600;overflow-wrap:anywhere; }
+.it-access-dialog label { display:block;font-size:14px;font-weight:600;margin:18px 0 8px; }
+.it-access-dialog textarea { box-sizing:border-box;width:100%;min-height:140px;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#0f172a;font:inherit;resize:vertical; }
+.it-access-dialog textarea:focus { outline:2px solid #c4b5fd;outline-offset:2px; }
+.it-access-dialog footer { justify-content:flex-end;margin-top:20px; }
+.it-access-dialog button { padding:10px 16px;border:1px solid #6d28d9;border-radius:8px;background:#6d28d9;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer; }
+.it-access-dialog .it-access-cancel,.it-access-dialog .it-access-close { background:#fff;border-color:#e2e8f0;color:#475569; }
+.it-access-dialog button:disabled { opacity:.5;cursor:not-allowed; }
+.it-access-dialog .it-access-error { color:#b91c1c; }
+.it-access-dialog .it-access-success { padding:16px;border-radius:10px;background:#f5f3ff;color:#5b21b6; }
+@media(max-width:520px) { .it-access-dialog { padding:18px; }.it-access-dialog footer button { flex:1; } }

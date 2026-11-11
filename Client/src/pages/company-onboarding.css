@@ -15,3 +15,28 @@
 .company-onboarding .right > .progress-wrap {
   max-width: 620px;
 }
+.company-onboarding {
+  --teal: #7c3aed;
+  --teal-dim: #6d28d9;
+  --teal-glow: rgba(124, 58, 237, .14);
+  --blue: #7c3aed;
+  --blue-light: #a78bfa;
+}
+.company-onboarding > .app > .left {
+  background: linear-gradient(150deg, #5933c4 0%, #3d208b 55%, #25105f 100%);
+}
+.company-onboarding .left::before { background: radial-gradient(circle, rgba(196,181,253,.24), transparent 65%); }
+.company-onboarding .left::after { background: radial-gradient(circle, rgba(167,139,250,.18), transparent 65%); }
+.company-onboarding .company-bridge-logo { display: block; width: 190px; height: 80px; color: #fff; flex-shrink: 0; }
+.company-onboarding .left-title span { color: #ddd6fe; }
+.company-onboarding .left-sub, .company-onboarding .feature-text p { color: #ddd6fe; }
+.company-onboarding .feature-icon { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.18); }
+.company-onboarding > .app > .right { background: #f7f5fc; }
+.company-onboarding .progress-bar { background: #e9e3f5; }
+.company-onboarding .progress-fill { background: linear-gradient(90deg, #6d28d9, #a78bfa); }
+.company-onboarding .right > .card { border: 1px solid #e9e3f5; box-shadow: 0 8px 30px rgba(62,32,126,.06); }
+.company-onboarding .card-icon { background: #f0eaff; }
+.company-onboarding .btn-primary { background: #6d28d9; color: #fff; box-shadow: 0 4px 14px rgba(109,40,217,.16); }
+.company-onboarding .btn-primary:hover:not(:disabled) { background: #5b21b6; }
+.company-onboarding .btn-secondary:hover { background: #f3effc; border-color: #c4b5fd; }
+.company-onboarding input:focus, .company-onboarding select:focus, .company-onboarding textarea:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,.12); }

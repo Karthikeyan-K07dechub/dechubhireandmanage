@@ -1,0 +1,30 @@
+import mongoose,{Schema} from 'mongoose';
+
+const schema=new Schema({
+  projectId:{type:Schema.Types.ObjectId,ref:'Project',required:true,index:true},
+  companyId:{type:Schema.Types.ObjectId,ref:'Company',required:true,index:true},
+  workerId:{type:Schema.Types.ObjectId,ref:'Worker',required:true,index:true},
+  projectName:{type:String,required:true},companyName:{type:String,required:true},
+  contractorName:{type:String,required:true},contractorEmail:{type:String,required:true},
+  equipmentType:{type:String,enum:['Laptop','Monitor','Headset','Other'],required:true},
+  otherEquipment:{type:String,default:'',maxlength:200},
+  reason:{type:String,required:true,maxlength:2000},
+  specifications:{type:String,default:'',maxlength:3000},
+  details:{type:String,default:'',maxlength:5000},
+  deliveryStatus:{type:String,enum:['delivered','ready_to_return','return_completed'],default:null},
+  returnResponse:{type:String,enum:['yes','no'],default:null},returnReason:{type:String,default:''},returnRespondedAt:{type:Date,default:null},returnResponseEmailStatus:{type:String,enum:['pending','sent','failed'],default:null},returnEmailStatus:{type:String,enum:['pending','sent','failed'],default:null},
+  deliveryMessage:{type:String,default:''},deliveryUpdatedAt:{type:Date,default:null},
+  deliveryFile:{type:Schema.Types.Mixed,default:null,select:false},
+  deliveryFileName:{type:String,default:null},deliveryMimeType:{type:String,default:null},
+  clientDeliveryReadAt:{type:Date,default:null},contractorDeliveryReadAt:{type:Date,default:null},
+  clientDeliveryConfirmedAt:{type:Date,default:null},
+  contractorDeliveryConfirmedAt:{type:Date,default:null},
+  deliveryHistory:{type:[{status:String,message:String,updatedAt:Date,updatedBy:String}],default:[]},
+  status:{type:String,enum:['pending','approved','rejected'],default:'pending',index:true},
+  rejectionReason:{type:String,default:null,maxlength:2000},
+  reviewedAt:{type:Date,default:null},reviewedBy:{type:String,default:null},
+  adminEmailStatus:{type:String,enum:['pending','sent','failed'],default:'pending'},
+  adminReadAt:{type:Date,default:null},
+  adminEmailSentAt:{type:Date,default:null},
+},{timestamps:true});
+export const EquipmentRequest=mongoose.model('EquipmentRequest',schema);

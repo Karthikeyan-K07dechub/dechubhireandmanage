@@ -1,4 +1,5 @@
-import PaymentProofUpload from './components/PaymentProofUpload';
+import ClientBillingPage from './pages/ClientBillingPage';
+import EquipmentSection from '../components/EquipmentSection';
 import AnalyticsPage, { ANALYTICS_VIEWS, getAnalyticsView, type AnalyticsView } from './pages/AnalyticsPage';
 import { resolveImageUrl } from '../utils/imageUrl';
 import DocumentsPage from './pages/DocumentsPage';
@@ -13,7 +14,7 @@ import './dashboard.css';
 import type { DashboardPage } from './types/dashboard.type';
 import DashboardHome from './pages/DashboardHome';
 import WorkersPage from './pages/WorkersPage';
-import { ContractsPage, InvoicesPage } from './pages/ContractInvoicePage';
+import { ContractsPage } from './pages/ContractInvoicePage';
 import ProjectsPage from './pages/ProjectsPage';
 import { tokenStore } from '../api/client';
 import { getMyCompany } from '../api/company.api';
@@ -46,6 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'payroll', icon: '💵', label: 'Payroll' },
   { id: 'invoices', icon: '🧾', label: 'Invoices' },
   { id: 'documents', icon: '📁', label: 'Documents' },
+  { id: 'equipment', icon: '', label: 'Equipment' },
   { id: 'settings', icon: '⚙️', label: 'Settings' },
 ];
 
@@ -61,13 +63,14 @@ const PAGE_TITLES: Record<DashboardPage, string> = {
   contracts: 'Contracts',
   payroll: 'Payroll',
   invoices: 'Invoices',
+  equipment: 'Equipment Management',
   documents: 'Documents',
   settings: 'Settings',
 };
 
 const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
 
-type PayrollRegion = 'global' | 'us' | 'india' | 'uae';
+
 type HiringView = 'overview' | 'marketplace' | 'requests' | 'profile' | 'consultation';
 
 function getDashboardPageFromQuery(initialPage: DashboardPage, hireRequestId: string): DashboardPage {
@@ -80,6 +83,7 @@ function getDashboardPageFromQuery(initialPage: DashboardPage, hireRequestId: st
   if (tab === 'hiring') return 'hiring';
   if (tab === 'payroll') return 'payroll';
   if (tab === 'invoices') return 'invoices';
+  if (tab === 'equipment') return 'equipment';
   if (tab === 'documents') return 'documents';
   if (tab === 'settings') return 'settings';
   if (tab === 'analytics') return 'analytics';
@@ -273,134 +277,6 @@ function HiringPage({
   return <HiringOverviewPage onSelectView={onSelectView} />;
 }
 
-function PayrollPage() {
-  const [region, setRegion] = useState<PayrollRegion>('global');
-
-  const content: Record<
-    PayrollRegion,
-    {
-      summary: string;
-      currencies: string;
-      cards: Array<{ label: string; value: string; note: string }>;
-    }
-  > = {
-    global: {
-      summary:
-        'Use payroll operations for cross-region visibility while routing active execution into the correct country setup.',
-      currencies: 'Primary currencies: USD, INR, AED',
-      cards: [
-        { label: 'Coverage', value: '3 regions', note: 'US, India, and UAE payroll support' },
-        { label: 'Execution model', value: 'Country-led', note: 'Each region can follow its own payroll workflow' },
-        { label: 'Primary controls', value: 'Payroll, invoices, compliance', note: 'Keep approvals and records centralized' },
-      ],
-    },
-    us: {
-      summary:
-        'Manage US payroll operations, approvals, and payment visibility for company payroll teams.',
-      currencies: 'Currency: USD',
-      cards: [
-        { label: 'Payroll region', value: 'United States', note: 'Structured for recurring company payroll operations' },
-        { label: 'Currency', value: 'USD', note: 'Primary payroll and invoice settlement currency' },
-        { label: 'Use case', value: 'Company payroll', note: 'Best for company-managed salary and payroll administration' },
-      ],
-    },
-    india: {
-      summary:
-        'Track India payroll workflows with better visibility across records, approvals, and recurring payroll preparation.',
-      currencies: 'Currency: INR',
-      cards: [
-        { label: 'Payroll region', value: 'India', note: 'Localized operations and payroll record management' },
-        { label: 'Currency', value: 'INR', note: 'Supports India payroll execution context' },
-        { label: 'Use case', value: 'Payroll operations', note: 'Useful for recurring employee and payroll workflow management' },
-      ],
-    },
-    uae: {
-      summary:
-        'Support UAE payroll planning and payment coordination with AED visibility as part of your regional operations.',
-      currencies: 'Currency: AED',
-      cards: [
-        { label: 'Payroll region', value: 'United Arab Emirates', note: 'Added for UAE payroll handling and regional setup readiness' },
-        { label: 'Currency', value: 'AED', note: 'Use AED for payroll context and payment coordination' },
-        { label: 'Use case', value: 'Regional payroll support', note: 'Best for UAE payroll tracking, setup, and finance visibility' },
-      ],
-    },
-  };
-
-  const current = content[region];
-
-  return (
-    <div className="db-page">
-      <div className="db-page-header">
-        <div>
-          <div className="db-page-title">Payroll</div>
-          <div className="db-page-sub">
-            Payroll workspace for the regions you currently support: US, India, and UAE.
-          </div>
-        </div>
-      </div>
-
-      <PaymentProofUpload />
-      <div className="db-card db-payroll-shell">
-        <div className="db-payroll-topline">
-          <div>
-            <div className="db-workspace-eyebrow">Payroll regions</div>
-            <div className="db-payroll-summary">{current.summary}</div>
-            <div className="db-payroll-currency">{current.currencies}</div>
-          </div>
-
-          <div className="db-segmented-control" role="tablist" aria-label="Payroll region selector">
-            {[
-              ['global', 'Global'],
-              ['us', 'US'],
-              ['india', 'India'],
-              ['uae', 'UAE'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className={`db-segmented-control__item ${region === value ? 'active' : ''}`}
-                onClick={() => setRegion(value as PayrollRegion)}
-                aria-selected={region === value}
-                role="tab"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="db-payroll-grid">
-          {current.cards.map((card) => (
-            <div key={card.label} className="db-payroll-metric">
-              <div className="db-payroll-metric__label">{card.label}</div>
-              <div className="db-payroll-metric__value">{card.value}</div>
-              <div className="db-payroll-metric__note">{card.note}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="db-card db-payroll-note-card">
-          <div className="db-card-header">
-            <span className="db-card-title">Phase 1 payroll scope</span>
-          </div>
-          <div className="db-feature-stack">
-            {[
-              'US payroll operations and company payroll visibility',
-              'India payroll workflow support and recurring process tracking',
-              'UAE payroll support with AED visibility and regional setup readiness',
-            ].map((item) => (
-              <div key={item} className="db-feature-row">
-                <span className="db-feature-dot">✓</span>
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface DashboardProps {
   companyName?: string;
   userName?: string;
@@ -536,7 +412,7 @@ export default function Dashboard({
 
   const handleContinueSetup = () => {
     sessionStorage.setItem(COMPANY_DESTINATION_KEY, 'dashboard');
-    window.location.href = '/company/onboarding';
+    window.location.href = '/company/onboarding?start=identity';
   };
 
   const companyInitial = Array.from(companyIdentity.name.trim())[0]?.toUpperCase() || 'C';
@@ -564,7 +440,7 @@ export default function Dashboard({
   const workspaceItems = NAV_ITEMS.filter((item) =>
     ['home', 'projects', 'workers', 'hiring', 'contracts', 'payroll', 'analytics'].includes(item.id),
   );
-  const operationsItems = NAV_ITEMS.filter((item) => ['invoices', 'documents', 'settings'].includes(item.id));
+  const operationsItems = NAV_ITEMS.filter((item) => ['invoices', 'documents', 'equipment', 'settings'].includes(item.id));
 
   return (
     <div className="db-shell">
@@ -782,9 +658,10 @@ export default function Dashboard({
             />
           )}
           {page === 'contracts' && <ContractsPage />}
-          {page === 'payroll' && <PayrollPage />}
-          {page === 'invoices' && <InvoicesPage />}
+          {page === 'payroll' && <ClientBillingPage />}
+          {page === 'invoices' && <ClientBillingPage invoicesOnly />}
           {page === 'documents' && <DocumentsPage />}
+          {page === 'equipment' && <div className="db-page"><EquipmentSection role="client"/></div>}
           {page === 'settings' && <SettingsPage />}
 
         </main>

@@ -32,6 +32,7 @@ export interface ICompany extends Document {
   addressLine1:    string | null;
   addressCity:     string | null;
   addressZip:      string | null;
+  itManagement: 'Yes' | 'No' | null;
   referralSource:  string | null;
 
   // ── Step 4: KYB ───────────────────────────────────────────────────────────
@@ -61,6 +62,7 @@ export interface ICompany extends Document {
   notif4: boolean;
 
   // ── Meta ─────────────────────────────────────────────────────────────────
+  adminProfileNotifiedAt: Date | null;
   signupCompleted: boolean;
   signupCompletedAt: Date | null;
   createdAt: Date;
@@ -95,6 +97,7 @@ const companySchema = new Schema<ICompany>(
     addressLine1:    { type: String, default: null },
     addressCity:     { type: String, default: null },
     addressZip:      { type: String, default: null },
+    itManagement: {type:String,enum:['Yes','No',null],default:null},
     referralSource:  { type: String, default: null },
 
     // Step 4
@@ -124,6 +127,7 @@ const companySchema = new Schema<ICompany>(
     notif4: { type: Boolean, default: true },
 
     // Meta
+    adminProfileNotifiedAt: {type:Date,default:null},
     signupCompleted:   { type: Boolean, default: false },
     signupCompletedAt: { type: Date,    default: null },
   },

@@ -1,3 +1,4 @@
+import {notifyAdminProfileCompletion} from '../services/adminActivityEmail.service';
 import { uploadVerificationFile, removeVerificationFile, validateVerificationFile, type VerificationFile } from '../services/verificationStorage.service';
 import { logger } from '../utils/logger';
 import { Request, Response, NextFunction } from 'express';
@@ -28,6 +29,7 @@ const businessSchema = z.object({
   addressLine1: z.string().trim().min(1),
   addressCity: z.string().trim().min(1),
   addressZip: z.string().trim().min(1),
+  itManagement: z.enum(['Yes','No'],{required_error:'Confirm whether your company has IT management.'}),
   referralSource: z.string().trim().optional().or(z.literal('')),
 });
 
@@ -184,6 +186,7 @@ export async function saveBusinessDetails(req: Request, res: Response, next: Nex
     company.addressLine1 = data.addressLine1;
     company.addressCity = data.addressCity;
     company.addressZip = data.addressZip;
+    company.itManagement = data.itManagement;
     company.referralSource = normalizeOptionalString(data.referralSource);
     await company.save();
 
@@ -343,6 +346,7 @@ export async function savePreferences(req: Request, res: Response, next: NextFun
     await company.save();
 
     await CompanyAuth.findByIdAndUpdate(req.user!.sub, { signupStep: 7 });
+    notifyAdminProfileCompletion('client',req.user!.sub);
     ok(res, company);
   } catch (err) {
     next(err);
@@ -357,6 +361,7 @@ const companyProfileSchema = z.object({
     companyName: profileText, companyCountry: profileText, companyType: profileText, taxId: profileText,
     companySize: z.union([z.enum(['1-10', '11-50', '51-200', '201-500', '500+']), z.literal('')]),
     companyIndustry: profileText, companyWebsite: z.union([z.string().trim().url().max(1000), z.literal('')]),
+    itManagement: z.union([z.enum(['Yes','No']),z.literal('')]).transform(value=>value||null),
     addressLine1: profileText, addressCity: profileText, addressZip: profileText, referralSource: profileText,
     billCurrency: z.union([z.enum(['USD', 'INR', 'AED']), z.literal('')]), billingEmail: profileEmail,
     payCycle: profileText, contractCurrency: z.union([z.enum(['USD', 'INR', 'AED']), z.literal('')]), companyTimezone: profileText, hrEmail: profileEmail,
@@ -373,6 +378,7 @@ export async function updateCompanyProfile(req: Request, res: Response, next: Ne
     // Profile edits never bypass onboarding, verification, or payment setup.
     if (data.company) { Object.assign(company, data.company); await company.save(); }
     if (data.user) { Object.assign(account, data.user); await account.save(); }
+    notifyAdminProfileCompletion('client',req.user!.sub);
     await getMyCompany(req, res, next);
   } catch (error) { next(error); }
 }

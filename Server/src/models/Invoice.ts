@@ -4,6 +4,20 @@ import mongoose, { Document, Schema } from 'mongoose';
 export type InvoiceStatus = 'pending_admin' | 'draft' | 'submitted' | 'approved' | 'paid' | 'disputed';
 
 export interface IInvoice extends Document {
+  billingMonth?:string;
+  submissionHistory:{at:Date;action:string;note:string}[];
+  stripeInvoiceId?: string;
+  stripeHostedInvoiceUrl?: string;
+  stripeInvoiceNumber?: string;
+  stripeStatus?: string;
+  stripeAmountPaid?: number;
+  stripeAmountRemaining?: number;
+  stripePaidAt?: Date | null;
+  stripeDueAt?: Date | null;
+
+  contractorPaymentProof: import('../services/paymentProofStorage.service').PaymentProofFile | null;
+  contractorPaymentProofSentAt: Date | null;
+  contractorPaymentApprovedAt: Date | null;
   adminReviewStatus: 'pending' | 'approved' | 'changes_requested';
   adminReviewReason: string | null;
   adminReviewedAt: Date | null;
@@ -45,6 +59,16 @@ export interface IInvoice extends Document {
 
 const invoiceSchema = new Schema<IInvoice>(
   {
+    billingMonth:{type:String,default:undefined,match:/^\d{4}-(0[1-9]|1[0-2])$/},
+    submissionHistory:{type:[new Schema({at:{type:Date,default:Date.now},action:String,note:String},{_id:false})],default:[]},
+    stripeInvoiceId: {type:String,default:undefined},
+    stripeHostedInvoiceUrl: {type:String,default:undefined},
+    stripeInvoiceNumber: String,
+    stripeStatus: String,
+    stripeAmountPaid: Number,
+    stripeAmountRemaining: Number,
+    stripePaidAt: {type:Date,default:null},
+    stripeDueAt: {type:Date,default:null},
     adminReviewStatus: { type: String, enum: ['pending','approved','changes_requested'], default: 'pending' },
     adminReviewReason: { type: String, default: null },
     adminReviewedAt: { type: Date, default: null },
@@ -63,6 +87,9 @@ const invoiceSchema = new Schema<IInvoice>(
     projectName:    { type: String, trim: true, maxlength: 180, default: '' },
     serviceCharge: { type: Number, min: 0, default: 0 },
     clientTotal: { type: Number, min: 0, default: null },
+    contractorPaymentProof: {type: Schema.Types.Mixed, default:null, select:false},
+    contractorPaymentProofSentAt: {type:Date,default:null},
+    contractorPaymentApprovedAt: {type:Date,default:null},
     clientDocument: { type: new Schema({ bucket: String, path: String, fileName: String, mimeType: String, size: Number, sha256: String }, { _id: false }), default: null },
     clientSentAt: { type: Date, default: null },
     adminReviewedBy: { type: String, default: null },
@@ -83,6 +110,8 @@ const invoiceSchema = new Schema<IInvoice>(
   { timestamps: true },
 );
 
+invoiceSchema.index({workerId:1,projectId:1,billingMonth:1},{unique:true,partialFilterExpression:{billingMonth:{$type:'string'}}});
+invoiceSchema.index({ stripeInvoiceId: 1 }, { unique: true, sparse: true });
 invoiceSchema.index({ companyId: 1, status: 1 });
 invoiceSchema.index({ workerId: 1, periodStart: 1 });
 
@@ -96,3 +125,6 @@ invoiceSchema.pre('validate', function (next) {
 });
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', invoiceSchema);
+
+let monthlyIndexes:Promise<unknown>|undefined;
+export function ensureContractorMonthlyIndexes(){return monthlyIndexes ||= Invoice.collection.createIndex({workerId:1,projectId:1,billingMonth:1},{unique:true,partialFilterExpression:{billingMonth:{$type:'string'}}}).catch(error=>{monthlyIndexes=undefined;throw error;});}

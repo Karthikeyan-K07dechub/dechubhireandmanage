@@ -96,6 +96,9 @@ export interface ContractorContract {
 export type InvoiceStatus = 'pending_admin' | 'draft' | 'submitted' | 'approved' | 'paid' | 'disputed';
 
 export interface ContractorInvoice {
+  billingMonth?:string;
+  submissionHistory?:{at:string;action:string;note:string}[];
+  contractorPaymentProofSentAt?: string | null;
   adminReviewStatus?: 'pending'|'approved'|'changes_requested';
   adminReviewReason?: string | null;
   projectId?: string | null;
@@ -116,6 +119,7 @@ export interface ContractorInvoice {
 }
 
 export interface SubmitInvoicePayload {
+  billingMonth:string;
   projectId: string;
   projectName: string;
   periodStart: string;
@@ -125,7 +129,7 @@ export interface SubmitInvoicePayload {
   hoursWorked?: number;
 }
 
-export type ContractorPage = 'dashboard' | 'projects' | 'invoices' | 'contract' | 'profile' | 'notifications';
+export type ContractorPage = 'equipment' | 'dashboard' | 'projects' | 'invoices' | 'contract' | 'profile' | 'notifications';
 
 export interface ContractorNotification {
   _id: string;

@@ -4,7 +4,6 @@ import {
   STANDALONE_LIGHT_THEME_CSS,
   shouldApplyStandaloneLightTheme,
 } from './standaloneLightTheme';
-import LandingTalentRequestModal from './LandingTalentRequestModal';
 
 interface ExportedStaticPageProps {
   sourcePath: string;
@@ -335,23 +334,13 @@ async function loadStaticPageDefinition(sourcePath: string): Promise<CachedStati
 export default function ExportedStaticPage({ sourcePath }: ExportedStaticPageProps) {
   const mountNodeRef = useRef<HTMLDivElement | null>(null);
   const [markup, setMarkup] = useState('');
-  const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
-  const [requestedServices, setRequestedServices] = useState<string[]>([]);
   const scriptTemplatesRef = useRef<HTMLScriptElement[]>([]);
 
   const openTalentRequestModal = (services?: string[]) => {
-    setRequestedServices(
-      Array.isArray(services)
-        ? services.filter((item): item is string => typeof item === 'string')
-        : [],
-    );
-    setIsTalentRequestModalOpen(true);
+    if(Array.isArray(services))sessionStorage.setItem('dechub_hero_requested_services',JSON.stringify(services));
+    window.history.pushState({},'','/book-demo');window.dispatchEvent(new PopStateEvent('popstate'));window.scrollTo(0,0);
   };
 
-  useEffect(() => {
-    setIsTalentRequestModalOpen(false);
-    setRequestedServices([]);
-  }, [sourcePath]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -569,15 +558,6 @@ export default function ExportedStaticPage({ sourcePath }: ExportedStaticPagePro
     };
   }, [markup, sourcePath]);
 
-  return (
-    <LandingTalentRequestModal
-      isOpen={isTalentRequestModalOpen}
-      onClose={() => {
-        setIsTalentRequestModalOpen(false);
-        setRequestedServices([]);
-      }}
-      requestedServices={requestedServices}
-    />
-  );
+  return null;
 }
 

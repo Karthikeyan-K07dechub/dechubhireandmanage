@@ -1,3 +1,5 @@
+import {equipmentDeliveryFile,readEquipmentDelivery,updateEquipmentDelivery,confirmEquipmentDelivery} from '../controllers/equipmentDelivery.controller';
+import {listCompanyEquipment,reviewEquipmentRequest} from '../controllers/equipmentRequests.controller';
 import { listTeamMessages, sendTeamMessage, downloadTeamAttachment } from '../controllers/projectTeamMessages.controller';
 import { companyTaskAttention, listTaskMessages, postTaskMessage, taskAttachment, downloadAssignmentAttachment, reviewTask } from '../controllers/taskMessages.controller';
 import { AppError as TaskUploadError } from '../utils/response';
@@ -45,6 +47,11 @@ const router = Router();
 
 // All company routes require auth
 router.use(requireAuth);
+router.get('/equipment-requests',listCompanyEquipment);
+router.get('/equipment-requests/:id/delivery-file',equipmentDeliveryFile('client'));
+router.post('/equipment-requests/:id/delivery-read',readEquipmentDelivery('client'));
+
+router.post('/equipment-requests/:id/review',reviewEquipmentRequest);
 
 router.get  ('/me',             getMyCompany);
 router.patch('/profile', updateCompanyProfile);

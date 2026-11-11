@@ -6,6 +6,8 @@ export type CompanyAuthProvider = 'local' | 'google';
 
 export interface ICompanyAuth extends Document {
   _id: mongoose.Types.ObjectId;
+  termsAcceptedAt: Date | null;
+  termsVersion: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -32,6 +34,8 @@ export interface ICompanyAuth extends Document {
 
 const companyAuthSchema = new Schema<ICompanyAuth>(
   {
+    termsAcceptedAt:{type:Date,default:null},
+    termsVersion:{type:String,default:null},
     firstName: { type: String, required: true, trim: true, maxlength: 50 },
     lastName: { type: String, required: true, trim: true, maxlength: 50 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },

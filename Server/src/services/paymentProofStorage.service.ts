@@ -29,9 +29,8 @@ export function validatePaymentProofFile(file: Express.Multer.File) {
   if (!type || !/\.(pdf|png|jpe?g|webp)$/i.test(file.originalname) || file.mimetype !== type.mime) throw new AppError('Choose a valid PDF, PNG, JPEG, or WebP document.', 422, 'INVALID_VERIFICATION_FILE');
   return type;
 }
-export async function uploadPaymentProofFile(file: Express.Multer.File, ownerId: string, docType: string): Promise<PaymentProofFile> {
+export async function uploadPaymentProofFile(file: Express.Multer.File, ownerId: string, docType: string, bucket = 'payment_proofs'): Promise<PaymentProofFile> {
   const type = validatePaymentProofFile(file);
-  const bucket = 'payment_proofs';
   const folder = ownerId;
   const document = { bucket, path: `${folder}/${docType}/${randomUUID()}.${type.extension}`, fileName: file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-160), mimeType: type.mime, size: file.buffer.length, sha256: digest(file.buffer) };
   await requirePrivate(bucket);

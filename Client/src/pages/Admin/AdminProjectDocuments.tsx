@@ -1,3 +1,4 @@
+import AttentionDot from '../../components/AttentionDot';
 
 import { useEffect, useState } from 'react';
 import { api, unwrapApiData } from '../../api/client';
@@ -32,7 +33,7 @@ export default function AdminProjectDocuments({ projectId }: { projectId: string
       await load();
     } catch (error) { setError(documentError(error)); } finally { setBusy(false); }
   }
-  return <section className="apd-panel"><h3>Client verification documents</h3>{error && <p role="alert" className="apd-error">{error}</p>}{message && <p role="status">{message}</p>}
+  return <section className="apd-panel"><h3>Client verification documents{data?.verificationDocuments.length&&data.verificationStatus!=='approved'?<AttentionDot label="Verification needs review"/>:null}</h3>{error && <p role="alert" className="apd-error">{error}</p>}{message && <p role="status">{message}</p>}
     {!data ? <p>Loading documents...</p> : <><p>Company verification: {data.verificationStatus || 'Pending'}</p><div className="apd-verification-files">{data.verificationDocuments.map(d => <div className="apd-verification-file" key={d._id}><span>{verificationDocumentLabel(d._id)}</span><button type="button" disabled={busy} onClick={() => void download(d._id, d.fileName)}>Download document</button></div>)}</div><ul>{data.documents.map(d => <li key={d._id}>{d.fileName} — {d.status.replace(/_/g, ' ')}{d.replacementReason && <p>{d.replacementReason}</p>}</li>)}</ul>
     <div className="apd-controls"><label>Document to review<select value={target} disabled={busy} onChange={e => setTarget(e.target.value)}><option value="verification">Company verification</option>{data.documents.map(d => <option key={d._id} value={d._id}>{d.fileName}</option>)}</select></label><label>Reason / replacement instructions<textarea value={reason} disabled={busy} maxLength={1000} onChange={e => setReason(e.target.value)} placeholder="Explain which file needs replacing and why" /></label><div className="apd-actions"><button type="button" disabled={busy || !reason.trim()} onClick={() => void act()}>Request replacement</button>{target === 'verification' && <button type="button" disabled={busy} onClick={() => void act('approved')}>Approve verification</button>}</div></div></>}
 

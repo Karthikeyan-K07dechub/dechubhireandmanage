@@ -1,3 +1,4 @@
+import BridgeLogo from '../components/common/BridgeLogo';
 import { useEffect, useMemo, useState } from 'react';
 import { register, redirectToGoogle } from '../api/auth.api';
 import {
@@ -32,16 +33,6 @@ interface CompanyOnboardingPageProps {
 }
 
 const COMPANY_DESTINATION_KEY = 'dechub_company_destination';
-
-function LogoMark() {
-  return (
-    <div className="logo-mark">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    </div>
-  );
-}
 
 function getPasswordStrength(password: string): { score: number; label: string; color: string } {
   if (!password) {
@@ -82,6 +73,7 @@ function mergeCompanyData(state: AppState, data: MyCompanyData): AppState {
       addressLine1: typeof company.addressLine1 === 'string' ? company.addressLine1 : state.formData.addressLine1,
       addressCity: typeof company.addressCity === 'string' ? company.addressCity : state.formData.addressCity,
       addressZip: typeof company.addressZip === 'string' ? company.addressZip : state.formData.addressZip,
+      itManagement: typeof company.itManagement === 'string' ? company.itManagement : state.formData.itManagement,
       referralSource: typeof company.referralSource === 'string' ? company.referralSource : state.formData.referralSource,
       billCurrency: typeof company.billCurrency === 'string' ? company.billCurrency : state.formData.billCurrency,
       billingEmail: typeof company.billingEmail === 'string' ? company.billingEmail : state.formData.billingEmail,
@@ -235,6 +227,11 @@ export default function CompanyOnboardingPage({
   };
 
   const goBack: AppHandlers['goBack'] = () => {
+    if (booting || state.loadingAction) return;
+    if (state.currentStep === 1) {
+      onBack();
+      return;
+    }
     // If resumed from previous session (initialStep > 1), don't go back to step 1
     if (initialStep > 1 && state.currentStep <= 2) {
       onBack();
@@ -272,6 +269,7 @@ export default function CompanyOnboardingPage({
           return;
         }
 
+        if(!state.formData.termsAccepted){setState(previous=>({...previous,loadingAction:null,errors:{termsAccepted:'Please read and accept the client terms and conditions.'}}));return;}
         const normalizedPhone = state.formData.phone.trim();
         await register({
           firstName: state.formData.firstName.trim(),
@@ -279,6 +277,7 @@ export default function CompanyOnboardingPage({
           workEmail: state.formData.workEmail.trim().toLowerCase(),
           password: state.formData.password,
           phone: normalizedPhone,
+          termsAccepted:state.formData.termsAccepted,termsVersion:'2026-11-09',
         });
 
         if (completeAfterStep1) {
@@ -306,6 +305,7 @@ export default function CompanyOnboardingPage({
           addressLine1: state.formData.addressLine1.trim(),
           addressCity: state.formData.addressCity.trim(),
           addressZip: state.formData.addressZip.trim(),
+          itManagement: state.formData.itManagement,
           referralSource: state.formData.referralSource.trim(),
         });
       }
@@ -463,7 +463,7 @@ export default function CompanyOnboardingPage({
     validateEmail,
     googleSignup: () => {
       sessionStorage.setItem(COMPANY_DESTINATION_KEY, 'dashboard');
-      redirectToGoogle('signup');
+      redirectToGoogle('signup',!!state.formData.termsAccepted);
     },
     goToLogin: onBack,
     goToDashboard: onComplete,
@@ -514,8 +514,7 @@ export default function CompanyOnboardingPage({
       <div className="app">
         <aside className="left">
           <div className="logo">
-            <LogoMark />
-            <span className="logo-name">Dechub</span>
+            <BridgeLogo className="company-bridge-logo" />
           </div>
 
           <div className="left-hero">
@@ -532,7 +531,7 @@ export default function CompanyOnboardingPage({
                 <div className="feature-icon fi-green">1</div>
                 <div className="feature-text">
                   <h4>Identity and business details</h4>
-                  <p>Capture the legal data Dechub needs for contracts and compliance.</p>
+                  <p>Capture the legal data Bridge needs for contracts and compliance.</p>
                 </div>
               </div>
               <div className="feature-item">
@@ -558,7 +557,7 @@ export default function CompanyOnboardingPage({
             <div className="progress-wrap">
               <div className="progress-top">
                 {!( (initialStep > 1 || completeAfterStep1) && state.currentStep === 2 ) ? (
-                  <button className="rsp-back" onClick={onBack}>Back</button>
+                  <button type="button" className="rsp-back" onClick={goBack} disabled={booting || Boolean(state.loadingAction)}>Back</button>
                 ) : null}
               </div>
               <div className="progress-label">{progress?.label ?? 'Company setup'}</div>

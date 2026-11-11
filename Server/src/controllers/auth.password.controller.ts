@@ -1,3 +1,4 @@
+import {notifyAdminLogin} from '../services/adminActivityEmail.service';
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -260,6 +261,7 @@ export async function contractorLogin(
     worker.refreshTokenHash = await hashToken(refreshToken);
     worker.lastLoginAt = new Date();
     await worker.save();
+    notifyAdminLogin('contractor',String(worker._id));
 
     logger.info(`Contractor login: ${worker.email}`);
     ok(res, {
@@ -302,6 +304,7 @@ export async function contractorRefresh(
     worker.refreshTokenHash = await hashToken(newRefreshToken);
     worker.lastLoginAt = new Date();
     await worker.save();
+    notifyAdminLogin('contractor',String(worker._id));
 
     ok(res, {
       accessToken,

@@ -1,3 +1,4 @@
+import ClientSignupTerms from '../ClientSignupTerms';
 import ActionButton from '../common/ActionButton';
 import { ArrowIcon, EyeIcon, GoogleIcon, MailIcon } from '../common/Icons';
 import { AppHandlers, AppState } from '../../types/signup';
@@ -23,7 +24,7 @@ export default function Step1Account({ state, handlers }: { state: AppState; han
       <h2 className="card-title">Create your account</h2>
       <p className="card-sub">Start hiring global talent in minutes. No credit card required to sign up.</p>
 
-      <button className="social-btn" type="button" onClick={googleSignup}>
+      <button className="social-btn" type="button" onClick={()=>{if(formData.termsAccepted)googleSignup();else document.getElementById('client-signup-terms-title')?.scrollIntoView({behavior:'smooth',block:'center'});}}>
         <GoogleIcon />
         Continue with Google
       </button>
@@ -91,6 +92,7 @@ export default function Step1Account({ state, handlers }: { state: AppState; han
         <div className={`field-error ${errors.phone ? 'show' : ''}`}>{errors.phone}</div>
       </div>
 
+      <ClientSignupTerms accepted={!!formData.termsAccepted} onChange={value=>handleInputChange('termsAccepted',value)} error={errors.termsAccepted}/>
       <ActionButton loading={loadingAction === 'step-2'} onClick={() => goToStep(2)}>
         Continue <ArrowIcon />
       </ActionButton>

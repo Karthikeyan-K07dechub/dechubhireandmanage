@@ -46,6 +46,7 @@ function step2(f: FormData): ErrorMap {
 function step3(f: FormData): ErrorMap {
   const e: ErrorMap = {};
   if (!f.companySize)           e.companySize     = 'Select company size';
+  if (!['Yes','No'].includes(f.itManagement)) e.itManagement = 'Confirm whether your company has IT management';
   if (!f.companyIndustry)       e.companyIndustry = 'Select your industry';
   if (!f.addressLine1.trim())   e.addressLine1    = 'Street address is required';
   if (!f.addressCity.trim())    e.addressCity     = 'City is required';

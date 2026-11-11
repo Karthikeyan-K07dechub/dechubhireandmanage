@@ -16,6 +16,7 @@ export type DashboardPage =
   | 'contracts'
   | 'payroll'
   | 'invoices'
+  | 'equipment'
   | 'documents'
   | 'settings';
 

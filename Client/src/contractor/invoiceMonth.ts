@@ -1,0 +1,4 @@
+﻿export function currentContractorMonth(){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit'}).formatToParts(new Date());return parts.find(p=>p.type==='year')!.value+'-'+parts.find(p=>p.type==='month')!.value;}
+export function contractorInvoiceMonth(invoice:{billingMonth?:string;periodStart:string}){if(invoice.billingMonth)return invoice.billingMonth;const date=new Date(invoice.periodStart);if(!Number.isFinite(date.getTime()))return '';const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit'}).formatToParts(date);return parts.find(p=>p.type==='year')!.value+'-'+parts.find(p=>p.type==='month')!.value;}
+
+export function shiftContractorMonth(value:string,offset:number){const [year,month]=(value||currentContractorMonth()).split('-').map(Number);return new Date(Date.UTC(year,month-1+offset,1)).toISOString().slice(0,7);}

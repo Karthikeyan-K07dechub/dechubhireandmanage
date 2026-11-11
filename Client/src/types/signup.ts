@@ -20,6 +20,7 @@ export type UploadedDocs = Partial<Record<DocKey, DocState>>;
 // ─── Form data ────────────────────────────────────────────────────────────────
 
 export interface FormData {
+  termsAccepted:boolean;
   // Step 1 — Account
   firstName:   string;
   lastName:    string;
@@ -41,6 +42,7 @@ export interface FormData {
   addressLine1:    string;
   addressCity:     string;
   addressZip:      string;
+  itManagement: string;
   referralSource:  string;
 
   // Step 4 — KYB (files tracked via uploadedDocs, not here)

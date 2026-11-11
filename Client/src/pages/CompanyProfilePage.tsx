@@ -1,3 +1,4 @@
+import BridgeLogo from '../components/common/BridgeLogo';
 import { resolveImageUrl } from '../utils/imageUrl';
 import SignOutButton from '../components/common/SignOutButton';
 import { useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ const sections: { title: string; fields: Field[] }[] = [
   ] },
   { title: 'Business details', fields: [
     { key: 'companySize', label: 'Company size', options: ['1-10', '11-50', '51-200', '201-500', '500+'] },
+    { key: 'itManagement', label: 'IT management', options: ['Yes','No'] },
     { key: 'companyIndustry', label: 'Industry' }, { key: 'companyWebsite', label: 'Company website', type: 'url' },
     { key: 'addressLine1', label: 'Business address' }, { key: 'addressCity', label: 'City' }, { key: 'addressZip', label: 'Postal code' }, { key: 'referralSource', label: 'How did you hear about us?' },
   ] },
@@ -65,7 +67,7 @@ export default function CompanyProfilePage() {
       {!value && <small className="cp-required">Please enter your {item.label.toLowerCase()}.</small>}
     </label>;
   }
-  return <div className="cp-page"><header className="cp-header"><a className="cp-back" href="/dashboard">Back to dashboard</a><a className="cp-back" href="/company/onboarding">Complete company setup</a></header>
+  return <div className="cp-page"><header className="cp-header"><a className="cp-brand-link" href="/dashboard" aria-label="Bridge dashboard"><BridgeLogo className="cp-profile-bridge-logo"/></a><nav className="cp-header-actions" aria-label="Company profile navigation"><a className="cp-back" href="/dashboard">Back to dashboard</a><a className="cp-back" href="/company/onboarding?start=identity">Complete company setup</a></nav></header>
     <main className="cp-main"><div className="cp-title"><h1>Company profile</h1><p>Review and edit your account, company details, and workspace preferences.</p></div>
       {error && <div className="cp-error" role="alert">{error}</div>}{success && <div className="cp-success" role="status">{success}</div>}
       {loading ? <p>Loading your company profile...</p> : data && <>

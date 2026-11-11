@@ -17,11 +17,12 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
   const sectionRef = useRef(activeSection);
   sectionRef.current = activeSection;
   const [taskAttentionCount,setTaskAttentionCount]=useState(0);
+  const [equipmentCount,setEquipmentCount]=useState(0);
   useEffect(()=>{
     let active=true;let busy=false;
     async function refreshAttention(){
       if(busy)return;busy=true;
-      try{const response=await api.get('/company/task-attention');if(active)setTaskAttentionCount(response.data.data.length);}catch{/* Preserve the last count and retry. */}finally{busy=false;}
+      try{const results=await Promise.allSettled([api.get('/company/task-attention'),api.get('/company/equipment-requests')]);if(active){if(results[0].status==='fulfilled')setTaskAttentionCount(results[0].value.data.data.length);if(results[1].status==='fulfilled')setEquipmentCount(results[1].value.data.data.filter((item:{status:string;deliveryUpdatedAt?:string;clientDeliveryReadAt?:string|null})=>item.status==='pending'||(item.deliveryUpdatedAt&&!item.clientDeliveryReadAt)).length);}}catch{/* Preserve the last count and retry. */}finally{busy=false;}
     }
     void refreshAttention();
     const timer=window.setInterval(()=>void refreshAttention(),5000);
@@ -37,12 +38,14 @@ export default function DashboardNotifications({ onCountsChange, activeSection }
     for (const notice of notices) {
       if (notice.read) continue;
       const section = noticeSection(notice);
+      if(section==='equipment')continue;
       if(section==='projects' && new URL(notice.href,window.location.origin).searchParams.has('task'))continue;
       counts[section] = (counts[section] || 0) + 1;
     }
     counts.projects=(counts.projects||0)+taskAttentionCount;
+    counts.equipment=equipmentCount;
     onCountsChange?.(counts);
-  }, [notices, onCountsChange, taskAttentionCount]);
+  }, [notices, onCountsChange, taskAttentionCount,equipmentCount]);
   const seen = useRef(new Set<string>());
   const read = useRef(new Set<string>());
   const dismissed = useRef(new Set<string>());

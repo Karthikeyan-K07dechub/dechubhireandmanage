@@ -42,6 +42,7 @@ export interface IWorker extends Document {
   passwordResetToken: string | null;
   passwordResetExpires: Date | null;
   refreshTokenHash: string | null;
+  adminProfileNotifiedAt: Date | null;
   lastLoginAt:      Date | null;
   contractorProfile: {
     dateOfBirth: Date;
@@ -139,6 +140,7 @@ const workerSchema = new Schema<IWorker>(
     passwordResetToken: { type: String, default: null, select: false },
     passwordResetExpires: { type: Date, default: null },
     refreshTokenHash: { type: String, default: null, select: false },
+    adminProfileNotifiedAt: {type:Date,default:null},
     lastLoginAt:      { type: Date, default: null },
     contractorProfile:{ type: Schema.Types.Mixed, default: null },
     kycData:          { type: Schema.Types.Mixed, default: null },

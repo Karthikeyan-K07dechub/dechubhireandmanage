@@ -1,3 +1,4 @@
+import {notifyAdminLogin} from '../services/adminActivityEmail.service';
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -118,6 +119,8 @@ async function linkBookDemoRequestsToCompany(email: string, companyId: unknown):
 // ─── Controllers ─────────────────────────────────────────────────────────────
 
 const registerSchema = z.object({
+  termsAccepted:z.literal(true),
+  termsVersion:z.literal('2026-11-09'),
   firstName: z.string().min(2).max(50),
   lastName:  z.string().min(2).max(50),
   workEmail: z.string().email().refine(isWorkEmail, {
@@ -161,6 +164,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
       email:                    normalizedEmail,
       passwordHash:             password,   // pre-save hook will hash it
       phone:                    phone ?? null,
+      termsAcceptedAt:new Date(),termsVersion:parsed.data.termsVersion,
       provider:                 'local',
       isEmailVerified:          true,
       emailVerificationToken:   null,
@@ -260,6 +264,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const { accessToken, refreshToken } = buildTokenPair(user);
     user.refreshTokenHash = await hashToken(refreshToken);
     await user.save();
+    notifyAdminLogin('client',String(user._id));
 
     ok(res, {
       accessToken,
@@ -313,11 +318,12 @@ function getGoogleAuthIntent(value: unknown): GoogleAuthIntent {
 
 export function googleAuthRedirect(req: Request, res: Response): void {
   const intent = getGoogleAuthIntent(req.query.intent);
+  if(req.query.role!=='contractor'&&intent==='signup'&&req.query.termsVersion!=='2026-11-09'){res.redirect(env.CLIENT_URL+'/company/signup?terms=required');return;}
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope:       ['openid', 'email', 'profile'],
     prompt:      'select_account',
-    state:       req.query.role === 'contractor' ? `contractor:${intent}` : intent,
+    state:       req.query.role === 'contractor' ? `contractor:${intent}` : intent==='signup'?'signup:terms:2026-11-09':intent,
   });
   res.redirect(url);
 }
@@ -325,7 +331,7 @@ export function googleAuthRedirect(req: Request, res: Response): void {
 export async function googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const isContractor = req.query.state === 'contractor:login' || req.query.state === 'contractor:signup';
-    const intent = getGoogleAuthIntent(isContractor ? String(req.query.state).split(':')[1] : req.query.state);
+    const intent = getGoogleAuthIntent(isContractor ? String(req.query.state).split(':')[1] : String(req.query.state||'').split(':')[0]);
     const code = req.query.code as string;
     if (!code) throw new AppError('Missing OAuth code', 400, 'OAUTH_ERROR');
 
@@ -361,6 +367,7 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
       worker.refreshTokenHash = await hashToken(refreshToken);
       worker.lastLoginAt = new Date();
       await worker.save();
+    notifyAdminLogin('contractor',String(worker._id));
       res.redirect(`${env.CLIENT_URL}/auth/callback?${new URLSearchParams({ access_token: accessToken, refresh_token: refreshToken, account_status: 'existing' })}`);
       return;
     }
@@ -377,11 +384,13 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
     }
 
     if (!user) {
+      if(req.query.state!=='signup:terms:2026-11-09'){res.redirect(env.CLIENT_URL+'/company/signup?terms=required');return;}
       user = await CompanyAuth.create({
         firstName,
         lastName,
         email:           data.email.toLowerCase(),
         passwordHash:    null,
+        termsAcceptedAt:new Date(),termsVersion:'2026-11-09',
         provider:        'google',
         googleId:        data.id,
         isEmailVerified: true,
@@ -400,6 +409,7 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
     const { accessToken, refreshToken } = buildTokenPair(user);
     user.refreshTokenHash = await hashToken(refreshToken);
     await user.save();
+    notifyAdminLogin('client',String(user._id));
 
     // Redirect to frontend with tokens
     const params = new URLSearchParams({

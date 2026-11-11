@@ -19,6 +19,7 @@ export interface ProjectTeamAccess extends ProjectTeamMember {
   taskSummary: { total: number; todo: number; inProgress: number; completed: number; };
 }
 export interface DeliveryProject {
+  invoiceBillingMonth?:string;
   agreedAmount?: number | null;
   teamDirectory?: { workerId: string; name: string; role: string; status: string; isSelf: boolean }[];
   talentRequestId?: string | null;

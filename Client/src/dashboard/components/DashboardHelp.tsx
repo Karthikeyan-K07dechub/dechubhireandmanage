@@ -1,21 +1,53 @@
+import { contractorFaqs } from '../../contractor/contractorFaqs';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './dashboard-help.css';
 
 export const faqs = [
-  ['What is Dechub Bridge?', 'Dechub Bridge helps businesses find suitable talent and manage project delivery, onboarding, contracts, workers, and invoices through one platform.'],
-  ['What does "Get a resource in 60 minutes" mean?', 'Our goal is to connect you with a suitable professional in as little as 60 minutes. This refers to talent deployment; project completion follows the agreed scope and timeline. Availability and your requirements affect the deployment time.'],
-  ['Do you offer a free trial?', 'Yes, Dechub Bridge offers a 10-day free trial. Contact our team to confirm eligibility, what is included, and the terms before starting.'],
-  ['How do I get started?', 'Book a demo and share your requirements, or sign in and select Projects > Create project. Include your project details, required skills, and expected start and end dates so our team can identify suitable candidates.'],
-  ['How does Dechub Bridge select suitable talent?', 'Our approach combines AI-assisted matching with human review. The Dechub team reviews your requirements and shares shortlisted profiles for you to evaluate.'],
-  ['Can I choose who works on my project?', 'Yes. In Hiring > Manage Requests, review each shortlisted profile, select Accept or Reject, and submit your decisions. You can accept multiple candidates for your project.'],
-  ['What happens after I select candidates?', 'The Dechub team reviews your selections and prepares the project contract. You can review the scope, deliverables, budget, and payment terms in Contracts before accepting and starting delivery.'],
-  ['How much does hiring through Dechub Bridge cost?', 'Pricing depends on your requirements, selected talent, scope, and engagement duration. The agreed project budget and payment terms are provided for your review before you accept the contract.'],
-  ['How do I manage workers and track project progress?', 'Use Projects to view your delivery team, assign tasks, and track task status. The Workers section shows assignments across projects, including project dates and status. Notifications highlight updates and actions requiring your attention.'],
-  ['Where can I manage invoices and payment details?', 'Use Invoices to review submitted invoices and approve or dispute them. Visit Payroll to access payment-related information and add payment details.'],
+  [
+    "How do I create a project?",
+    "Open Projects > Create project, enter your requirements, and submit the request for Dechub review."
+  ],
+  [
+    "Where can I review suggested contractors?",
+    "Go to Hiring > Manage Requests to review shortlisted profiles and submit your selections."
+  ],
+  [
+    "How do I accept a project contract?",
+    "Open Contracts, review the scope, budget, dates, and payment terms, then accept the agreement."
+  ],
+  [
+    "How do I assign tasks to a contractor?",
+    "Open the project, find the assigned contractor, and add a task with instructions and an optional attachment."
+  ],
+  [
+    "How can I contact a contractor?",
+    "Click Message beside their project assignment, or open a task conversation to share messages, files, and links."
+  ],
+  [
+    "How do I know when work is ready for review?",
+    "The task shows Submitted - awaiting your review. Blue dots and the Projects count highlight unread messages and pending reviews."
+  ],
+  [
+    "How do I approve work or request changes?",
+    "Open Review submission, check the submitted work, then select Approve completion or Request changes."
+  ],
+  [
+    "How do I mark the whole project completed?",
+    "After approving all assigned tasks, select Close and complete project and confirm Yes. You can assign more tasks until the project is closed."
+  ],
+  [
+    "Where do I download invoices and submit payment proof?",
+    "Download invoices from Invoices. After paying through the agreed method, upload your receipt and transaction reference in Payroll for admin verification."
+  ],
+  [
+    "Where can I update company details and IT management preferences?",
+    "Open Settings > Company profile to update your details, logo, and whether your company has IT management."
+  ]
 ];
 
-export default function DashboardHelp() {
+export default function DashboardHelp({audience='client'}:{audience?:'client'|'contractor'}) {
+  const helpFaqs=audience==='contractor'?contractorFaqs:faqs;
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -30,8 +62,8 @@ export default function DashboardHelp() {
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', escape); };
   }, [open]);
   return <>
-    <button ref={trigger} type="button" className="db-icon-btn" aria-label="Help and FAQs" aria-haspopup="dialog" onClick={() => setOpen(true)}>?</button>
-    {open && createPortal(<div className="db-help-overlay" onClick={close}>
+    <button ref={trigger} type="button" className={audience==='contractor'?'cd-help-trigger':'db-icon-btn'} aria-label="Help and FAQs" aria-haspopup="dialog" onClick={() => setOpen(true)}>?</button>
+    {open && createPortal(<div className={'db-help-overlay'+(audience==='contractor'?' cd-help-overlay':'')} onClick={close}>
       <section className="db-help-dialog" role="dialog" aria-modal="true" aria-labelledby="db-help-title" onClick={event => event.stopPropagation()} onKeyDown={event => {
         if (event.key !== 'Tab') return;
         const controls = event.currentTarget.querySelectorAll<HTMLElement>('button, summary, a[href]');
@@ -39,9 +71,9 @@ export default function DashboardHelp() {
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }}>
-        <header className="db-help-header"><div><h2 id="db-help-title">How can we help?</h2><p>Common questions about Dechub Bridge</p></div><button ref={closeButton} type="button" className="db-btn-secondary" aria-label="Close help" onClick={close}>X</button></header>
+        <header className="db-help-header"><div><h2 id="db-help-title">How can we help?</h2><p>{audience==='contractor'?'Help with your Bridge contractor dashboard':'Help with your Bridge client dashboard'}</p></div><button ref={closeButton} type="button" className="db-btn-secondary" aria-label="Close help" onClick={close}>X</button></header>
         <div className="db-help-content">
-          <div className="db-help-faqs">{faqs.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div>
+          <div className="db-help-faqs">{helpFaqs.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div>
           <section className="db-help-contact" aria-labelledby="db-help-contact-title"><h3 id="db-help-contact-title">Need more help?</h3><p>Email our team with your question or project details.</p><div><a className="db-btn-primary" href="mailto:prasanna@dechub.in">prasanna@dechub.in</a><a className="db-btn-primary" href="mailto:dechubai@gmail.com">dechubai@gmail.com</a></div></section>
         </div>
       </section>

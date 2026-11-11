@@ -1,3 +1,6 @@
+import {contractorBillingPeriod} from '../services/contractorMonthlyInvoices.service';
+import {ensureContractorMonthlyIndexes} from '../models/Invoice';
+import {notifyAdminLogin,notifyAdminProfileCompletion} from '../services/adminActivityEmail.service';
 import { ProjectTask } from '../models/ProjectTask';
 import { marketplaceProfileCompletion, isMarketplaceEligible } from '../services/marketplaceEligibility.service';
 import { uploadVerificationFile, removeVerificationFile, validateVerificationFile, type VerificationFile } from '../services/verificationStorage.service';
@@ -327,6 +330,7 @@ async function ensureContractForWorker(worker: Awaited<ReturnType<typeof getWork
 
   worker.contractId = contract._id;
   await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
   return contract;
 }
@@ -398,6 +402,8 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
       worker.refreshTokenHash = await hashToken(refreshToken);
       worker.lastLoginAt = new Date();
       await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
+    notifyAdminLogin('contractor',String(worker._id));
     }
 
     ok(res, {
@@ -453,6 +459,7 @@ export async function setPassword(req: Request, res: Response, next: NextFunctio
     worker.status      = 'kyc_pending';
     worker.inviteToken = null;  // consume token
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
     // Issue contractor JWT
     const accessToken = signAccessToken({
@@ -466,6 +473,8 @@ export async function setPassword(req: Request, res: Response, next: NextFunctio
     worker.refreshTokenHash = await hashToken(refreshToken);
     worker.lastLoginAt = new Date();
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
+    notifyAdminLogin('contractor',String(worker._id));
 
     logger.info(`Contractor account created: ${worker.email}`);
     ok(res, { accessToken, refreshToken });
@@ -558,6 +567,8 @@ export async function selfSignup(req: Request, res: Response, next: NextFunction
     worker.refreshTokenHash = await hashToken(refreshToken);
     worker.lastLoginAt = new Date();
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
+    notifyAdminLogin('contractor',String(worker._id));
 
     created(res, {
       accessToken,
@@ -668,6 +679,7 @@ export async function savePersonalDetails(req: Request, res: Response, next: Nex
     worker.contractorProfile = profile;
     worker.country = data.country;
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
     ok(res, { message: 'Personal details saved' });
   } catch (err) { next(err); }
@@ -697,7 +709,8 @@ export async function uploadKyc(req: Request, res: Response, next: NextFunction)
 
     worker.kycData = kycData;
     worker.kycStatus = 'pending';  // KYC team reviews within 24h
-    await worker.save(); committed = true;
+    await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id)); committed = true;
 
     // In production: trigger Stripe Identity or manual review notification here
 
@@ -725,6 +738,7 @@ export async function saveBankDetails(req: Request, res: Response, next: NextFun
 
     worker.paymentDetails = data;
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
     // If Wise: could trigger Wise account link here in production
     ok(res, { message: 'Payment details saved' });
@@ -784,6 +798,7 @@ export async function updateSkills(req: Request, res: Response, next: NextFuncti
     };
 
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
     ok(res, { skills: cleanedSkills, message: 'Skills updated successfully' });
   } catch (err) { next(err); }
@@ -856,6 +871,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
     };
 
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
     const company = await Company.findById(worker.companyId).lean();
     const marketplaceProfile = getMarketplaceProfile(worker);
@@ -954,6 +970,7 @@ export async function signMyContract(req: Request, res: Response, next: NextFunc
     worker.status = updatedContract.status === 'active' ? 'active' : 'inactive';
     worker.inviteToken = null;
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
     if (updatedContract.status === 'worker_signed') {
       await ContractorNotification.create({
@@ -989,6 +1006,7 @@ export async function rejectMyContract(req: Request, res: Response, next: NextFu
     worker.status = 'inactive';
     worker.inviteToken = null;
     await worker.save();
+    notifyAdminProfileCompletion('contractor',String(worker._id));
 
     ok(res, contract);
   } catch (err) { next(err); }
@@ -1148,11 +1166,10 @@ export async function markNotificationRead(req: Request, res: Response, next: Ne
 const submitInvoiceSchema = z.object({
   projectId: z.string().regex(/^[a-f\d]{24}$/i),
   projectName: z.string().trim().min(1).max(180).optional(),
-  periodStart:  z.string().min(1),
-  periodEnd:    z.string().min(1),
-  amountGross:  z.number().positive(),
-  description:  z.string().min(1),
-  hoursWorked:  z.number().optional(),
+  billingMonth:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  amountGross:z.number().finite().positive().max(100000000).refine(value=>Math.abs(value*100-Math.round(value*100))<0.00001,'Use at most two decimal places.'),
+  description:z.string().trim().min(1).max(5000),
+  hoursWorked:z.number().finite().positive().max(744).optional(),
 });
 
 export async function submitInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -1166,41 +1183,23 @@ export async function submitInvoice(req: Request, res: Response, next: NextFunct
       throw new AppError('Your account has been terminated. Contact Dechub before submitting invoices.', 403, 'ACCOUNT_TERMINATED');
     }
 
-    const project = await Project.findOne({ _id: data.projectId, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, 'contractorAcceptances.workerId': worker._id, 'deliveryCompletions.workerId': worker._id, status: { $in: ['active', 'payment_submitted', 'completed'] } });
-    if (!project) throw new AppError('Wait until the client approves completion of your assigned tasks before submitting an invoice.', 403, 'CLIENT_APPROVAL_REQUIRED');
-    const tasks = await ProjectTask.find({projectId:project._id,assigneeWorkerIds:worker._id}).select('status');
-    if (!tasks.length || tasks.some(task => task.status !== 'completed')) throw new AppError('Wait until the client approves completion of all your assigned tasks before submitting an invoice.',403,'CLIENT_APPROVAL_REQUIRED');
-    const contract = await Contract.findOne({ workerId: worker._id, companyId: project.companyId, status: 'active' });
-
-    // Check for duplicate invoice for same period
-    const existing = await Invoice.findOne({
-      workerId:    worker._id,
-      projectId: project._id,
-      periodStart: new Date(data.periodStart),
-      status:      { $ne: 'disputed' },
-    });
-    if (existing) {
-      throw new AppError('An invoice for this period already exists', 409, 'DUPLICATE_INVOICE');
+    const period=contractorBillingPeriod(data.billingMonth);
+    const project=await Project.findOne({_id:data.projectId,'teamMembers.workerId':worker._id,clientAcceptedAt:{$ne:null},'contractorAcceptances.workerId':worker._id,status:{$in:['active','payment_submitted','completed']}});
+    if(!project)throw new AppError('Accept the project contract before submitting a monthly invoice.',403,'PROJECT_ACCEPTANCE_REQUIRED');
+    const approved=await ProjectTask.exists({projectId:project._id,assigneeWorkerIds:worker._id,status:'completed',completedAt:{$gte:period.start,$lt:period.endExclusive}});
+    if(!approved)throw new AppError('No client-approved work is available for this billing month.',403,'CLIENT_APPROVAL_REQUIRED');
+    const contract=await Contract.findOne({workerId:worker._id,companyId:project.companyId,status:'active'});
+    await ensureContractorMonthlyIndexes();
+    const existing=await Invoice.findOne({workerId:worker._id,projectId:project._id,$or:[{billingMonth:data.billingMonth},{billingMonth:{$exists:false},periodStart:{$gte:period.start,$lt:period.endExclusive}}]}).sort({createdAt:-1});
+    const values={companyId:project.companyId,workerId:worker._id,contractId:contract?._id??null,projectId:project._id,workerName:worker.firstName+' '+worker.lastName,workerRole:worker.roleTitle,billingMonth:data.billingMonth,periodStart:period.start,periodEnd:period.end,amountGross:data.amountGross,currency:project.currency,description:data.description,projectName:project.title,hoursWorked:data.hoursWorked??null,status:'pending_admin' as const,submittedAt:new Date(),adminReviewStatus:'pending' as const,adminReviewReason:null,adminReviewedAt:null,disputeReason:null,approvedAt:null,approvedBy:null,adminEmailSentAt:null,adminEmailError:null};
+    let invoice;
+    if(existing){
+     if(existing.status!=='disputed'||existing.clientSentAt||existing.contractorPaymentProofSentAt)throw new AppError('An invoice already exists for this project and billing month.',409,'DUPLICATE_INVOICE');
+     invoice=await Invoice.findOneAndUpdate({_id:existing._id,status:'disputed',clientSentAt:null,contractorPaymentProofSentAt:null},{$set:values,$push:{submissionHistory:{at:new Date(),action:'resubmitted',note:'Corrected monthly invoice submitted for admin review.'}}},{new:true,runValidators:true});
+     if(!invoice)throw new AppError('Invoice changed. Refresh before resubmitting.',409,'INVOICE_CONFLICT');
+    }else{
+     try{invoice=await Invoice.create({...values,submissionHistory:[{at:new Date(),action:'submitted',note:'Monthly contractor invoice submitted.'}]});}catch(error){if((error as {code?:number}).code===11000)throw new AppError('An invoice already exists for this project and billing month.',409,'DUPLICATE_INVOICE');throw error;}
     }
-
-    const invoice = await Invoice.create({
-      companyId:   project.companyId,
-      workerId:    worker._id,
-      contractId:  contract?._id ?? null,
-      projectId: project._id,
-      workerName:  `${worker.firstName} ${worker.lastName}`,
-      workerRole:  worker.roleTitle,
-      periodStart: new Date(data.periodStart),
-      periodEnd:   new Date(data.periodEnd),
-      amountGross: data.amountGross,
-      currency:    worker.payCurrency,
-      description: data.description,
-      projectName: project.title,
-      hoursWorked: data.hoursWorked ?? null,
-      status:      'pending_admin',
-      submittedAt: new Date(),
-    });
-
     logger.info(`Invoice submitted: ${invoice._id} by worker ${worker._id}`);
     void notifyInvoiceAdmin(invoice).catch(error => logger.error('Invoice admin email failed', error));
     created(res, invoice);
@@ -1215,6 +1214,15 @@ export async function getMyInvoices(req: Request, res: Response, next: NextFunct
     const invoices = await Invoice.find({ workerId: worker._id })
       .sort({ submittedAt: -1 })
       .lean();
-    ok(res, invoices.map(({ serviceCharge, clientTotal, adminReviewedBy, adminEmailSentAt, adminEmailError, clientEmailSentAt, clientEmailError, clientDocument, ...invoice }) => invoice));
+    ok(res, invoices.map(({ serviceCharge, clientTotal, adminReviewedBy, adminEmailSentAt, adminEmailError, clientEmailSentAt, clientEmailError, clientDocument, ...invoice }) => ({...invoice,status:invoice.contractorPaymentProofSentAt?'paid':invoice.adminReviewStatus==='approved'?'approved':invoice.status,paidAt:invoice.contractorPaymentProofSentAt||invoice.paidAt}))); 
   } catch (err) { next(err); }
-}
+}export async function getMonthlyInvoiceEligibility(req:Request,res:Response,next:NextFunction){try{
+ const worker=await getWorkerFromReq(req);if(worker.status==='terminated')throw Errors.Forbidden();
+ const billingMonth=z.string().parse(req.query.month);const period=contractorBillingPeriod(billingMonth);
+ const projects=await Project.find({'teamMembers.workerId':worker._id,clientAcceptedAt:{$ne:null},'contractorAcceptances.workerId':worker._id,status:{$in:['active','payment_submitted','completed']}}).select('_id');
+ const tasks=await ProjectTask.find({projectId:{$in:projects.map(p=>p._id)},assigneeWorkerIds:worker._id,status:'completed',completedAt:{$gte:period.start,$lt:period.endExclusive}}).select('projectId');
+ const counts=new Map<string,number>();tasks.forEach(task=>counts.set(String(task.projectId),(counts.get(String(task.projectId))||0)+1));
+ ok(res,projects.map(project=>({projectId:String(project._id),approvedTasks:counts.get(String(project._id))||0})));
+}catch(error){next(error);}}
+
+

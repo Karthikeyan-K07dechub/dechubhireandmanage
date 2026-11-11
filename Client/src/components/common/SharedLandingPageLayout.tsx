@@ -1,5 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import LandingTalentRequestModal from './LandingTalentRequestModal';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import '../../landing_deel/landing.css';
 import '../../landing_deel/overrides.css';
 import Header from '../../landing_deel/components/Header.jsx';
@@ -146,8 +145,6 @@ interface SharedLandingPageLayoutProps {
 
 export default function SharedLandingPageLayout({ children }: SharedLandingPageLayoutProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [isTalentRequestModalOpen, setIsTalentRequestModalOpen] = useState(false);
-  const [requestedServices, setRequestedServices] = useState<string[]>([]);
 
   useEffect(() => {
     const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -179,12 +176,8 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
   }, []);
 
   const openTalentRequestModal = (services?: string[]) => {
-    setRequestedServices(
-      Array.isArray(services)
-        ? services.filter((item): item is string => typeof item === 'string')
-        : [],
-    );
-    setIsTalentRequestModalOpen(true);
+    if(Array.isArray(services))sessionStorage.setItem('dechub_hero_requested_services',JSON.stringify(services));
+    window.history.pushState({},'','/book-demo');window.dispatchEvent(new PopStateEvent('popstate'));window.scrollTo(0,0);
   };
 
   useEffect(() => {
@@ -351,18 +344,6 @@ export default function SharedLandingPageLayout({ children }: SharedLandingPageL
           <Footer />
         </div>
       </div>
-      <LandingTalentRequestModal
-        isOpen={isTalentRequestModalOpen}
-        onClose={() => {
-          setIsTalentRequestModalOpen(false);
-          setRequestedServices([]);
-        }}
-        requestedServices={requestedServices}
-        onSuccess={() => {
-          setRequestedServices([]);
-          window.dispatchEvent(new Event('dechub:talent-request-submitted'));
-        }}
-      />
     </div>
   );
 }

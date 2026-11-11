@@ -86,7 +86,7 @@ svg {
   .cd-page > div:first-child { flex-wrap: wrap; gap: 16px; }
   .cd-page > div:first-child > div { min-width: 0; }
   .cd-user { min-width: 0; }
-  .cd-user > div:first-child { max-width: 180px; overflow: hidden; }
+  .cd-user > div:first-of-type { max-width: 180px; overflow: hidden; }
   .cd-user-name, .cd-user-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .atd-header-meta, .atd-header-meta-shortlist { grid-template-columns: minmax(0, 1fr); }
   .atd-header-card { min-width: 0; overflow-wrap: anywhere; }
@@ -126,7 +126,7 @@ svg {
   .db-contract-header-actions { width: 100%; align-items: flex-start; }
   .db-contract-header-actions > button { max-width: 100%; }
   .cd-topbar { padding: 12px 16px; }
-  .cd-user > div:first-child { max-width: 140px; }
+  .cd-user > div:first-of-type { max-width: 140px; }
   .cd-setup-banner { padding: 20px !important; }
   .cd-setup-banner h2 { font-size: 24px !important; line-height: 1.25 !important; }
   .ctp-task { padding: 14px; }
@@ -340,6 +340,6 @@ svg {
   .db-shell .db-pending-link { margin-left: 0; }
   .db-shell .db-home-invoice-card .db-action-item { grid-template-columns: minmax(0, 1fr); }
   .db-shell .db-home-invoice-card .db-action-item > :last-child { justify-self: start; }
-  .cd-topbar .cd-user > div:first-child { max-width: 120px; }
+  .cd-topbar .cd-user > div:first-of-type { max-width: 120px; }
   .task-chat footer button { flex: 1 1 130px; }
 }

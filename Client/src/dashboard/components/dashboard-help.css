@@ -16,3 +16,22 @@
 .db-help-contact a { text-decoration: none; overflow-wrap: anywhere; }
 .db-help-dialog :focus-visible { outline: 2px solid #6d42d8; outline-offset: 3px; }
 @media(max-width: 600px) { .db-help-overlay { padding: 12px; } .db-help-dialog { max-height: calc(100dvh - 24px); } .db-help-header, .db-help-content { padding: 18px; } }
+.cd-help-trigger {
+  position:fixed;right:24px;bottom:24px;z-index:1100;
+  display:grid;place-items:center;width:50px;height:50px;flex-shrink:0;
+  padding:0;border:1px solid #2563eb;border-radius:50%;background:#2563eb;
+  color:#fff;font:inherit;font-size:24px;font-weight:600;cursor:pointer;
+  box-shadow:0 6px 20px rgba(37,99,235,.25);
+}
+.cd-help-trigger:hover { background:#1d4ed8;border-color:#1d4ed8; }
+.cd-help-trigger:focus-visible { outline:2px solid #2563eb;outline-offset:3px; }
+@media(max-width:600px) {
+  .cd-help-trigger { right:16px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));width:46px;height:46px; }
+  .cd-shell { padding-bottom:76px; }
+}
+.cd-help-overlay .db-help-header > button,
+.cd-help-overlay .db-help-contact a {
+  display:inline-flex;align-items:center;justify-content:center;padding:9px 13px;
+  border:1px solid #dbe4ef;border-radius:8px;background:#fff;color:#1e3a8a;
+  font:inherit;font-size:13px;text-decoration:none;cursor:pointer;
+}

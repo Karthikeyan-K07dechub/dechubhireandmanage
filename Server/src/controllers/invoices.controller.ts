@@ -1,3 +1,5 @@
+import {MonthlyInvoice} from '../models/MonthlyInvoice';
+import {downloadInvoiceDocument} from '../services/invoiceStorage.service';
 import { Project } from '../models/Project';
 import { Company } from '../models/Company';
 import { invoiceView } from '../services/invoiceStorage.service';
@@ -22,13 +24,19 @@ export async function listInvoices(req: Request, res: Response, next: NextFuncti
     const companyId = await companyIdFor(req);
     const company = await Company.findById(companyId).select('companyName');
     const items = await Invoice.find({ companyId, ...clientVisibleInvoiceFilter }).sort({ createdAt: -1 }).lean();
-    const paidProjects = await Project.find({ companyId, _id: { $in: items.map(item => item.projectId).filter(Boolean) }, paymentVerifiedAt: { $ne: null }, status: 'completed' }).select('_id paymentVerifiedAt').lean();
-    const paidByProject = new Map(paidProjects.map(project => [String(project._id), project.paymentVerifiedAt]));
-    ok(res, items.map(item => {
-      const projectPaidAt = item.projectId ? paidByProject.get(String(item.projectId)) : null;
+    const paidProjects = await Project.find({ companyId, _id: { $in: items.map(item => item.projectId).filter(Boolean) },  }).select('_id paymentVerifiedAt paymentSubmittedAt paymentReference paymentMode').lean();
+    const paidByProject = new Map(paidProjects.map(project => [String(project._id), project]));
+    const monthly=await MonthlyInvoice.find({companyId,sentAt:{$ne:null}}).sort({createdAt:-1}).lean();
+    const legacy=items.map(item => {
+      const paymentProject = item.projectId ? paidByProject.get(String(item.projectId)) : null;
+      const projectPaidAt = paymentProject?.paymentVerifiedAt;
+      const paymentStatus = projectPaidAt ? 'paid' : paymentProject?.paymentSubmittedAt ? 'verification_pending' : !item.projectId && item.status === 'paid' ? 'paid' : 'unpaid';
       return { ...invoiceView(item), companyName: company?.companyName || '', contractorAmount: item.amountGross, amountGross: item.clientTotal ?? item.amountGross,
-        status: projectPaidAt ? 'paid' : item.status, paidAt: projectPaidAt || item.paidAt };
-    }));
+        paymentStatus, paymentReference: paymentProject?.paymentReference || null, paymentMode: paymentProject?.paymentMode || null, paymentSubmittedAt: paymentProject?.paymentSubmittedAt || null,
+        status: projectPaidAt ? 'paid' : item.status, paidAt: projectPaidAt || (!item.projectId ? item.paidAt : null) };
+    });
+    const monthlyItems=monthly.map(item=>{const [year,month]=item.billingMonth.split('-').map(Number);return {_id:item._id,sourceType:'monthly',monthlyStatus:item.status,billingMonth:item.billingMonth,invoiceNumber:item.invoiceNumber,companyName:item.companyName,projectId:item.projectId,projectName:item.projectName,description:item.message,workerName:'',workerRole:'',amountGross:item.amount,currency:item.currency,serviceCharge:0,periodStart:new Date(Date.UTC(year,month-1,1)),periodEnd:new Date(Date.UTC(year,month,0)),submittedAt:item.sentAt,clientSentAt:item.sentAt,dueDate:item.dueDate,paidAt:item.paidAt,paymentReference:item.paymentReference,paymentStatus:item.status==='paid'?'paid':'unpaid',status:item.status==='paid'?'paid':'approved',documentName:item.document?.fileName||null};});
+    ok(res,[...monthlyItems,...legacy]);
   } catch (error) { next(error); }
 }
 
@@ -64,6 +72,8 @@ export async function disputeInvoice(req: Request, res: Response, next: NextFunc
 export async function downloadCompanyInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const companyId = await companyIdFor(req);
+    const monthly=await MonthlyInvoice.findOne({_id:req.params.id,companyId,sentAt:{$ne:null}});
+    if(monthly?.document){res.setHeader('Content-Type',monthly.document.mimeType||'application/pdf');res.setHeader('Content-Disposition','attachment; filename="'+monthly.document.fileName+'"');res.setHeader('Cache-Control','no-store');res.send(await downloadInvoiceDocument(monthly.document));return;}
     const invoice = await Invoice.findOne({ _id: req.params.id, companyId, ...clientVisibleInvoiceFilter });
     if (!invoice) throw Errors.NotFound('Invoice');
     res.setHeader('Content-Type', invoice.clientDocument?.mimeType || 'application/pdf'); res.setHeader('Content-Disposition', 'attachment; filename="' + (invoice.clientDocument?.fileName || invoice.invoiceNumber + '.pdf') + '"'); res.setHeader('Cache-Control', 'no-store');

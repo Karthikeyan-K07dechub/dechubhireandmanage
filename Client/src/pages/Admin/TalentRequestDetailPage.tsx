@@ -1,7 +1,7 @@
+import AdminInvoiceReview from './AdminInvoiceReview';
 import AdminContractorVerification from './AdminContractorVerification';
 import AdminPaymentProof from './AdminPaymentProof';
 import AdminProjectDocuments from './AdminProjectDocuments';
-import AdminInvoiceReview from './AdminInvoiceReview';
 import { useEffect, useMemo, useState } from 'react';
 import {
   getTalentRequest,
@@ -396,7 +396,7 @@ export default function TalentRequestDetailPage({
       done: request.deliveryProject?.status === 'completed',
       meta: request.deliveryProject?.completedAt ? formatDate(request.deliveryProject.completedAt) : request.deliveryProject ? 'In progress' : 'Not started yet',
     }, {
-      label: 'Invoice', description: 'Review contractor invoices and upload the final PDF for the client.', done: false, meta: '',
+      label: 'Invoice', description: 'Client invoices are managed from Invoices on the admin home page.', done: false, meta: '',
     }, {
       label: 'Payment status',
       description: request.deliveryProject?.paymentVerifiedAt ? 'Admin confirmed payment.' : request.deliveryProject?.completedAt ? 'Delivery is complete. Confirm whether payment is done.' : request.deliveryProject ? 'Payment status unlocks after all assigned contractors complete delivery. ' + request.deliveryProject.workers.filter(worker => worker.completedAt).length + ' of ' + request.deliveryProject.workers.length + ' contractors completed.' : 'Create the project and complete delivery before updating payment status.',
@@ -442,7 +442,7 @@ export default function TalentRequestDetailPage({
             title={request.companyId ? 'Build the delivery team and project contract.' : 'The client must sign up with this request email first.'}
             style={!request.companyId ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           >
-            {request.companyId ? 'Build delivery project' : 'Build delivery project - client signup required'}
+            {request.companyId ? 'Send contract' : 'Send contract - client signup required'}
           </button>
         ) : null}
         {!loading && request ? (
@@ -728,7 +728,7 @@ export default function TalentRequestDetailPage({
                                 </div>
                                 <p>{step.description}</p>
                                 {step.label === 'Contract approvals' && <div><p style={{ color: request.deliveryProject?.clientAcceptedAt ? '#4ade80' : '#f87171' }}>Contract approved by client</p>{request.deliveryProject?.workers.map(worker => <p key={worker.workerId} style={{ color: worker.acceptedAt ? '#4ade80' : '#f87171' }}>Contractor: {request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role}</p>)}</div>}
-                                {step.label === 'Invoice' && request.deliveryProject && <><AdminInvoiceReview projectId={request.deliveryProject._id} /></>}
+                                {step.label === 'Invoice' && <><p>Manage client invoices in <a href="/admin/talent-requests?invoices=all">Invoices</a> on the admin home page.</p>{request.deliveryProject&&<AdminInvoiceReview projectId={request.deliveryProject._id} reviewOnly/>}</>}
                                 {step.label === 'Payment status' && <div className="atd-payment-status-actions">{request.deliveryProject && <AdminPaymentProof projectId={request.deliveryProject._id} />}{!request.deliveryProject?.completedAt && <p className="atd-payment-blocked">Waiting for project completion. {request.deliveryProject?.workers.filter(worker => !worker.completedAt).map(worker => request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role).join(', ')}</p>}<button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={Boolean(request.deliveryProject?.paymentVerifiedAt)} onClick={() => void setPaymentStatus(true)}>Done</button><button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={!request.deliveryProject?.paymentVerifiedAt} onClick={() => void setPaymentStatus(false)}>Not done</button>{savingAction === 'payment' && <span role="status">Saving...</span>}</div>}
                                 {step.label === 'Project status' && request.deliveryProject && <div className="atd-project-worker-status">{request.deliveryProject.workers.map(worker => <p key={worker.workerId} className={worker.completedAt ? 'completed' : ''}>{request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role}: {worker.completedAt ? 'Completed - invoice eligible' : 'In progress'}</p>)}</div>}
                                 {step.label === 'Candidate selected' && (

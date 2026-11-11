@@ -1,3 +1,4 @@
+import ClientSignupTerms,{CLIENT_TERMS_VERSION} from '../components/ClientSignupTerms';
 import { useEffect, useMemo, useState } from 'react';
 import './company-auth.css';
 import { login, redirectToGoogle, register, type AuthResult } from '../api/auth.api';
@@ -73,6 +74,7 @@ export default function CompanyAuthPage({
   onGoogleStart,
 }: CompanyAuthPageProps) {
   const isSignupMode = mode === 'signup';
+  const [termsAccepted,setTermsAccepted]=useState(false);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -151,6 +153,7 @@ export default function CompanyAuthPage({
       nextErrors.password = 'Password must be at least 8 characters';
     }
 
+    if(isSignupMode&&!termsAccepted)nextErrors.termsAccepted='Please read and accept the client terms and conditions.';
     return nextErrors;
   };
 
@@ -259,6 +262,7 @@ export default function CompanyAuthPage({
           lastName: form.lastName.trim(),
           phone: form.phone.trim(),
           workEmail: form.email.toLowerCase(),
+          termsAccepted,termsVersion:CLIENT_TERMS_VERSION,
           password: form.password,
         });
       }
@@ -352,7 +356,7 @@ export default function CompanyAuthPage({
             <button
               type="button"
               className="cap-google"
-              onClick={onGoogleStart ?? (() => redirectToGoogle(mode))}
+              onClick={()=>{if(isSignupMode&&!termsAccepted){setFieldErrors(previous=>({...previous,termsAccepted:'Please read and accept the client terms and conditions.'}));document.getElementById('client-signup-terms-title')?.scrollIntoView({behavior:'smooth',block:'center'});return;}(onGoogleStart??(()=>redirectToGoogle(mode,isSignupMode&&termsAccepted)))();}}
               disabled={loading}
             >
               <span className="cap-google-icon" aria-hidden="true">
@@ -436,6 +440,7 @@ export default function CompanyAuthPage({
               {fieldErrors.password && <p>{fieldErrors.password}</p>}
             </div>
 
+            <div>{isSignupMode&&<ClientSignupTerms accepted={termsAccepted} onChange={value=>{setTermsAccepted(value);setFieldErrors(previous=>{const next={...previous};delete next.termsAccepted;return next;});}} error={fieldErrors.termsAccepted}/>}</div>
             <button className="cap-submit" onClick={handleSubmit} disabled={loading}>
               {loading ? 'Please wait...' : pageCopy.button}
             </button>

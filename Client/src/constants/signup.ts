@@ -3,6 +3,7 @@ import { FormData, Step, UploadedDocs } from '../types/signup';
 // ─── Initial form data — every FormData field must have a default ─────────────
 
 export const initialData: FormData = {
+  termsAccepted:false,
   // Step 1
   firstName:   '',
   lastName:    '',
@@ -24,6 +25,7 @@ export const initialData: FormData = {
   addressLine1:    '',
   addressCity:     '',
   addressZip:      '',
+  itManagement: '',
   referralSource:  '',
 
   // Step 5 — Billing

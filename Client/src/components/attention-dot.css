@@ -1,0 +1,4 @@
+.section-attention-dot{display:inline-block;flex-shrink:0;width:8px;height:8px;margin-inline-start:8px;border-radius:50%;background:#7c3aed;vertical-align:middle;box-shadow:0 0 0 3px #7c3aed12}
+.atr-root .section-attention-dot,.atd-root .section-attention-dot,.air-panel .section-attention-dot,.equipment-admin .section-attention-dot{background:#5eead4;box-shadow:0 0 0 3px #5eead414}
+.equipment-update-label{font-size:12px;font-weight:600;color:#6d28d9}.equipment-admin .equipment-update-label{color:#5eead4}
+.equipment-admin .equipment-card .section-attention-dot{background:#0f766e;box-shadow:0 0 0 3px #0f766e12}.equipment-admin .equipment-card .equipment-update-label{color:#0f766e}

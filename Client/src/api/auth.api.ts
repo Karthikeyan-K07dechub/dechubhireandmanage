@@ -13,6 +13,8 @@ export interface AuthResult {
 }
 
 export interface RegisterPayload {
+  termsAccepted?:boolean;
+  termsVersion?:string;
   firstName: string;
   lastName: string;
   workEmail: string;
@@ -41,6 +43,7 @@ export async function register(payload: RegisterPayload): Promise<AuthResult> {
     workEmail: payload.workEmail,
     password: payload.password,
     phone: payload.phone,
+    termsAccepted:payload.termsAccepted,termsVersion:payload.termsVersion,
   };
 
   try {
@@ -134,9 +137,9 @@ export async function checkEmailAvailability(email: string): Promise<boolean> {
   }
 }
 
-export function redirectToGoogle(intent: 'login' | 'signup' = 'signup'): void {
+export function redirectToGoogle(intent: 'login' | 'signup' = 'signup', termsAccepted=false): void {
   const base = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
-  window.location.href = `${base}/api/auth/google?intent=${intent}`;
+  window.location.href = `${base}/api/auth/google?intent=${intent}${termsAccepted?'&termsVersion=2026-11-09':''}`;
 }
 
 export function handleGoogleCallback(): { signupStep: number; accountStatus: 'existing' | 'new'; role: 'company' | 'contractor' } | null {
