@@ -11,6 +11,7 @@ export type DashboardPage =
   | 'home'
   | 'marketplace'
   | 'projects'
+  | 'it-access'
   | 'workers'
   | 'hiring'
   | 'contracts'
@@ -208,7 +209,7 @@ export const DECHUB_SERVICES: ServiceConfig[] = [
   {
     id:        'contracts_compliance',
     name:      'Contracts & Compliance',
-    desc:      'Create and store worker contracts, manage required documents, and maintain compliance records.',
+    desc:      'Create and store talent contracts, manage required documents, and maintain compliance records.',
     icon:      '📄',
     required:  false,
     defaultOn: true,

@@ -1,3 +1,5 @@
+import {clientWorkUpdates,reviewWorkUpdateFile,reviewClientWorkUpdate,workUpdateProjects,readWorkUpdates} from '../controllers/workUpdateReview.controller';
+import {listITAccessChats,getITAccessChat,postITAccessChat,readITAccessChat} from '../controllers/itAccessChat.controller';
 import {equipmentDeliveryFile,readEquipmentDelivery,updateEquipmentDelivery,confirmEquipmentDelivery} from '../controllers/equipmentDelivery.controller';
 import {listCompanyEquipment,reviewEquipmentRequest} from '../controllers/equipmentRequests.controller';
 import { listTeamMessages, sendTeamMessage, downloadTeamAttachment } from '../controllers/projectTeamMessages.controller';
@@ -47,6 +49,10 @@ const router = Router();
 
 // All company routes require auth
 router.use(requireAuth);
+router.get('/it-access-requests',listITAccessChats);
+router.get('/it-access-requests/:requestId',getITAccessChat);
+router.post('/it-access-requests/:requestId/read',readITAccessChat);
+router.post('/it-access-requests/:requestId/messages',rateLimit({windowMs:60000,max:30}),postITAccessChat);
 router.get('/equipment-requests',listCompanyEquipment);
 router.get('/equipment-requests/:id/delivery-file',equipmentDeliveryFile('client'));
 router.post('/equipment-requests/:id/delivery-read',readEquipmentDelivery('client'));
@@ -66,6 +72,11 @@ router.post ('/billing/setup-intent', createSetupIntent);
 router.post ('/billing',        saveBilling);            // Step 5
 router.post ('/preferences',    savePreferences);        // Step 6
 router.get('/task-attention',companyTaskAttention);
+router.get('/work-updates/projects',workUpdateProjects(false));
+router.get('/projects/:id/work-updates',clientWorkUpdates);
+router.post('/projects/:id/work-updates/read',readWorkUpdates(false));
+router.post('/work-updates/:id/review',reviewClientWorkUpdate);
+router.get('/work-updates/:id/files/:fileId',reviewWorkUpdateFile(false));
 router.get  ('/projects', listCompanyProjects);
 router.post('/projects/:id/close', closeCompanyProject);
 router.post ('/project-requests', createCompanyProjectRequest);

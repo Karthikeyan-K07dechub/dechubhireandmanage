@@ -1,3 +1,6 @@
+import {listRequestTalentContracts,acceptRequestTalentContract} from '../controllers/requestTalentContract.controller';
+import {workUpdateOptions,listWorkUpdates,saveWorkUpdate,workUpdateFile} from '../controllers/workUpdates.controller';
+import {listITAccessChats,getITAccessChat,postITAccessChat} from '../controllers/itAccessChat.controller';
 import {getMonthlyInvoiceEligibility} from '../controllers/contractor.controller';
 import {equipmentDeliveryFile,readEquipmentDelivery,updateEquipmentDelivery,confirmEquipmentDelivery,respondEquipmentReturn} from '../controllers/equipmentDelivery.controller';
 import {createEquipmentRequest,listContractorEquipment} from '../controllers/equipmentRequests.controller';
@@ -30,7 +33,7 @@ import {
   getMe,
   listMyNotifications,
   markNotificationRead,
-  submitInvoice,
+
   getMyInvoices,
 } from '../controllers/contractor.controller';
 import { acceptWorkerProjectContract, listWorkerProjects, listWorkerProjectTasks, } from '../controllers/projects.controller';
@@ -65,6 +68,18 @@ router.post('/docusign/webhook', docusignWebhook);
 // ── Protected routes (contractor JWT required) ───────────────────────────────
 
 router.use(requireContractorAuth);
+router.get('/request-contracts',listRequestTalentContracts);
+router.post('/request-contracts/:id/accept',acceptRequestTalentContract);
+router.get('/work-updates/options',workUpdateOptions);
+router.get('/work-updates',listWorkUpdates);
+router.get('/work-updates/:id/files/:fileId',workUpdateFile);
+const workFiles=multer({storage:multer.memoryStorage(),limits:{fileSize:25*1024*1024,files:5,fields:1}}).array('files',5);
+const workUpload=(req:any,res:any,next:any)=>workFiles(req,res,(error:any)=>next(error?new TaskUploadError('Choose up to five files, 25 MB total.',422,'INVALID_WORK_FILES'):undefined));
+router.post('/work-updates',rateLimit({windowMs:60000,max:15}),workUpload,saveWorkUpdate);
+router.post('/work-updates/:id',rateLimit({windowMs:60000,max:15}),workUpload,saveWorkUpdate);
+router.get('/it-access-requests',listITAccessChats);
+router.get('/it-access-requests/:requestId',getITAccessChat);
+router.post('/it-access-requests/:requestId/messages',rateLimit({windowMs:60000,max:30}),postITAccessChat);
 router.get('/equipment-requests',listContractorEquipment);
 router.get('/equipment-requests/:id/delivery-file',equipmentDeliveryFile('contractor'));
 router.post('/equipment-requests/:id/delivery-read',readEquipmentDelivery('contractor'));
@@ -105,7 +120,7 @@ router.post('/invoices/:id/payment-proof/approve',approveContractorPayment);
 router.get('/invoices/:id/payment-proof',downloadContractorPaymentProof);
 router.get('/invoices/eligibility',getMonthlyInvoiceEligibility);
 router.get ('/invoices',       getMyInvoices);
-router.post('/invoices',       submitInvoice);
+router.post('/invoices', (_req,res)=>{res.status(403).json({success:false,message:'Talent invoice submission is disabled.',code:'INVOICE_SUBMISSION_DISABLED'});});
 
 const taskFileUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 2 } }).single('attachment');
 router.get('/project-tasks/:taskId/messages', listTaskMessages);

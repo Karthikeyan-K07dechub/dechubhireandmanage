@@ -11,7 +11,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/
 import { TalentRequest, type ITalentRequest, type TalentRequestStatus } from '../models/TalentRequest';
 import { Worker } from '../models/Worker';
 import { ok, Errors, AppError } from '../utils/response';
-import { sendEmail } from '../utils/email';
+import { queueEmail as sendEmail } from '../utils/email';
 
 const ADMIN_AVAILABILITY_LABELS: Record<string, string> = {
   available_now: 'Available now',
@@ -214,9 +214,10 @@ async function serializeTalentRequest(item: ITalentRequest) {
   );
 
   const deliveryProject = await Project.findOne({ talentRequestId: item._id, companyId: item.companyId }).sort({ createdAt: -1 }).lean();
+  const deliveryTalents=deliveryProject?await Worker.find({_id:{$in:deliveryProject.teamMembers.map(m=>m.workerId)}}).select('firstName lastName').lean():[];
   return {
     ...item.toObject(),
-    deliveryProject: deliveryProject ? { _id: deliveryProject._id, title: deliveryProject.title, status: deliveryProject.status, startDate: deliveryProject.startDate, endDate: deliveryProject.targetEndDate, completedAt: deliveryProject.deliveryCompletedAt, paymentVerifiedAt: deliveryProject.paymentVerifiedAt, clientAcceptedAt: deliveryProject.clientAcceptedAt, workers: deliveryProject.teamMembers.map(member => ({ workerId: member.workerId, role: member.role, acceptedAt: deliveryProject.contractorAcceptances?.find(entry => String(entry.workerId) === String(member.workerId))?.acceptedAt ?? null, completedAt: deliveryProject.deliveryCompletions?.find(entry => String(entry.workerId) === String(member.workerId))?.completedAt ?? null })) } : null,
+    deliveryProject: deliveryProject ? { deliveryMode:deliveryProject.deliveryMode, _id: deliveryProject._id, title: deliveryProject.title, status: deliveryProject.status, startDate: deliveryProject.startDate, endDate: deliveryProject.targetEndDate, completedAt: deliveryProject.deliveryCompletedAt, paymentVerifiedAt: deliveryProject.paymentVerifiedAt, clientAcceptedAt: deliveryProject.clientAcceptedAt, contractSentAt:deliveryProject.contractSentAt, workers: deliveryProject.teamMembers.map(member => ({ workerId: member.workerId, name: deliveryTalents.filter(w=>String(w._id)===String(member.workerId)).map(w=>[w.firstName,w.lastName].filter(Boolean).join(' '))[0]||'Assigned talent', role: member.role, contractSentAt:member.talentContract?.sentAt??(!deliveryProject.manualTalentContracts?deliveryProject.clientAcceptedAt:null), acceptedAt: deliveryProject.contractorAcceptances?.find(entry => String(entry.workerId) === String(member.workerId))?.acceptedAt ?? null, completedAt: deliveryProject.deliveryCompletions?.find(entry => String(entry.workerId) === String(member.workerId))?.completedAt ?? null })) } : null,
     ...await resolveCompanyRequestDetails(item),
     talentProfile: formatTalentProfile(worker),
     suggestedTalentProfile: suggestedWorker
@@ -693,14 +694,7 @@ export async function unreadCount(req: Request, res: Response, next: NextFunctio
 }
 
 export async function markAsRead(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const id = req.params.id;
-    const item = await TalentRequest.findById(id);
-    if (!item) throw Errors.NotFound('Talent request');
-    item.unread = false;
-    await item.save();
-    ok(res, { success: true });
-  } catch (err) { next(err); }
+ try{const data=z.object({updatedAt:z.string().datetime().optional()}).parse(req.body||{});const filter:any={_id:req.params.id};if(data.updatedAt)filter.updatedAt=new Date(data.updatedAt);const result=await TalentRequest.updateOne(filter,{$set:{unread:false}},{timestamps:false});ok(res,{success:true,read:result.matchedCount>0});}catch(error){next(error);}
 }
 
 export async function listMarketplaceCandidatesForAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {

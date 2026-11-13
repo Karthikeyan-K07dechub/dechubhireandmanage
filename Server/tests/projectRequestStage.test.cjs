@@ -1,0 +1,5 @@
+const assert=require('node:assert/strict');process.chdir(require('node:path').join(__dirname,'..'));
+const c=require('../dist/controllers/workers.controller');const {TalentRequest}=require('../dist/models/TalentRequest');
+const body={projectName:'Portal',projectType:'Web development',projectDescription:'Build a portal',expectedStartDate:'2030-01-01',expectedEndDate:'2030-02-01'};
+async function validate(data){let error;await c.createCompanyProjectRequest({body:data},{},e=>error=e);return error;}
+(async()=>{assert.ok((await validate(body)).issues.some(i=>i.path[0]==='projectStage'));assert.ok((await validate({...body,projectStage:'invalid'})).issues.some(i=>i.path[0]==='projectStage'));for(const stage of ['existing_project','new_project'])assert.equal(new TalentRequest({projectStage:stage}).projectStage,stage);console.log('PASS: project request requires a valid hiring stage; both choices retained by request model. No DB writes or emails.');process.exit(0)})().catch(e=>{console.error(e);process.exit(1)});

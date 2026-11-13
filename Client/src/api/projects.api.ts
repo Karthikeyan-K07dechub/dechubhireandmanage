@@ -19,6 +19,8 @@ export interface ProjectTeamAccess extends ProjectTeamMember {
   taskSummary: { total: number; todo: number; inProgress: number; completed: number; };
 }
 export interface DeliveryProject {
+  deliveryMode?:'client_managed'|'bridge_managed';
+  talentContractAvailable?:boolean;
   invoiceBillingMonth?:string;
   agreedAmount?: number | null;
   teamDirectory?: { workerId: string; name: string; role: string; status: string; isSelf: boolean }[];
@@ -65,6 +67,7 @@ export const getTeamMemberProjectTasks = (id: string) => contractorRequest<Deliv
 export const updateTeamMemberProjectTask = (id: string, payload: { status: ProjectTaskStatus; completionNote?: string }) => contractorRequest<DeliveryTask>(contractorApi.patch(`/project-tasks/${id}`, payload));
 
 export interface CreateDeliveryProjectPayload {
+  manualTalentContracts?:boolean;
   startDate?: string | null;
   targetEndDate?: string | null;
   talentRequestId: string;

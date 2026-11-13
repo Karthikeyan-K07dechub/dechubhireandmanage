@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<string, string> = {
   approved: 'Approved',
   alternative_suggested: 'Alternative suggested',
   rejected: 'Rejected',
-  hired: 'Worker invited',
+  hired: 'Talent invited',
   talent_hired: 'Talent hired',
 };
 
@@ -104,7 +104,7 @@ export default function MarketplaceTalentRequestsPage({
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
-                    <span style={statusPillStyle(item.status)}>{item.clientSelectionSubmittedAt ? 'Worker list updated' : item.status === 'shortlisted_sent' ? 'Review candidates' : STATUS_LABELS[item.status] ?? item.status}</span>
+                    <span style={statusPillStyle(item.status)}>{item.clientSelectionSubmittedAt ? 'Talent list updated' : item.status === 'shortlisted_sent' ? 'Review candidates' : STATUS_LABELS[item.status] ?? item.status}</span>
                     <span style={{ color: '#64748b', fontSize: 13 }}>
                       Submitted {new Date(item.createdAt).toLocaleString()}
                     </span>
@@ -168,7 +168,7 @@ export default function MarketplaceTalentRequestsPage({
                       || (item.status === 'hire_started' ? 'Your hiring setup is already in progress in the dashboard. Continue there to finish onboarding this candidate.' : '')
                       || (item.status === 'approved' ? 'This talent has been approved. You can continue to the dashboard hire flow.' : '')
                       || (item.status === 'rejected' ? 'This request was not approved. Please submit a new request if you want to explore a different fit.' : '')
-                      || (item.status === 'hired' ? 'The worker invite and agreement flow have been sent. Waiting for final signatures to complete the hire.' : '')
+                      || (item.status === 'hired' ? 'The talent invite and agreement flow have been sent. Waiting for final signatures to complete the hire.' : '')
                       || (item.status === 'talent_hired' ? 'The agreement is fully signed and this candidate is now hired.' : '')
                       || 'An alternative profile was suggested for review.'}
                   </div>

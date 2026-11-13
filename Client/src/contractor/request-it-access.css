@@ -19,3 +19,5 @@
 .it-access-dialog .it-access-error { color:#b91c1c; }
 .it-access-dialog .it-access-success { padding:16px;border-radius:10px;background:#f5f3ff;color:#5b21b6; }
 @media(max-width:520px) { .it-access-dialog { padding:18px; }.it-access-dialog footer button { flex:1; } }
+
+.it-access-chat-dialog{width:min(1000px,calc(100vw - 24px));padding:20px}.it-access-chat-dialog>header{margin-bottom:20px}.it-access-chat-dialog .ita-panel p{font-size:14px}.it-access-chat-dialog .ita-panel textarea{min-height:85px}

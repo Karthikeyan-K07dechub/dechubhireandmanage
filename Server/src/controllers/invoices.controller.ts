@@ -35,7 +35,21 @@ export async function listInvoices(req: Request, res: Response, next: NextFuncti
         paymentStatus, paymentReference: paymentProject?.paymentReference || null, paymentMode: paymentProject?.paymentMode || null, paymentSubmittedAt: paymentProject?.paymentSubmittedAt || null,
         status: projectPaidAt ? 'paid' : item.status, paidAt: projectPaidAt || (!item.projectId ? item.paidAt : null) };
     });
-    const monthlyItems=monthly.map(item=>{const [year,month]=item.billingMonth.split('-').map(Number);return {_id:item._id,sourceType:'monthly',stripeHostedInvoiceUrl:item.status==='sent'&&item.stripeStatus==='open'?item.stripeHostedInvoiceUrl:null,stripeStatus:item.stripeStatus,monthlyStatus:item.status,billingMonth:item.billingMonth,invoiceNumber:item.invoiceNumber,companyName:item.companyName,projectId:item.projectId,projectName:item.projectName,description:item.message,workerName:'',workerRole:'',amountGross:item.amount,currency:item.currency,serviceCharge:0,periodStart:new Date(Date.UTC(year,month-1,1)),periodEnd:new Date(Date.UTC(year,month,0)),submittedAt:item.sentAt,clientSentAt:item.sentAt,dueDate:item.dueDate,paidAt:item.paidAt,paymentReference:item.paymentReference,paymentStatus:item.status==='paid'?'paid':'unpaid',status:item.status==='paid'?'paid':'approved',documentName:item.document?.fileName||null};});
+    const monthlyItems=monthly.map(item=>{
+      const [year,month]=item.billingMonth.split('-').map(Number);
+      const amountPaid=item.stripeAmountPaid??(item.status==='paid'?item.amount:0);
+      const amountRemaining=item.stripeAmountRemaining??(item.status==='paid'?0:item.amount);
+      const paymentStatus=item.status==='paid'||item.stripeStatus==='paid'?'paid':amountPaid>0?'partially_paid':'unpaid';
+      return {
+        _id:item._id,sourceType:'monthly',stripeHostedInvoiceUrl:item.status==='sent'&&item.stripeStatus==='open'?item.stripeHostedInvoiceUrl:null,
+        stripeStatus:item.stripeStatus,stripeAmountPaid:amountPaid,stripeAmountRemaining:amountRemaining,monthlyStatus:item.status,billingMonth:item.billingMonth,
+        invoiceNumber:item.invoiceNumber,companyName:item.companyName,projectId:item.projectId,projectName:item.projectName,description:item.message,
+        workerName:'',workerRole:'',amountGross:item.amount,currency:item.currency,serviceCharge:0,
+        periodStart:new Date(Date.UTC(year,month-1,1)),periodEnd:new Date(Date.UTC(year,month,0)),submittedAt:item.sentAt,clientSentAt:item.sentAt,
+        dueDate:item.dueDate,paidAt:item.paidAt,paymentReference:item.paymentReference,paymentStatus,
+        status:item.status==='paid'?'paid':'approved',documentName:item.document?.fileName||null
+      };
+    });
     ok(res,[...monthlyItems,...legacy]);
   } catch (error) { next(error); }
 }

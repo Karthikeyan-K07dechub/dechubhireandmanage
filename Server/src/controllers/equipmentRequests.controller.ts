@@ -7,7 +7,7 @@ import {CompanyAuth} from '../models/CompanyAuth';
 import {Worker} from '../models/Worker';
 import {CompanyNotification} from '../models/CompanyNotification';
 import {ContractorNotification} from '../models/ContractorNotification';
-import {sendEmail} from '../utils/email';
+import {queueEmail} from '../services/emailQueue.service';
 import {escapeMessageHtml as esc} from '../services/messageAlerts.service';
 import {env} from '../config/env';
 import {AppError,Errors,ok,created} from '../utils/response';
@@ -33,8 +33,8 @@ async function emailAdmin(record:any){
  try{
   const recipients=[...new Set(env.DECHUB_ADMIN_EMAILS.split(',').map(v=>v.trim()).filter(Boolean))];
   if(!recipients.length)throw Error('No admin email configured');
-  await Promise.all(recipients.map(to=>sendEmail(to,subject+': '+record.projectName,html)));
-  await EquipmentRequest.updateOne({_id:record._id,status:record.status},{$set:{adminEmailStatus:'sent',adminEmailSentAt:new Date()}});return true;
+  await EquipmentRequest.updateOne({_id:record._id,status:record.status},{$set:{adminEmailStatus:'pending',adminEmailSentAt:null}});
+  await queueEmail(recipients,subject+': '+record.projectName,html,{tracking:{kind:'equipment_admin',recordId:String(record._id),expectedStatus:record.status}});return true;
  }catch(error){await EquipmentRequest.updateOne({_id:record._id,status:record.status},{$set:{adminEmailStatus:'failed'}});logger.error('Equipment request admin email failed',error);return false;}
 }
 

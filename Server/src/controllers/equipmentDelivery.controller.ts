@@ -1,4 +1,4 @@
-import {sendEmail} from '../utils/email';
+import {queueEmail} from '../services/emailQueue.service';
 import {escapeMessageHtml as esc} from '../services/messageAlerts.service';
 import {env} from '../config/env';
 import {Request,Response,NextFunction} from 'express';
@@ -55,7 +55,7 @@ export async function updateEquipmentDelivery(req:Request,res:Response,next:Next
  ]).then(results=>results.forEach(result=>{if(result.status==='rejected')logger.error('Equipment delivery notification failed',result.reason);}));
  let emailWarning:null|string=null;
  if(data.status==='ready_to_return'){
-  try{await sendEmail(record.contractorEmail,'Ready to return equipment? - '+record.projectName,'<h2>Ready to return your equipment?</h2><p>Project: '+esc(record.projectName)+'</p><p style="white-space:pre-wrap">'+esc(data.message)+'</p><p>Please open My Equipment and choose Yes or No. If No, explain why.</p><p><a href="'+esc(env.CLIENT_URL.replace(/\/$/,'')+'/contractor/dashboard?tab=equipment&request='+record._id)+'">Respond to return request</a></p><p>Thank you,<br/>Bridge equipment management</p>');await EquipmentRequest.updateOne({_id:record._id,deliveryUpdatedAt:now},{$set:{returnEmailStatus:'sent'}});}
+  try{await queueEmail(record.contractorEmail,'Ready to return equipment? - '+record.projectName,'<h2>Ready to return your equipment?</h2><p>Project: '+esc(record.projectName)+'</p><p style="white-space:pre-wrap">'+esc(data.message)+'</p><p>Please open My Equipment and choose Yes or No. If No, explain why.</p><p><a href="'+esc(env.CLIENT_URL.replace(/\/$/,'')+'/contractor/dashboard?tab=equipment&request='+record._id)+'">Respond to return request</a></p><p>Thank you,<br/>Bridge equipment management</p>',{tracking:{kind:'equipment_return',recordId:String(record._id),version:now}});}
   catch(error){await EquipmentRequest.updateOne({_id:record._id,deliveryUpdatedAt:now},{$set:{returnEmailStatus:'failed'}});logger.error('Equipment return email failed',error);emailWarning='Return request saved, but the contractor email could not be sent.';}
  }
  ok(res,{message:data.status==='ready_to_return'?'Return request sent to contractor.':'Equipment update sent to the client and contractor.',emailWarning});
@@ -97,8 +97,8 @@ export async function respondEquipmentReturn(req:Request,res:Response,next:NextF
   try{
    const recipients=[...new Set(env.DECHUB_ADMIN_EMAILS.split(',').map(value=>value.trim()).filter(Boolean))];
    if(!recipients.length)throw Error('Admin email is not configured');
-   await Promise.all(recipients.map(to=>sendEmail(to,'Equipment return confirmed - '+record.projectName,html)));
-   await EquipmentRequest.updateOne({_id:record._id,returnRespondedAt:updated.returnRespondedAt},{$set:{returnResponseEmailStatus:'sent'}});
+   await queueEmail(recipients,'Equipment return confirmed - '+record.projectName,html,{tracking:{kind:'equipment_response',recordId:String(record._id),version:updated.returnRespondedAt!}});
+
   }catch(error){await EquipmentRequest.updateOne({_id:record._id,returnRespondedAt:updated.returnRespondedAt},{$set:{returnResponseEmailStatus:'failed'}});logger.error('Equipment return response email failed',error);emailWarning='Your response was saved, but the admin email could not be sent.';}
  }
  ok(res,{message:data.answer==='yes'?'Thank you. Your readiness to return is recorded.':'Your reason has been sent to admin.',emailWarning});

@@ -47,7 +47,7 @@ function getPdfCellContent(
       : contract.status === 'sent'
       ? 'Waiting for signatures'
       : contract.status === 'company_signed'
-      ? 'Waiting for worker signature'
+      ? 'Waiting for talent signature'
       : 'Preparing...';
 
   return <span style={{ color: '#94a3b8', fontSize: 12 }}>{pendingLabel}</span>;
@@ -59,7 +59,7 @@ const CONTRACT_BADGE: Record<ContractStatus, [string, string]> = {
   draft:          ['db-badge db-badge-draft',    'Draft'],
   sent:           ['db-badge db-badge-sent',     'Sent'],
   company_signed: ['db-badge db-badge-pending',  'Your sig needed'],
-  worker_signed:  ['db-badge db-badge-pending',  'Worker signed'],
+  worker_signed:  ['db-badge db-badge-pending',  'Talent signed'],
   active:         ['db-badge db-badge-active',   'Active'],
   rejected:       ['db-badge db-badge-disputed', 'Rejected'],
   terminated:     ['db-badge db-badge-terminated','Terminated'],
@@ -129,7 +129,7 @@ export function ContractsPage() {
         <div>
           <div className="db-page-title">Contracts</div>
           <div className="db-page-sub">
-            {contracts.length} worker contracts · {active} active · {pending} pending signatures
+            {contracts.length} talent contracts · {active} active · {pending} pending signatures
           </div>
         </div>
         <div className="db-page-actions">
@@ -139,13 +139,13 @@ export function ContractsPage() {
 
       {exportError && <p className="db-project-error" role="alert">{exportError}</p>}
       <ProjectContractsSection />
-      <h2 className="db-card-title">Worker contracts</h2>
+      <h2 className="db-card-title">Talent contracts</h2>
       <div className="db-card">
         <div className="db-filters">
           <div className="db-filter-search">
             <span style={{ color: '#94a3b8' }}>🔍</span>
             <input
-              placeholder="Search by worker name or role…"
+              placeholder="Search by talent name or role…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -170,9 +170,9 @@ export function ContractsPage() {
         ) : filtered.length === 0 ? (
           <div className="db-empty">
             <div className="db-empty-icon">📄</div>
-            <div className="db-empty-title">No worker contracts yet</div>
+            <div className="db-empty-title">No talent contracts yet</div>
             <div className="db-empty-sub">
-              Contracts are auto-generated when you invite a worker and they complete KYC
+              Contracts are auto-generated when you invite a talent and they complete KYC
             </div>
           </div>
         ) : (
@@ -180,7 +180,7 @@ export function ContractsPage() {
             <table className="db-table">
               <thead>
                 <tr>
-                  <th>Worker</th>
+                  <th>Talent</th>
                   <th>Type</th>
                   <th>Track</th>
                   <th>Pay rate</th>
@@ -195,7 +195,7 @@ export function ContractsPage() {
                 {filtered.map((c) => {
                   const [badgeCls, badgeLabel] = CONTRACT_BADGE[c.status] ?? ['db-badge db-badge-draft', c.status];
                   return (
-                    <tr key={c._id}>
+                    <tr key={c._id} data-update-resource={'contract:'+c._id}>
                       <td>
                         <div className="db-table-name">{c.workerName}</div>
                         <div className="db-table-sub">{c.workerRole}</div>
@@ -223,8 +223,8 @@ export function ContractsPage() {
                         <span title="Company" style={{ marginRight: 4 }}>
                           {c.companySigned ? '✅' : '⏳'} You
                         </span>
-                        <span title="Worker">
-                          {c.workerSigned ? '✅' : '⏳'} Worker
+                        <span title="Talent">
+                          {c.workerSigned ? '✅' : '⏳'} Talent
                         </span>
                       </td>
                       <td>
@@ -375,7 +375,7 @@ export function InvoicesPage() {
             <div className="db-filter-search">
               <span style={{ color: '#94a3b8' }}>🔍</span>
               <input
-                placeholder="Search by worker or invoice number…"
+                placeholder="Search by talent or invoice number…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -401,7 +401,7 @@ export function InvoicesPage() {
               <div className="db-empty-icon">🧾</div>
               <div className="db-empty-title">No invoices yet</div>
               <div className="db-empty-sub">
-                Workers submit invoices each month. They'll appear here for your approval.
+                Talents submit invoices each month. They'll appear here for your approval.
               </div>
             </div>
           ) : (
@@ -410,7 +410,7 @@ export function InvoicesPage() {
                 <thead>
                   <tr>
                     <th>Invoice</th>
-                    <th>Worker</th>
+                    <th>Talent</th>
                     <th>Period</th>
                     <th>Submitted</th>
                     <th>Status</th>
@@ -421,7 +421,7 @@ export function InvoicesPage() {
                   {filtered.map((inv) => {
                     const [badgeCls, badgeLabel] = INVOICE_BADGE[inv.status] ?? ['db-badge db-badge-draft', inv.status];
                     return (
-                      <tr key={inv._id}>
+                      <tr key={inv._id} data-update-resource={'invoice:'+inv._id}>
                         <td>
                           <div style={{ fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>
                             {inv.invoiceNumber}

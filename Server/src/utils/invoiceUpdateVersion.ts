@@ -1,0 +1,2 @@
+import {createHash} from 'crypto';
+export function invoiceUpdateVersion(row:any){const last=row.history?.[row.history.length-1];return createHash('sha256').update(JSON.stringify([row.status,String(row.paidAt||''),row.paymentReference||'',row.invoiceNumber,row.amount,row.currency,row.document?.fileName||row.documentName||'',row.stripeStatus||'',row.emailStatus==='failed',last?.action||'',String(last?.at||'')])).digest('hex');}

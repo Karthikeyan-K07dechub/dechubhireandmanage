@@ -19,16 +19,16 @@ export default function CloseProject({ project, tasks, onClosed }: { project: De
     } finally { setBusy(false); }
   }
   return <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 24, paddingTop: 24 }}>
-    <p>You can keep assigning tasks until you close this project.</p>
-    {!ready && <p>Approve all assigned tasks to enable project completion.</p>}
-    <button type="button" className="db-btn-primary" disabled={!ready} onClick={() => dialog.current?.showModal()}>Close and complete project</button>
+    <h3 style={{ margin: '0 0 8px' }}>Project completion</h3>
+    <p style={{ margin: '0 0 12px', color: '#64748b', lineHeight: 1.6 }}>{ready ? 'All assigned tasks are approved. You can now mark this project as completed.' : tasks.length ? 'Review and approve all assigned tasks before completing this project.' : 'At least one task must be completed and approved before this project can be completed.'}</p>
+    <button type="button" className="db-btn-primary" disabled={!ready} onClick={() => dialog.current?.showModal()}>Complete project</button>
     <dialog ref={dialog} style={{ position: 'fixed', inset: 0, margin: 'auto', width: 'min(440px, calc(100vw - 32px))', padding: 28, border: 0, borderRadius: 16 }} onCancel={event => { if (busy) event.preventDefault(); }}>
-      <h3>Close and complete project?</h3>
-      <p>Mark {project.title} as completed for the client, admin, and contractors? You will no longer be able to assign tasks to this project.</p>
+      <h3>Complete this project?</h3>
+      <p>This will mark {project.title} as completed for you, the admin team, and all assigned talents. The project will be closed to new tasks.</p>
       {error && <p role="alert">{error}</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
-        <button type="button" className="db-btn-secondary" disabled={busy} onClick={() => dialog.current?.close()}>No</button>
-        <button type="button" className="db-btn-primary" disabled={busy} onClick={() => void close()}>{busy ? 'Completing...' : 'Yes'}</button>
+        <button type="button" className="db-btn-secondary" disabled={busy} onClick={() => dialog.current?.close()}>Cancel</button>
+        <button type="button" className="db-btn-primary" disabled={busy} onClick={() => void close()}>{busy ? 'Completing...' : 'Complete project'}</button>
       </div>
     </dialog>
   </div>;

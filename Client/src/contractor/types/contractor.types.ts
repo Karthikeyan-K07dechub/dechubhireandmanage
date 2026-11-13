@@ -129,7 +129,7 @@ export interface SubmitInvoicePayload {
   hoursWorked?: number;
 }
 
-export type ContractorPage = 'equipment' | 'dashboard' | 'projects' | 'invoices' | 'contract' | 'profile' | 'notifications';
+export type ContractorPage = 'work-updates' | 'equipment' | 'dashboard' | 'projects' | 'invoices' | 'contract' | 'profile' | 'notifications';
 
 export interface ContractorNotification {
   _id: string;

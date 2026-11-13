@@ -15,7 +15,7 @@ import {
 } from '../utils/jwt';
 import { logger } from '../utils/logger';
 import { env } from '../config/env';
-import { sendEmail } from '../utils/email';
+import { queueEmail as sendEmail } from '../utils/email';
 
 type ResettableAccount = {
   firstName: string;
@@ -66,7 +66,7 @@ p{font-size:14px;color:#475569;line-height:1.7;margin:0 0 16px}
 </html>`.trim();
 
   try {
-    await sendEmail(email, 'Reset your Dechub password', html, { includeLogo: false });
+    await sendEmail(email, 'Reset your Dechub password', html, { includeLogo: false, priority:10,expiresAt:new Date(Date.now()+55*60000) });
   } catch (emailErr) {
     logger.warn(`Failed to send password reset email to ${email}`, emailErr);
   }

@@ -7,6 +7,8 @@ import { logger } from './logger';
 const transporter = env.RESEND_API_KEY
   ? null
   : nodemailer.createTransport({
+      pool: true, maxConnections: 5, maxMessages: 100,
+      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000,
       host: env.SMTP_HOST,
       port: Number(env.SMTP_PORT),
       secure: Number(env.SMTP_PORT) === 465,
@@ -45,6 +47,8 @@ transporter.verify().then(() => {
 }
 
 type EmailBrandingOptions = {
+  expiresAt?:Date;
+  priority?:number;
   includeLogo?: boolean;
   attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>;
 };
@@ -101,6 +105,7 @@ export async function sendEmail(
     if (env.RESEND_API_KEY) {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
+        signal: AbortSignal.timeout(15000),
         headers: {
           Authorization: `Bearer ${env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
@@ -135,6 +140,8 @@ export async function sendEmail(
 
 // ─── Templates ────────────────────────────────────────────────────────────────
 
+export async function queueEmail(to:string,subject:string,html:string,options:EmailBrandingOptions={}){const queue=await import('../services/emailQueue.service');await queue.queueEmail(to,subject,html,options);}
+
 export async function sendVerificationEmail(
   to: string,
   firstName: string,
@@ -147,7 +154,7 @@ export async function sendVerificationEmail(
     <div class="otp">${otp}</div>
     <p class="muted">This code expires in 15 minutes. If you didn't sign up, ignore this email.</p>
   `);
-  await sendEmail(to, 'Verify your Dechub account', html);
+  await queueEmail(to, 'Verify your Dechub account', html,{priority:10,expiresAt:new Date(Date.now()+14*60000)});
 }
 
 export async function sendWelcomeEmail(
@@ -182,7 +189,7 @@ export async function sendPasswordResetEmail(
     <a href="${resetUrl}" class="btn">Reset Password</a>
     <p class="muted">If you didn't request this, you can safely ignore this email.</p>
   `);
-  await sendEmail(to, 'Reset your Dechub password', html);
+  await queueEmail(to, 'Reset your Dechub password', html,{priority:10,expiresAt:new Date(Date.now()+55*60000)});
 }
 
 export async function sendContractActivatedEmail(
@@ -198,7 +205,7 @@ export async function sendContractActivatedEmail(
     <a href="${env.CLIENT_URL}/contractor/dashboard?tab=contract" class="btn">Open Dashboard</a>
     <p class="muted">You’ll also see this update inside your Dechub account notifications.</p>
   `);
-  await sendEmail(to, `Your ${companyName} contract is active`, html);
+  await queueEmail(to, `Your ${companyName} contract is active`, html);
 }
 
 type TalentRequestAdminNotificationInput = {

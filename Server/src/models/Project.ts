@@ -10,12 +10,15 @@ export type ProjectStatus =
   | 'cancelled';
 
 export interface IProjectTeamMember {
+  talentContract?: {scope:string;paymentTerms:string;deliverables:string[];sentAt:Date};
   agreedAmount?: number | null;
   workerId: mongoose.Types.ObjectId;
   role: string;
 }
 
 export interface IProject extends Document {
+  deliveryMode:'client_managed'|'bridge_managed';
+  manualTalentContracts?:boolean;
   _id: mongoose.Types.ObjectId;
   companyId: mongoose.Types.ObjectId;
   talentRequestId: mongoose.Types.ObjectId | null;
@@ -54,12 +57,15 @@ const projectTeamMemberSchema = new Schema<IProjectTeamMember>(
     workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true },
     role: { type: String, required: true, trim: true, maxlength: 120 },
     agreedAmount: { type: Number, min: 0, default: null },
+    talentContract: {type:new Schema({scope:{type:String,required:true},paymentTerms:{type:String,required:true},deliverables:[String],sentAt:{type:Date,required:true}},{_id:false}),default:undefined},
   },
   { _id: false },
 );
 
 const projectSchema = new Schema<IProject>(
   {
+    deliveryMode:{type:String,enum:['client_managed','bridge_managed'],default:'client_managed'},
+    manualTalentContracts:{type:Boolean,default:false},
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     talentRequestId: { type: Schema.Types.ObjectId, ref: 'TalentRequest', default: null, index: true },
     title: { type: String, required: true, trim: true, maxlength: 180 },

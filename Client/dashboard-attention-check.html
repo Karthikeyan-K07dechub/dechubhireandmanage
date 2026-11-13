@@ -1,0 +1,7 @@
+<style>body{font-family:Arial;margin:0} .theme{padding:20px;display:inline-block}#spacer{height:1600px}#lower{padding:20px}dialog{padding:30px} </style>
+<div class="db-shell theme"><span id="client-dot" class="section-attention-dot"></span></div><div class="cd-shell theme"><span id="talent-dot" class="section-attention-dot"></span></div><div class="atd-root theme" style="background:#162638"><span id="admin-dot" class="section-attention-dot"></span></div>
+<div id="first" data-update-resource="project:first" style="padding:30px">Visible project</div><div id="spacer"></div><div id="lower" data-update-resource="project:second">Off-screen project</div><dialog id="modal"><div data-update-resource="task:modal" style="padding:30px">Visible task inside modal</div></dialog>
+<script type="module">
+import '/src/components/attention-dot.css';import {observeVisibleUpdates,updateResource} from '/src/components/updateVisibility.ts';
+window.seen=[];window.track=()=>{window.stopTracking?.();window.stopTracking=observeVisibleUpdates(el=>window.seen.push(el.dataset.updateResource));};window.getResource=updateResource;window.ready=true;
+</script>

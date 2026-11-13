@@ -1,3 +1,5 @@
+import AttentionDot from '../components/AttentionDot';
+import ITAccessPanel from '../components/ITAccessPanel';
 import ClientBillingPage from './pages/ClientBillingPage';
 import EquipmentSection from '../components/EquipmentSection';
 import AnalyticsPage, { ANALYTICS_VIEWS, getAnalyticsView, type AnalyticsView } from './pages/AnalyticsPage';
@@ -40,7 +42,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'home', icon: '▣', label: 'Dashboard' },
   { id: 'marketplace', icon: '🛍', label: 'Marketplace' },
-  { id: 'workers', icon: '👥', label: 'Workers' },
+  { id: 'workers', icon: '👥', label: 'Talents' },
   { id: 'hiring', icon: '🎯', label: 'Hiring' },
   { id: 'contracts', icon: '📄', label: 'Contracts' },
   { id: 'analytics', icon: '', label: 'Analytics' },
@@ -51,14 +53,15 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'settings', icon: '⚙️', label: 'Settings' },
 ];
 
-NAV_ITEMS.splice(1, 0, { id: 'projects', icon: 'P', label: 'Projects' });
+NAV_ITEMS.splice(1, 0, { id: 'projects', icon: 'P', label: 'Projects' },{id:'it-access',icon:'IT',label:'IT access'});
 
 const PAGE_TITLES: Record<DashboardPage, string> = {
   analytics: 'Analytics',
   home: 'Dashboard',
   projects: 'Projects',
+  'it-access':'IT access',
   marketplace: 'Marketplace',
-  workers: 'Workers',
+  workers: 'Talents',
   hiring: 'Hiring',
   contracts: 'Contracts',
   payroll: 'Payroll',
@@ -77,6 +80,7 @@ function getDashboardPageFromQuery(initialPage: DashboardPage, hireRequestId: st
   const tab = new URLSearchParams(window.location.search).get('tab')?.trim() ?? '';
 
   if (tab === 'marketplace') return 'hiring';
+  if (tab === 'it-access') return 'it-access';
   if (tab === 'projects') return 'projects';
   if (tab === 'contracts') return 'contracts';
   if (tab === 'workers') return 'workers';
@@ -123,7 +127,7 @@ function HiringOverviewPage({ onSelectView }: { onSelectView: (next: HiringView)
           <div className="db-marketplace-tags">
             <span className="db-marketplace-tag">Pre-vetted profiles</span>
             <span className="db-marketplace-tag">Request tracking</span>
-            <span className="db-marketplace-tag">Worker conversion</span>
+            <span className="db-marketplace-tag">Talent conversion</span>
           </div>
           <div className="db-workspace-actions">
             <button className="db-btn-primary" onClick={() => onSelectView('marketplace')}>
@@ -143,7 +147,7 @@ function HiringOverviewPage({ onSelectView }: { onSelectView: (next: HiringView)
             {[
               'Browse approved contractor and specialist profiles',
               'Track company talent requests in one place',
-              'Move selected profiles into workers and contracts',
+              'Move selected profiles into talents and contracts',
               'Keep hiring discovery separate from payroll execution',
             ].map((item) => (
               <div key={item} className="db-feature-row">
@@ -169,7 +173,7 @@ function HiringOverviewPage({ onSelectView }: { onSelectView: (next: HiringView)
             </div>
             <div className="db-kpi-item">
               <strong>3. Convert</strong>
-              <span>Move approved hires into workers, contracts, and payroll execution.</span>
+              <span>Move approved hires into talents, contracts, and payroll execution.</span>
             </div>
           </div>
         </div>
@@ -438,7 +442,7 @@ export default function Dashboard({
     : PAGE_TITLES[page];
 
   const workspaceItems = NAV_ITEMS.filter((item) =>
-    ['home', 'projects', 'workers', 'hiring', 'contracts', 'payroll', 'analytics'].includes(item.id),
+    ['home', 'projects', 'it-access', 'workers', 'hiring', 'contracts', 'payroll', 'analytics'].includes(item.id),
   );
   const operationsItems = NAV_ITEMS.filter((item) => ['invoices', 'documents', 'equipment', 'settings'].includes(item.id));
 
@@ -478,7 +482,7 @@ export default function Dashboard({
                   aria-expanded={hiringOpen}
                   aria-controls="hiring-navigation"
                 >
-                  <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <span className="db-nav-badge" aria-label={sectionCounts[item.id] + " pending actions or unread notifications"}>{sectionCounts[item.id]}</span>}
+                  <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <AttentionDot label={sectionCounts[item.id]+" pending actions or unread updates"}/>}
                 <span className={`db-nav-chevron ${hiringOpen ? 'expanded' : ''}`} aria-hidden="true" />
                 </button>
                 {hiringOpen && <div className="db-nav-sublist" id="hiring-navigation">
@@ -501,7 +505,7 @@ export default function Dashboard({
                       setMobileNavOpen(false);
                     }}
                   >
-                    Manage Requests {sectionCounts.hiring > 0 && <span className="db-nav-badge">{sectionCounts.hiring}</span>}
+                    Manage Requests {sectionCounts.hiring > 0 && <AttentionDot label="Hiring updates or pending actions"/>}
                   </button>
                 </div>}
               </div>
@@ -520,7 +524,7 @@ export default function Dashboard({
                 }}
                 aria-current={page === item.id ? 'page' : undefined}
               >
-                <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <span className="db-nav-badge" aria-label={sectionCounts[item.id] + " pending actions or unread notifications"}>{sectionCounts[item.id]}</span>}
+                <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <AttentionDot label={sectionCounts[item.id]+" pending actions or unread updates"}/>}
 
               </button>
             )
@@ -536,7 +540,7 @@ export default function Dashboard({
               }}
               aria-current={page === item.id ? 'page' : undefined}
             >
-              <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <span className="db-nav-badge" aria-label={sectionCounts[item.id] + " pending actions or unread notifications"}>{sectionCounts[item.id]}</span>}
+              <span className="db-nav-label">{item.label}</span>{sectionCounts[item.id] > 0 && <AttentionDot label={sectionCounts[item.id]+" pending actions or unread updates"}/>}
             </button>
           ))}
         </nav>
@@ -638,6 +642,7 @@ export default function Dashboard({
           )}
 
           {page === 'analytics' && <AnalyticsPage view={analyticsView} onView={setAnalyticsView} />}
+          {page === 'it-access' && <div className="db-page"><ITAccessPanel/></div>}
           {page === 'home' && <DashboardHome onNavigate={(nextPage) => setPage(nextPage as DashboardPage)} />}
           {page === 'projects' && <ProjectsPage onRequestCreated={() => {
             setHiringView('requests');

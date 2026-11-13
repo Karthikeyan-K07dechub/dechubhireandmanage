@@ -39,7 +39,7 @@ export interface TalentRequestSignupPrefill {
 }
 
 export interface CompanyTalentRequestItem {
-  clientDecisions?: Array<{ workerId: string; decision: 'accepted' | 'rejected' }>;
+  clientDecisions?: Array<{ workerId: string; decision: 'accepted' | 'rejected';reason?:string|null }>;
   clientSelectionSubmittedAt?: string | null;
   shortlistSentAt?: string | null;
   projectName?: string;
@@ -93,7 +93,7 @@ export async function listCompanyTalentRequests(): Promise<CompanyTalentRequestI
 
 export async function submitShortlistDecisions(id: string, payload: {
   shortlistSentAt: string;
-  decisions: Array<{ workerId: string; decision: 'accepted' | 'rejected' }>;
+  decisions: Array<{ workerId: string; decision: 'accepted' | 'rejected';reason?:string|null }>;
 }): Promise<CompanyTalentRequestItem> {
   try {
     const res = await api.post<ApiResponse<CompanyTalentRequestItem>>(`/company/talent-requests/${id}/decisions`, payload);
@@ -120,6 +120,8 @@ export async function createPublicTalentRequest(payload: PublicTalentRequestPayl
 }
 
 export async function createCompanyProjectRequest(payload: {
+  deliveryMode:'client_managed'|'bridge_managed';
+  projectStage:'existing_project'|'new_project';
   projectName: string; projectType: string; projectDescription: string;
   expectedStartDate: string; expectedEndDate: string;
 }): Promise<Awaited<ReturnType<typeof createPublicTalentRequest>>> {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const shortlistDecisionsSchema = z.object({
   shortlistSentAt: z.string().datetime(),
-  decisions: z.array(z.object({ workerId: z.string().regex(/^[a-f\d]{24}$/i), decision: z.enum(['accepted', 'rejected']) })).min(1).max(10),
+  decisions: z.array(z.object({ workerId: z.string().regex(/^[a-f\d]{24}$/i), decision: z.enum(['accepted', 'rejected']),reason:z.string().trim().max(2000).optional() }).superRefine((value,ctx)=>{if(value.decision==='rejected'&&!value.reason)ctx.addIssue({code:z.ZodIssueCode.custom,path:['reason'],message:'Enter a reason for rejecting this talent.'});})).min(1).max(10),
 });
 
 export function decisionsMatchShortlist(shortlistedIds: string[], decisions: Array<{ workerId: string }>) {

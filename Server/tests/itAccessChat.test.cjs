@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict');process.chdir(require('node:path').join(__dirname,'..'));
+const {ITAccessRequest}=require('../dist/models/ITAccessRequest');const {Company}=require('../dist/models/Company');const {CompanyAuth}=require('../dist/models/CompanyAuth');const {Project}=require('../dist/models/Project');const {Worker}=require('../dist/models/Worker');
+const id='aaaaaaaaaaaaaaaaaaaaaaaa',companyId='bbbbbbbbbbbbbbbbbbbbbbbb',workerId='cccccccccccccccccccccccc',projectId='dddddddddddddddddddddddd';
+let row={_id:id,companyId,workerId,projectId,message:'Need repository access',__v:0,status:'pending',entries:[]},closed=false,assigned=true,notifications=[];
+CompanyAuth.findById=owner=>({select:async()=>({companyId:owner==='other'?'eeeeeeeeeeeeeeeeeeeeeeee':companyId})});Company.findById=async id=>({_id:id});
+ITAccessRequest.findOne=async q=>q._id===id&&(!q.workerId||q.workerId===workerId)&&(!q.companyId||q.companyId===companyId)?structuredClone(row):null;
+Project.findOne=async q=>assigned&&q.companyId===companyId&&q['teamMembers.workerId']===workerId?{_id:projectId,title:'Project A',status:closed?'completed':'active'}:null;
+Worker.findById=async()=>({firstName:'Alex',lastName:'Contractor',status:'active'});
+ITAccessRequest.findOneAndUpdate=async(q,u)=>{if(q.__v!==undefined&&q.__v!==row.__v)return null;if(row.entries.length>=500)return null;row.entries.push(u.$push.entries);Object.assign(row,u.$set||{});row.__v++;return structuredClone(row)};
+ITAccessRequest.updateOne=async(q,u)=>{const match=q.$or.some(c=>typeof c.lastContractorMessageId==='string'?c.lastContractorMessageId===row.lastContractorMessageId:row.lastContractorMessageId===undefined);if(match)Object.assign(row,u.$set);return {matchedCount:match?1:0};};
+require('../dist/models/CompanyNotification').CompanyNotification.create=async n=>notifications.push(n);require('../dist/models/ContractorNotification').ContractorNotification.create=async n=>notifications.push(n);
+require('../dist/services/itAccessAdminEmail.service').processITAccessAdminEmails=async()=>{};
+const c=require('../dist/controllers/itAccessChat.controller');
+async function call(fn,{contractor=false,other=false,body={}}={}){let data,error;await fn({params:{requestId:id},...(contractor?{worker:{sub:other?'eeeeeeeeeeeeeeeeeeeeeeee':workerId}}:{user:{sub:other?'other':'owner',email:'client@example.test'}}),body},{status(){return this},json(v){data=v.data}},e=>error=e);return {data,error};}
+(async()=>{
+ assert.equal((await call(c.getITAccessChat,{contractor:true,other:true})).error.statusCode,404);
+ assert.equal((await call(c.getITAccessChat,{other:true})).error.statusCode,404);
+ assert.equal((await call(c.getITAccessChat)).data.hasUnread,true);
+ assert.equal((await call(c.readITAccessChat,{body:{messageId:'request'}})).data.read,true);
+ assert.equal((await call(c.getITAccessChat)).data.hasUnread,false);
+ assert.equal((await call(c.postITAccessChat,{contractor:true,body:{text:'I granted myself access',status:'granted',version:0}})).error.statusCode,403);
+ let result=await call(c.postITAccessChat,{body:{text:'Invitation sent. Sign in with your work email.',status:'granted',version:0,accessUrl:'https://example.test/invite'}});assert.ifError(result.error);assert.equal(row.status,'granted');assert.equal(result.data.hasUnread,false,'Client update must not create a new unread dot');assert.equal(row.entries[0].sender,'client');assert(!JSON.stringify(result.data).includes('adminEmail'));assert(row.entries[0].adminEmailNextAt instanceof Date);assert.equal(notifications[0].workerId,workerId);
+ result=await call(c.postITAccessChat,{contractor:true,body:{text:'Thanks, access works.'}});assert.ifError(result.error);assert.equal(row.entries[1].sender,'contractor');assert.equal(result.data.hasUnread,true);assert.equal((await call(c.readITAccessChat,{body:{messageId:'request'}})).data.read,false,'Stale acknowledgement must not clear a newer reply');assert.equal((await call(c.getITAccessChat)).data.hasUnread,true);assert.equal((await call(c.readITAccessChat,{body:{messageId:row.lastContractorMessageId}})).data.read,true);assert.equal((await call(c.getITAccessChat)).data.hasUnread,false);assert.equal(notifications[1].companyId,companyId);
+ assert.equal((await call(c.postITAccessChat,{body:{text:'Old status update',status:'in_progress',version:0}})).error.statusCode,409);
+ assert((await call(c.postITAccessChat,{body:{text:'Invalid link',status:'granted',version:2,accessUrl:'javascript:alert(1)'}})).error);
+ result=await call(c.postITAccessChat,{body:{text:'Access removed from the tool.',status:'revoked',version:2}});assert.ifError(result.error);assert.equal(row.accessUrl,'');
+ closed=true;assert.equal((await call(c.getITAccessChat,{contractor:true})).data.readOnly,true);assert.equal((await call(c.postITAccessChat,{contractor:true,body:{text:'Test'}})).error.statusCode,409);closed=false;
+ assigned=false;assert.equal((await call(c.getITAccessChat)).error.statusCode,404);assigned=true;
+ row.entries=Array(500).fill({});assert.equal((await call(c.postITAccessChat,{contractor:true,body:{text:'Over limit'}})).error.statusCode,409);
+ assert.equal((await call(c.postITAccessChat,{contractor:true,body:{text:'   '}})).error.code,'MESSAGE_REQUIRED');
+ row.status=undefined;row.entries=[];const legacy=await call(c.getITAccessChat,{contractor:true});assert.equal(legacy.data.status,'pending');
+ console.log('PASS: participant isolation, client-only status grants, bidirectional replies/notifications, stale status protection, safe URLs, revoke, closed-project history, removed membership, message limit and legacy compatibility. No real messages or DB changes.');process.exit(0);
+})().catch(e=>{console.error(e);process.exit(1)});

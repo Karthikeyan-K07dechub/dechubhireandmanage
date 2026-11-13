@@ -18,6 +18,7 @@
 .db-contract-project-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; align-items: center; }
 .db-project-contract-card .db-project-section > .db-card-link { margin-top: 12px; }
 .db-project-acceptance { text-align: center; }
+.db-project-action.db-contract-review-callout{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 24px;margin-top:24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;text-align:left}.db-contract-review-callout p{margin:0;font-size:13px;line-height:1.7;color:#64748b;max-width:520px}.db-contract-review-callout .db-btn-primary{flex-shrink:0;min-height:44px;padding:12px 20px;border-radius:9px;box-shadow:0 3px 8px #0a162812}.db-contract-review-callout .db-btn-primary:focus-visible{outline:3px solid #c4b5fd;outline-offset:3px}@media(max-width:800px){.db-project-action.db-contract-review-callout{align-items:flex-start;flex-direction:column;gap:16px;padding:18px}.db-contract-review-callout .db-btn-primary{align-self:flex-end}}@media(max-width:480px){.db-contract-review-callout .db-btn-primary{width:100%;justify-content:center}}
 .db-project-acceptance-form { display: grid; justify-items: center; gap: 18px; margin-top: 18px; }
 .db-project-acceptance-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: min(100%, 480px); text-align: left; }
 @media (max-width: 560px) {
@@ -2056,3 +2057,4 @@
   text-transform: none;
   margin-top: 6px;
 }
+.db-task-project-dates{display:flex;flex-wrap:wrap;align-items:center;gap:10px 28px;margin-top:18px;padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;line-height:1.6}.db-task-project-dates>span{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:6px}.db-task-project-dates strong{color:#0f172a;white-space:nowrap}.db-contract-title-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;margin-bottom:10px}.db-contract-title-row h3{margin:0;color:#0f172a;font-size:18px;line-height:1.4;overflow-wrap:anywhere}.db-contract-title-row .db-project-status{display:inline-flex;align-items:center;flex-shrink:0;line-height:1.3}.db-contract-header>div:first-child>p{margin:0;overflow-wrap:anywhere}

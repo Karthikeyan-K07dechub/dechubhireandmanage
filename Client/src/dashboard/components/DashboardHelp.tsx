@@ -34,7 +34,7 @@ export const faqs = [
   ],
   [
     "How do I mark the whole project completed?",
-    "After approving all assigned tasks, select Close and complete project and confirm Yes. You can assign more tasks until the project is closed."
+    "After approving all assigned tasks, select Complete project and confirm in the popup. The project will be marked completed and closed to new tasks."
   ],
   [
     "Where do I download invoices and submit payment proof?",

@@ -1,3 +1,4 @@
+import {WorkUpdate} from '../models/WorkUpdate';
 import { notifyMessageRecipients } from '../services/messageAlerts.service';
 import { logger } from '../utils/logger';
 import { Request, Response, NextFunction } from 'express';
@@ -22,17 +23,20 @@ export async function listTaskMessages(req: Request,res: Response,next: NextFunc
 export async function postTaskMessage(req: Request,res: Response,next: NextFunction){let attachment:any;let saved=false;try{
  const {task,project}=await access(req);const body=z.string().trim().max(5000).parse(req.body.body||'');const submission=req.worker&&req.body.submission==='true';
  if(!body&&!req.file)throw new AppError('Enter a message, link, or attach a file.',422,'MESSAGE_REQUIRED');
+ if(submission&&project.deliveryMode==='bridge_managed')throw new AppError('Submit work through Work Updates for admin review.',403,'ADMIN_REVIEW_REQUIRED');
  if(submission && (task.status === 'completed' || !['active','payment_submitted'].includes(project.status))) throw new AppError('This task is already closed for completion review. You can still send messages and files.',409,'TASK_CLOSED');
  if(req.file)attachment=await uploadTaskAttachmentFile(req.file,String(project.companyId),'tasks/'+String(task._id));
  const message=await TaskMessage.create({taskId:task._id,senderRole:req.worker?'contractor':'client',senderId:req.worker?.sub||req.user!.sub,body,submission:Boolean(submission),attachment});saved=true;
  if(submission){task.status='submitted';await task.save();}
  void notifyMessageRecipients({companyId:String(project.companyId),projectId:String(project._id),projectTitle:project.title,senderRole:req.worker?'contractor':'client',senderId:req.worker?.sub||req.user!.sub,body,fileName:attachment?.fileName,taskId:String(task._id),taskTitle:task.title,submission:Boolean(submission),recipientWorkerIds:req.worker?undefined:task.assigneeWorkerIds.map(String)}).catch(error=>logger.error('Task message notification failed',error));
- ok(res,{messageId:message._id});
+ ok(res,{messageId:message._id,message:{_id:message._id,senderRole:req.worker?'contractor':'client',own:true,body:message.body,submission:message.submission,createdAt:message.createdAt,fileName:attachment?.fileName||null}});
  }catch(e){if(attachment&&!saved)await removeTaskAttachmentFile(attachment).catch(()=>{});next(e);}}
 export async function taskAttachment(req: Request,res: Response,next: NextFunction){try{await access(req);const row=await TaskMessage.findOne({_id:req.params.messageId,taskId:req.params.taskId}).select('+attachment');if(!row?.attachment)throw Errors.NotFound('Attachment');const bytes=await downloadTaskAttachmentFile(row.attachment);res.setHeader('Content-Type','application/octet-stream');res.setHeader('Content-Disposition','attachment; filename="'+row.attachment.fileName+'"');res.setHeader('Cache-Control','private, no-store');res.send(bytes);}catch(e){next(e);}}
 export async function reviewTask(req: Request,res: Response,next: NextFunction){try{
  const {task,project}=await access(req);const decision=z.enum(['approve','changes']).parse(req.body.decision);
  if(!['active','payment_submitted'].includes(project.status))throw new AppError('Project is closed.',409,'PROJECT_CLOSED');
+ if(project.deliveryMode==='bridge_managed'&&!(await WorkUpdate.exists({taskId:task._id,projectId:project._id,reviewStatus:'awaiting_client_review'})))throw new AppError('Wait for admin to approve and forward the latest work update.',403,'ADMIN_REVIEW_REQUIRED');
+ if(project.deliveryMode==='bridge_managed'&&task.status!=='submitted')throw new AppError('Wait for admin to review and forward the submission.',403,'ADMIN_REVIEW_REQUIRED');
  if (task.status === 'completed') throw new AppError('This task is already approved.',409,'TASK_ALREADY_COMPLETED');
  if(decision === 'changes' && task.status !== 'submitted') throw new AppError('Wait for a submission before requesting a revision.',409,'SUBMISSION_REQUIRED');
  const updated=await ProjectTask.findOneAndUpdate({_id:task._id,status:task.status},{$set:{status:decision==='approve'?'completed':'in_progress',completedAt:decision==='approve'?new Date():null}},{new:true});if(!updated)throw new AppError('Task has changed. Refresh and retry.',409,'TASK_CHANGED');

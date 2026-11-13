@@ -1,3 +1,7 @@
+import {observeVisibleUpdates} from '../../components/updateVisibility';
+import ProjectUpdatesModal,{AdminTaskUpdatesButton} from '../../components/ProjectUpdates';
+import AdminAssignTaskForm from './AdminAssignTaskForm';
+import AdminTalentContractForm from './AdminTalentContractForm';
 import AdminInvoiceReview from './AdminInvoiceReview';
 import AdminContractorVerification from './AdminContractorVerification';
 import AdminPaymentProof from './AdminPaymentProof';
@@ -62,6 +66,10 @@ export default function TalentRequestDetailPage({
 
   const [request, setRequest] = useState<TalentRequestItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [contractTarget,setContractTarget]=useState<'talents'|''>('');
+  const [contractTalent,setContractTalent]=useState('');
+  const [assignOpen,setAssignOpen]=useState(false);
+  const [taskUpdatesOpen,setTaskUpdatesOpen]=useState(false);
   const [showFullPortfolio, setShowFullPortfolio] = useState(false);
   const [availableProfiles, setAvailableProfiles] = useState<AdminMarketplaceCandidateItem[]>([]);
   const [suggestedWorkerId, setSuggestedWorkerId] = useState('');
@@ -87,6 +95,7 @@ export default function TalentRequestDetailPage({
     profiles: ShortlistPreviewProfile[];
   } | null>(null);
 
+  useEffect(()=>{if(!request?.unread)return;let running=false,active=true;const stop=observeVisibleUpdates(el=>{if(running||el.dataset.updateResource!=='request:'+request._id)return;running=true;void markAsRead(request._id,request.updatedAt).then(result=>{if(!active)return;if(result.read)setRequest(current=>current?{...current,unread:false}:current);else void getTalentRequest(request._id).then(value=>active&&setRequest(value)).catch(()=>{});}).catch(()=>{}).finally(()=>{running=false;});});return()=>{active=false;stop();};},[request?._id,request?.updatedAt,request?.unread]);
   useEffect(() => {
     if (!actionSuccess) {
       return undefined;
@@ -106,13 +115,13 @@ export default function TalentRequestDetailPage({
       try {
         setLoading(true);
         const detail = await getTalentRequest(requestId);
-        await markAsRead(requestId);
+
 
         if (!active) {
           return;
         }
 
-        setRequest({ ...detail, unread: false });
+        setRequest(detail);
         setSuggestedWorkerId(detail.suggestedWorkerId ?? '');
         setSelectedShortlistIds(detail.shortlistedTalentProfiles?.map((profile) => profile.workerId) ?? []);
         setReviewNotes(detail.reviewNotes ?? '');
@@ -389,7 +398,7 @@ export default function TalentRequestDetailPage({
       meta: request.clientSelectionSubmittedAt ? formatDate(request.clientSelectionSubmittedAt) : request.approvedAt ? formatDate(request.approvedAt) : 'Waiting for company action',
     },
     ...(request.clientSelectionSubmittedAt || request.deliveryProject ? [{
-      label: 'Contract approvals', description: 'Client and contractor acceptance for this project.', done: Boolean(request.deliveryProject?.clientAcceptedAt && request.deliveryProject.workers.length && request.deliveryProject.workers.every(worker => worker.acceptedAt)), meta: '',
+      label: 'Contract approvals', description: 'Client and talent contract acceptance for this project.', done: Boolean(request.deliveryProject?.clientAcceptedAt && request.deliveryProject.workers.length && request.deliveryProject.workers.every(worker => worker.acceptedAt)), meta: '',
     }, {
       label: 'Project status',
       description: request.deliveryProject ? request.deliveryProject.title + ' - ' + (request.deliveryProject.status === 'completed' ? 'Project closed and completed by the client.' : request.deliveryProject.completedAt ? 'Tasks approved. The client can assign more tasks or close the project.' : request.deliveryProject.workers.some(worker => worker.completedAt) ? request.deliveryProject.workers.filter(worker => worker.completedAt).length + ' of ' + request.deliveryProject.workers.length + ' contractors completed delivery.' : request.deliveryProject.status === 'contract_sent' ? 'Waiting for client contract approval.' : 'Delivery in progress.') : 'Waiting for admin to create the project for the selected candidates.',
@@ -424,6 +433,7 @@ export default function TalentRequestDetailPage({
     ]),
   ] : [];
 
+  const contractTalents=request?.deliveryProject?.workers.length?request.deliveryProject.workers.map(w=>({workerId:w.workerId,name:w.name||request.shortlistedTalentProfiles?.find(p=>p.workerId===w.workerId)?.workerName||availableProfiles.find(p=>p.workerId===w.workerId)?.name||w.role})):Array.from(new Map([...(request?.shortlistedTalentProfiles||[]).map(p=>({workerId:p.workerId,name:p.workerName})),...(request?.workerId?[{workerId:request.workerId,name:request.workerName}]:[])].map(p=>[p.workerId,p])).values());
   return (
     <div className="atd-root">
       <div className="atd-background" aria-hidden="true">
@@ -432,19 +442,13 @@ export default function TalentRequestDetailPage({
         <span className="atd-grid" />
       </div>
 
-      <header className="atd-header">
+      <header data-update-resource={request?'request:'+request._id:undefined} className="atd-header">
         <button className="atd-back" onClick={onBack}>Back to requests</button>
         {!loading && request ? (
-          <button
-            className="atd-back"
-            onClick={onBuildProject}
-            disabled={!request.companyId || Boolean(request.shortlistSentAt && !request.clientSelectionSubmittedAt && !request.workerId) || Boolean(request.clientSelectionSubmittedAt && !request.clientDecisions?.some(decision => decision.decision === 'accepted'))}
-            title={request.companyId ? 'Build the delivery team and project contract.' : 'The client must sign up with this request email first.'}
-            style={!request.companyId ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-          >
-            {request.companyId ? 'Send contract' : 'Send contract - client signup required'}
-          </button>
+          <div className="atd-contract-control"><details className="atd-contract-menu"><summary className="atd-back" onClick={()=>setContractTarget('')}>Send contract <span aria-hidden="true">&#9662;</span></summary><div className="atd-contract-menu-options"><button type="button" disabled={!request.companyId} onClick={e=>{e.currentTarget.closest('details')?.removeAttribute('open');onBuildProject();}}>Client</button><button type="button" onClick={e=>{e.currentTarget.closest('details')?.removeAttribute('open');setContractTarget('talents');}}>Talents</button></div></details>{contractTarget==='talents'&&<div className="atd-contract-talent-picker"><label htmlFor="contract-talent">Select project talent</label>{contractTalents.length?<select id="contract-talent" value="" onChange={e=>setContractTalent(e.target.value)}><option value="">Choose a talent</option>{contractTalents.map(t=><option key={t.workerId} value={t.workerId}>{t.name}</option>)}</select>:<p>Add talents to this request's shortlist first.</p>}</div>}{contractTalent&&<AdminTalentContractForm key={contractTalent} requestId={request._id} projectId={request.deliveryProject?._id} workerId={contractTalent} onClose={()=>setContractTalent('')}/>} </div>
         ) : null}
+        {!loading&&request&&(request.deliveryMode==='bridge_managed'||request.deliveryProject?.deliveryMode==='bridge_managed')&&<><button className="atd-back" title="Select a project talent and assign a task" onClick={()=>setAssignOpen(true)}>Assign task</button>{assignOpen&&<AdminAssignTaskForm projectId={request.deliveryProject?._id} ready={!!request.deliveryProject&&['active','payment_submitted'].includes(request.deliveryProject.status)} workers={request.deliveryProject?.workers||contractTalents.map(t=>({...t,role:request.shortlistedTalentProfiles?.find(p=>p.workerId===t.workerId)?.workerRole||request.workerRole||'Talent'}))} onPrepareProject={request.companyId?()=>{setAssignOpen(false);onBuildProject();}:undefined} onClose={()=>setAssignOpen(false)}/>}</>}
+        {!loading&&request&&<><AdminTaskUpdatesButton projectId={request.deliveryProject?._id} onClick={()=>setTaskUpdatesOpen(true)}/>{taskUpdatesOpen&&<ProjectUpdatesModal role="admin" projectId={request.deliveryProject?._id} onClose={()=>setTaskUpdatesOpen(false)}/>}</>}
         {!loading && request ? (
           <div
             className={"atd-header-meta" + (showShortlistExperience ? " atd-header-meta-shortlist" : "")}
@@ -727,7 +731,7 @@ export default function TalentRequestDetailPage({
                                   <span>{step.meta}</span>
                                 </div>
                                 <p>{step.description}</p>
-                                {step.label === 'Contract approvals' && <div><p style={{ color: request.deliveryProject?.clientAcceptedAt ? '#4ade80' : '#f87171' }}>Contract approved by client</p>{request.deliveryProject?.workers.map(worker => <p key={worker.workerId} style={{ color: worker.acceptedAt ? '#4ade80' : '#f87171' }}>Contractor: {request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role}</p>)}</div>}
+                                {step.label === 'Contract approvals' && <div className="atd-contract-approval-list"><p style={{color:request.deliveryProject?.clientAcceptedAt?'#4ade80':request.deliveryProject?.contractSentAt||request.deliveryProject?.status==='contract_sent'?'#fbbf24':'#94a3b8'}}>Client contract: {request.deliveryProject?.clientAcceptedAt?'Approved':request.deliveryProject?.contractSentAt||request.deliveryProject?.status==='contract_sent'?'Awaiting client acceptance':'Not sent yet'}</p>{request.deliveryProject?.workers.map(worker=><p key={worker.workerId} style={{color:worker.acceptedAt?'#4ade80':worker.contractSentAt?'#fbbf24':'#94a3b8'}}>Talent contract &mdash; {worker.name||request.shortlistedTalentProfiles?.find(profile=>profile.workerId===worker.workerId)?.workerName||worker.role}: {worker.acceptedAt?'Approved':worker.contractSentAt?'Awaiting talent acceptance':'Not sent yet'}</p>)}</div>}
                                 {step.label === 'Invoice' && <><p>Manage client invoices in <a href="/admin/talent-requests?invoices=all">Invoices</a> on the admin home page.</p>{request.deliveryProject&&<AdminInvoiceReview projectId={request.deliveryProject._id} reviewOnly/>}</>}
                                 {step.label === 'Payment status' && <div className="atd-payment-status-actions">{request.deliveryProject && <AdminPaymentProof projectId={request.deliveryProject._id} />}{!request.deliveryProject?.completedAt && <p className="atd-payment-blocked">Waiting for project completion. {request.deliveryProject?.workers.filter(worker => !worker.completedAt).map(worker => request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role).join(', ')}</p>}<button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={Boolean(request.deliveryProject?.paymentVerifiedAt)} onClick={() => void setPaymentStatus(true)}>Done</button><button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={!request.deliveryProject?.paymentVerifiedAt} onClick={() => void setPaymentStatus(false)}>Not done</button>{savingAction === 'payment' && <span role="status">Saving...</span>}</div>}
                                 {step.label === 'Project status' && request.deliveryProject && <div className="atd-project-worker-status">{request.deliveryProject.workers.map(worker => <p key={worker.workerId} className={worker.completedAt ? 'completed' : ''}>{request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role}: {worker.completedAt ? 'Completed - invoice eligible' : 'In progress'}</p>)}</div>}
@@ -744,7 +748,7 @@ export default function TalentRequestDetailPage({
                                       <div className={decision === 'rejected' ? 'atd-client-rejected' : 'atd-client-accepted'}>
                                         {decision === 'rejected' ? 'Rejected by client' : decision === 'accepted' ? 'Accepted by client' : selectedCandidateTitle}
                                       </div>
-                                      <div className="atd-selected-candidate-head">
+                                      {decision==='rejected'&&request.clientDecisions?.find(d=>d.workerId===profile.workerId)?.reason&&<p className="atd-body-copy"><strong>Rejection reason:</strong> {request.clientDecisions.find(d=>d.workerId===profile.workerId)?.reason}</p>}<div className="atd-selected-candidate-head">
                                         <div>
                                           <strong>{profile.workerName}</strong>
                                           <p>{profile.workerRole}</p>
@@ -1207,7 +1211,7 @@ export default function TalentRequestDetailPage({
 
               <article className="atd-card">
                 <h2>Project brief</h2>
-                {request.projectName && <p className="atd-body-copy"><strong>{request.projectName}</strong></p>}
+                {request.projectStage&&<p className="atd-body-copy"><strong>Hiring for:</strong> {request.projectStage==='existing_project'?'Existing project':'New project'}</p>}{request.deliveryMode&&<p className="atd-body-copy"><strong>Delivery approach:</strong> {request.deliveryMode==='bridge_managed'?'Bridge delivers the entire project':'Talents work with your team'}</p>}{request.projectName && <p className="atd-body-copy"><strong>{request.projectName}</strong></p>}
                 <div className="atd-info-grid">
                   <div>
                     <span>Project type</span>

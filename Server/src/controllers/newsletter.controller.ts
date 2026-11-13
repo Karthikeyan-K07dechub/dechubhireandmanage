@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { env } from '../config/env';
-import { sendEmail } from '../utils/email';
+import { queueEmail as sendEmail } from '../utils/email';
 import { logger } from '../utils/logger';
 import { ok } from '../utils/response';
 

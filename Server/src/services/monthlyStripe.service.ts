@@ -15,7 +15,7 @@ export async function verifyMonthlyStripe(id:string, company:any, amount:number,
  if(!remote.customer_email||!emails.includes(remote.customer_email.trim().toLowerCase()))throw new AppError('Stripe customer email must match the company billing or account email.',422,'STRIPE_CUSTOMER_MISMATCH');
  if(remote.currency.toUpperCase()!==currency||remote.total!==Math.round(amount*100)||remote.number!==number)throw new AppError('Invoice number, total and currency must match the Stripe invoice exactly.',422,'STRIPE_INVOICE_MISMATCH');
  if(remote.status!=='open'||!remote.hosted_invoice_url)throw new AppError('Select a finalized, unpaid Stripe invoice.',422,'STRIPE_INVOICE_NOT_OPEN');
- return {stripeInvoiceId:id,stripeHostedInvoiceUrl:trustedInvoiceUrl(remote.hosted_invoice_url),stripeStatus:remote.status,stripeLiveMode:remote.livemode};
+ return {stripeInvoiceId:id,stripeHostedInvoiceUrl:trustedInvoiceUrl(remote.hosted_invoice_url),stripeStatus:remote.status,stripeAmountPaid:remote.amount_paid/100,stripeAmountRemaining:remote.amount_remaining/100,stripeLiveMode:remote.livemode};
 }
 export async function synchronizeMonthlyStripe(id:string){
  const local=await MonthlyInvoice.findOne({stripeInvoiceId:id,sentAt:{$ne:null}});
@@ -23,11 +23,13 @@ export async function synchronizeMonthlyStripe(id:string){
  const remote=await stripeClient().invoices.retrieve(id);
  if(remote.livemode!==local.stripeLiveMode||remote.currency.toUpperCase()!==local.currency||remote.total!==Math.round(local.amount*100))throw new Error('Linked Stripe invoice changed; admin review required.');
  const paid=remote.status==='paid';
- const set:any={stripeStatus:remote.status,stripeHostedInvoiceUrl:trustedInvoiceUrl(remote.hosted_invoice_url)||null};
+ const stripeAmountPaid=remote.amount_paid/100;
+ const stripeAmountRemaining=remote.amount_remaining/100;
+ const set:any={stripeStatus:remote.status,stripeHostedInvoiceUrl:trustedInvoiceUrl(remote.hosted_invoice_url)||null,stripeAmountPaid,stripeAmountRemaining};
  if(paid){set.status='paid';set.paidAt=new Date((remote.status_transitions.paid_at||Math.floor(Date.now()/1000))*1000);set.paymentReference=id;}
  else if(remote.status==='void'||remote.status==='uncollectible'){set.status='void';set.emailNextAt=null;}
  // Optimistic concurrency also prevents overlapping deliveries from queuing duplicate receipts.
- const changed=remote.status!==local.stripeStatus||paid&&local.status!=='paid';
+ const changed=remote.status!==local.stripeStatus||stripeAmountPaid!==local.stripeAmountPaid||stripeAmountRemaining!==local.stripeAmountRemaining||paid&&local.status!=='paid';
  if(!changed)return;
  if(paid&&local.status!=='paid'){set.receiptPending=true;set.receiptNextAt=new Date();}
  const result=await MonthlyInvoice.updateOne({_id:local._id,__v:local.__v},{$set:set,$inc:{__v:1},$push:{history:{action:'stripe_'+remote.status,at:new Date(),by:'Stripe',note:id}}});

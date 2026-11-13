@@ -17,7 +17,8 @@ export interface IProjectTask extends Document {
   dueDate: Date | null;
   completionNote: string | null;
   completedAt: Date | null;
-  createdByCompanyUserId: mongoose.Types.ObjectId;
+  createdByCompanyUserId: mongoose.Types.ObjectId|null;
+  createdByAdminEmail?:string|null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,7 +37,8 @@ const projectTaskSchema = new Schema<IProjectTask>(
     dueDate: { type: Date, default: null },
     completionNote: { type: String, default: null, trim: true, maxlength: 3000 },
     completedAt: { type: Date, default: null },
-    createdByCompanyUserId: { type: Schema.Types.ObjectId, ref: 'CompanyAuth', required: true },
+    createdByCompanyUserId: { type: Schema.Types.ObjectId, ref: 'CompanyAuth', default:null },
+    createdByAdminEmail:{type:String,default:null},
   },
   { timestamps: true },
 );

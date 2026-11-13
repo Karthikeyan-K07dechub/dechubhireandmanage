@@ -114,10 +114,10 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
       ));
       if (assignments.status === 'fulfilled') setProjects(assignments.value);
       if (data.status === 'rejected' || assignments.status === 'rejected') {
-        setLoadError('Some worker or project information could not be loaded. Refresh to try again.');
+        setLoadError('Some talent or project information could not be loaded. Refresh to try again.');
       }
     } catch {
-      setLoadError('Unable to load workers. Refresh to try again.');
+      setLoadError('Unable to load talents. Refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
   }, [workers, projects, searchQuery, filterStatus, filterTrack]);
 
   const handleTerminate = useCallback(async (id: string) => {
-    if (!window.confirm('Terminate this worker? This cannot be undone.')) return;
+    if (!window.confirm('Terminate this talent? This cannot be undone.')) return;
     try {
       await terminateWorker(id);
       setWorkers((prev) => prev.map((w) => (w._id === id ? { ...w, status: 'terminated' as const } : w)));
@@ -190,7 +190,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
       <div className="db-page">
         <div className="db-page-header">
           <div>
-            <div className="db-page-title">Workers</div>
+            <div className="db-page-title">Talents</div>
             <div className="db-page-sub">
               {workers.length} total · {activeWorkers} active · {invitedWorkers} invited
             </div>
@@ -248,7 +248,7 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
               <span style={{ color: '#94a3b8' }}>Search</span>
               <input
                 type="text"
-                placeholder="Search workers, countries, or projects..."
+                placeholder="Search talents, countries, or projects..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
@@ -265,19 +265,19 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
             </select>
 
             <div className="db-filter-count">
-              {new Set(filtered.map(row => row.worker._id)).size} of {workers.length} workers ? {filtered.length} assignments
+              {new Set(filtered.map(row => row.worker._id)).size} of {workers.length} talents &middot; {filtered.length} assignments
             </div>
           </div>
 
           {loading ? (
             <div className="db-loading">
-              <div className="db-spinner" /> Loading workers...
+              <div className="db-spinner" /> Loading talents...
             </div>
           ) : filtered.length === 0 ? (
             <div className="db-empty">
               <div className="db-empty-icon">{workers.length === 0 ? 'Team' : 'Search'}</div>
               <div className="db-empty-title">
-                {workers.length === 0 ? 'No workers yet' : 'No workers match your search'}
+                {workers.length === 0 ? 'No talents yet' : 'No talents match your search'}
               </div>
               <div className="db-empty-sub">
                 {workers.length === 0
@@ -290,13 +290,13 @@ export default function WorkersPage({ initialHireRequestId = '' }: WorkersPagePr
               <table className="db-table">
                 <thead>
                   <tr>
-                    <th>Worker name</th><th>Role</th><th>Country</th><th>Assigned project</th>
+                    <th>Talent name</th><th>Role</th><th>Country</th><th>Assigned project</th>
                     <th>Start date</th><th>End date</th><th>Project status</th><th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(row => (
-                    <tr key={row.key}>
+                    <tr key={row.key} data-update-resource={'worker:'+row.worker._id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <WorkerAvatar w={row.worker} />

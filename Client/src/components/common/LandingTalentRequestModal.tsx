@@ -15,6 +15,8 @@ interface LandingTalentRequestModalProps {
 }
 
 interface LandingTalentRequestFormValues {
+  deliveryMode:''|'client_managed'|'bridge_managed';
+  projectStage:''|'existing_project'|'new_project';
   projectName: string;
   otherProjectType: string;
   expectedStartDate: string;
@@ -60,6 +62,8 @@ export default function LandingTalentRequestModal({
   } = useForm<LandingTalentRequestFormValues>({
     mode: 'onChange',
     defaultValues: {
+      deliveryMode:'',
+      projectStage:'',
       projectName: '',
       otherProjectType: '',
       expectedStartDate: '',
@@ -209,6 +213,8 @@ export default function LandingTalentRequestModal({
 
     try {
       const submitted = variant === 'project' ? await createCompanyProjectRequest({
+        deliveryMode:values.projectStage==='existing_project'?'client_managed':values.deliveryMode as 'client_managed'|'bridge_managed',
+        projectStage:values.projectStage as 'existing_project'|'new_project',
         projectName: values.projectName.trim(),
         projectType: values.projectType === 'Other' ? values.otherProjectType.trim() : values.projectType,
         projectDescription: values.projectDescription.trim(),
@@ -408,6 +414,8 @@ export default function LandingTalentRequestModal({
                 </label>)}
               </div>
 
+              {variant === 'project' && <label className="ltrm-field ltrm-field-full"><span>Hiring for *</span><select {...register('projectStage',{required:'Select whether you are hiring for an existing or new project.'})}><option value="">Select project stage</option><option value="existing_project">Existing project</option><option value="new_project">New project</option></select>{errors.projectStage&&<small>{errors.projectStage.message}</small>}</label>}
+              {variant==='project'&&watch('projectStage')==='new_project'&&<label className="ltrm-field ltrm-field-full"><span>How would you like to work with Bridge? *</span><select {...register('deliveryMode',{validate:value=>getValues('projectStage')!=='new_project'||!!value||'Choose how your project will be delivered.'})}><option value="">Select an option</option><option value="client_managed">Hire talents to work with your team</option><option value="bridge_managed">Let Bridge deliver the entire project</option></select>{errors.deliveryMode&&<small>{errors.deliveryMode.message}</small>}</label>}
               {variant === 'project' && watch('projectType') === 'Other' && <label className="ltrm-field ltrm-field-full">
                 <span>Specify project type *</span>
                 <input type="text" placeholder="Enter your project type" {...register('otherProjectType', { shouldUnregister: true, required: 'Please specify the project type.', maxLength: { value: 100, message: 'Use 100 characters or fewer.' }, validate: value => Boolean(value.trim()) || 'Enter a project type.' })} />

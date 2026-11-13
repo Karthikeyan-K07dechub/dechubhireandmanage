@@ -33,6 +33,8 @@ export interface ITalentRequest extends Document {
   phoneNumber: string;
   email: string;
   projectType: string;
+  deliveryMode?:'client_managed'|'bridge_managed'|null;
+  projectStage?:'existing_project'|'new_project'|null;
   projectName: string;
   projectDescription: string;
   expectedStartDate: Date | null;
@@ -41,7 +43,7 @@ export interface ITalentRequest extends Document {
   status: TalentRequestStatus;
   reviewNotes: string;
   shortlistedWorkerIds: mongoose.Types.ObjectId[];
-  clientDecisions: Array<{ workerId: mongoose.Types.ObjectId; decision: 'accepted' | 'rejected' }>;
+  clientDecisions: Array<{ workerId: mongoose.Types.ObjectId; decision: 'accepted' | 'rejected';reason?:string|null }>;
   clientSelectionSubmittedAt: Date | null;
   shortlistHistory: ITalentRequestShortlistHistoryEntry[];
   shortlistTokenHash: string | null;
@@ -93,6 +95,8 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     email: { type: String, required: true, trim: true },
 
     projectType: { type: String, required: true, trim: true },
+    deliveryMode:{type:String,enum:['client_managed','bridge_managed'],default:null},
+    projectStage:{type:String,enum:['existing_project','new_project'],default:null},
     projectName: { type: String, default: '', trim: true, maxlength: 180 },
     projectDescription: { type: String, required: true, trim: true },
     expectedStartDate: { type: Date, default: null },
@@ -106,7 +110,7 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     },
     reviewNotes: { type: String, default: '', trim: true },
     shortlistedWorkerIds: [{ type: Schema.Types.ObjectId, ref: 'Worker' }],
-    clientDecisions: { type: [{ workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true }, decision: { type: String, enum: ['accepted', 'rejected'], required: true }, _id: false }], default: [] },
+    clientDecisions: { type: [{ workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true }, decision: { type: String, enum: ['accepted', 'rejected'], required: true }, reason:{type:String,trim:true,maxlength:2000,default:null}, _id: false }], default: [] },
     clientSelectionSubmittedAt: { type: Date, default: null },
     shortlistHistory: { type: [talentRequestShortlistHistorySchema], default: [] },
     shortlistTokenHash: { type: String, default: null },

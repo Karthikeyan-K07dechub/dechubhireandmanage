@@ -4,6 +4,8 @@
 .ctp-card p.ctp-completed-label { color: #15803d; background: #dcfce7; padding: 10px 14px; border-radius: 8px; font-weight: 600; }
 
 .ctp-invoice-action { margin-top: 18px; }
+.ctp-review-contract{display:flex;align-items:center;justify-content:space-between;gap:16px}.ctp-review-contract p{margin:0}.ctp-review-contract button{flex-shrink:0}@media(max-width:600px){.ctp-review-contract{flex-wrap:wrap}.ctp-review-contract button{margin-left:auto}}
+.ctp-project-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid #edf0f5}.ctp-project-heading h3{line-height:1.4;overflow-wrap:anywhere}.ctp-project-badges{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ctp-project-badges .ctp-completed-label{display:inline-flex;align-items:center;padding:7px 11px;border:1px solid #d4ebde;border-radius:20px;background:#f0faf4;color:#187246;font-size:12px;font-weight:600;line-height:1.4}.ctp-project-badges .ctp-invoice-eligible{color:#476178;background:#f5f8fc;border-color:#e1e8f0}.ctp-card .ctp-project-description{margin:16px 0 0;line-height:1.7;color:#64748b}@media(max-width:600px){.ctp-project-heading{gap:10px}.ctp-project-badges{width:100%}}
 
 .ctp-task-chat-footer{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:12px;border-top:1px solid #eef2f7}.ctp-task-chat-footer>span{font-size:12px;color:#64748b}.ctp-task-chat-footer button{flex-shrink:0}@media(max-width:480px){.ctp-task-chat-footer{align-items:flex-end;flex-direction:column;text-align:right}}
 

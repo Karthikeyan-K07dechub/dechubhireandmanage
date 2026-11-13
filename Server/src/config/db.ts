@@ -13,6 +13,11 @@ async function ensureSeparateCollections(): Promise<void> {
   const existingCollections = await db.listCollections({}, { nameOnly: true }).toArray();
   const collectionNames = new Set(existingCollections.map((collection) => collection.name));
 
+  if (!collectionNames.has('workupdates')) {
+    await db.createCollection('workupdates');
+    logger.info('Created MongoDB collection: workupdates');
+  }
+
   if (!collectionNames.has('company_auth_accounts')) {
     await db.createCollection('company_auth_accounts');
     logger.info('Created MongoDB collection: company_auth_accounts');

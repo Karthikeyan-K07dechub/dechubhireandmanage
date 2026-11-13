@@ -1,8 +1,9 @@
+import {ProjectUpdatesCard} from '../../components/ProjectUpdates';
 import DashboardProjectOverview from '../components/DashboardProjectOverview';
 import { useEffect, useRef, useState } from 'react';
 import type { Worker, Invoice, DashboardStats, Contract } from '../types/dashboard.type';
 import { getDashboardStats, getWorkers, getInvoices, getContracts, approveInvoice } from '../api/dashboard.api';
-import { getCompanyProjects, getCompanyProjectTasks, type DeliveryProject } from '../../api/projects.api';
+import { getCompanyProjects, type DeliveryProject } from '../../api/projects.api';
 import { listCompanyTalentRequests, type CompanyTalentRequestItem } from '../../api/talentRequests.api';
 import { getMyCompany } from '../../api/company.api';
 import { buildPendingActions } from '../utils/pendingActions';
@@ -127,7 +128,6 @@ export default function DashboardHome({ onNavigate }: Props) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [projects, setProjects] = useState<DeliveryProject[]>([]);
-  const [tasksInProgress, setTasksInProgress] = useState<number | null>(null);
   const [requests, setRequests] = useState<CompanyTalentRequestItem[]>([]);
   const [readNoticeIds, setReadNoticeIds] = useState<Set<string>>(new Set());
   const [signupStep, setSignupStep] = useState<number | null>(null);
@@ -159,13 +159,7 @@ export default function DashboardHome({ onNavigate }: Props) {
           listCompanyTalentRequests(),
           getMyCompany(),
         ]);
-        const taskResults = p.status === 'fulfilled'
-          ? await Promise.allSettled(p.value.map(project => getCompanyProjectTasks(project._id)))
-          : null;
         if (cancelled) return;
-        setTasksInProgress(taskResults && taskResults.every(result => result.status === 'fulfilled')
-          ? new Set(taskResults.flatMap(result => result.status === 'fulfilled' ? result.value.filter(task => task.status === 'in_progress').map(task => task._id) : [])).size
-          : null);
         setStats(s.status === 'fulfilled' ? s.value : null);
         setWorkers(w.status === 'fulfilled' ? w.value : []);
         setInvoices(inv.status === 'fulfilled' ? inv.value : []);
@@ -187,7 +181,7 @@ export default function DashboardHome({ onNavigate }: Props) {
         }
         setSignupStep(company.status === 'fulfilled' ? company.value.user?.signupStep ?? null : null);
         setFailedSections([
-          [s, 'Dashboard totals'], [w, 'Workers'], [inv, 'Invoices'], [c, 'Contracts'],
+          [s, 'Dashboard totals'], [w, 'Talents'], [inv, 'Invoices'], [c, 'Contracts'],
           [p, 'Projects'], [r, 'Manage Requests'], [company, 'Company setup'],
         ].flatMap(([result, label]) => (result as PromiseSettledResult<unknown>).status === 'rejected' ? [label as string] : []));
         setLoading(false);
@@ -244,21 +238,13 @@ export default function DashboardHome({ onNavigate }: Props) {
       <div className="db-stats-row db-home-stats">
         <StatCard
           icon="Team"
-          label="Total Workers"
+          label="Total Talents"
           className="db-worker-total-card"
           value={failedSections.includes('Projects') ? '-' : projectWorkerCount}
-          delta={failedSections.includes('Projects') ? 'Unable to load project workers' : 'Across all projects'}
+          delta={failedSections.includes('Projects') ? 'Unable to load project talents' : 'Across all projects'}
           deltaType="neutral"
         />
-        <StatCard
-          icon=""
-          label="Tasks in progress"
-          actionLabel="View projects"
-          onAction={() => onNavigate('projects')}
-          value={tasksInProgress ?? '-'}
-          delta={tasksInProgress === null ? 'Unable to load project tasks' : 'Across all projects'}
-          deltaType="neutral"
-        />
+        <ProjectUpdatesCard/>
 
 <div className="db-card db-home-invoice-card">
             <div className="db-card-header">

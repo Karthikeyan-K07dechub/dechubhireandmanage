@@ -1,14 +1,17 @@
 import { api, ApiResponse, normalizeError, unwrapApiData } from './client';
 
 export interface TalentRequestItem {
-  deliveryProject?: { _id: string; title: string; status: string; startDate: string | null; endDate: string | null; completedAt: string | null; paymentVerifiedAt?: string | null; clientAcceptedAt?: string | null; workers: Array<{ workerId: string; role: string; acceptedAt?: string | null; completedAt: string | null }> } | null;
+  deliveryProject?: { deliveryMode?:'client_managed'|'bridge_managed'; _id: string; title: string; status: string; startDate: string | null; endDate: string | null; completedAt: string | null; paymentVerifiedAt?: string | null; clientAcceptedAt?: string | null; contractSentAt?:string|null; workers: Array<{ workerId: string; name?:string; role: string; contractSentAt?:string|null; acceptedAt?: string | null; completedAt: string | null }> } | null;
   clientContractApprovedAt?: string | null;
   projectCompleted?: boolean;
   contractorContractApproved?: boolean;
   contractorAcceptedCount?: number;
   contractorTotalCount?: number;
-  clientDecisions?: Array<{ workerId: string; decision: 'accepted' | 'rejected' }>;
+  clientDecisions?: Array<{ workerId: string; decision: 'accepted' | 'rejected';reason?:string|null }>;
   clientSelectionSubmittedAt?: string | null;
+  deliveryMode?:'client_managed'|'bridge_managed'|null;
+  projectStage?:'existing_project'|'new_project'|null;
+  updatedAt?:string;
   projectName?: string;
   expectedStartDate?: string | null;
   expectedEndDate?: string | null;
@@ -141,9 +144,9 @@ export async function updateTalentRequestStatus(
   } catch (err) { throw normalizeError(err); }
 }
 
-export async function markAsRead(id: string) {
+export async function markAsRead(id: string, updatedAt?:string) {
   try {
-    const res = await api.post<ApiResponse<any>>(`/admin/talent-requests/${id}/mark-as-read`);
+    const res = await api.post<ApiResponse<any>>(`/admin/talent-requests/${id}/mark-as-read`,{updatedAt});
     return unwrapApiData(res.data);
   } catch (err) { throw normalizeError(err); }
 }

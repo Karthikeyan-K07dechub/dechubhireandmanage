@@ -12,16 +12,17 @@ import { TalentRequest } from '../models/TalentRequest';
 import { Worker } from '../models/Worker';
 import { env } from '../config/env';
 import { AppError, Errors, created, ok } from '../utils/response';
-import { sendEmail } from '../utils/email';
+import { queueEmail as sendEmail } from '../utils/email';
 import { logger } from '../utils/logger';
 
 const teamMemberSchema = z.object({
-  agreedAmount: z.number().finite().positive(),
+  agreedAmount: z.number().finite().positive().optional(),
   workerId: z.string().trim().min(1),
   role: z.string().trim().min(2).max(120),
 });
 
 const projectSchema = z.object({
+  manualTalentContracts:z.boolean().default(false),
   talentRequestId: z.string().trim().min(1).optional(),
   companyId: z.string().trim().min(1).optional(),
   title: z.string().trim().min(3).max(180),
@@ -32,8 +33,8 @@ const projectSchema = z.object({
   paymentTerms: z.string().trim().min(3).max(1200),
   startDate: z.string().datetime().optional().nullable(),
   targetEndDate: z.string().datetime().optional().nullable(),
-  deliverables: z.array(z.string().trim().min(1).max(600)).min(1).max(50),
-  teamMembers: z.array(teamMemberSchema).min(1).max(20),
+  deliverables: z.array(z.string().trim().min(1).max(600)).max(50).default([]),
+  teamMembers: z.array(teamMemberSchema).min(1,'Select at least one talent for this project.').max(20),
 }).refine((value) => Boolean(value.talentRequestId || value.companyId), {
   message: 'A talent request or company is required.',
   path: ['companyId'],
@@ -149,6 +150,7 @@ export async function createProject(req: Request, res: Response, next: NextFunct
   try {
     const data = projectSchema.parse(req.body);
     let companyId = data.companyId;
+    let deliveryMode:'client_managed'|'bridge_managed'='client_managed';
     let talentRequestId: string | undefined;
     let startDate = data.startDate ? new Date(data.startDate) : null;
     let targetEndDate = data.targetEndDate ? new Date(data.targetEndDate) : null;
@@ -158,6 +160,7 @@ export async function createProject(req: Request, res: Response, next: NextFunct
       if (!request?.companyId) throw new AppError('The selected request is not linked to a signed-up company.', 400, 'COMPANY_REQUIRED');
       companyId = request.companyId.toString();
       talentRequestId = request._id.toString();
+      deliveryMode=request.projectStage==='existing_project'?'client_managed':request.deliveryMode||'client_managed';
       if (request.shortlistedWorkerIds?.length && !request.clientSelectionSubmittedAt && !request.workerId) {
         throw new AppError('Wait for the client to submit their shortlist decisions before preparing the contract.', 400, 'CLIENT_SELECTION_REQUIRED');
       }
@@ -184,6 +187,7 @@ export async function createProject(req: Request, res: Response, next: NextFunct
 
     const project = await Project.create({
       ...data,
+      deliveryMode,
       companyId: company._id,
       talentRequestId: talentRequestId ?? null,
       startDate,
@@ -301,7 +305,7 @@ export async function acceptProjectContract(req: Request, res: Response, next: N
     if (project.talentRequestId) await TalentRequest.updateOne({ _id: project.talentRequestId, companyId: company._id }, { $set: { unread: true } });
 
 
-    void notifyWorkers(project, 'Review your project contract', `The client has approved ${project.title}. Open Contracts in your contractor dashboard to review and accept.`, `/contractor/dashboard?tab=contract&project=${project._id}`).catch(error => logger.error('Worker project contract email failed', error));
+    if(!project.manualTalentContracts) void notifyWorkers(project, 'Review your project contract', `The client has approved ${project.title}. Open Contracts in your contractor dashboard to review and accept.`, `/contractor/dashboard?tab=contract&project=${project._id}`).catch(error => logger.error('Worker project contract email failed', error));
     await sendAdminEmail(`Client accepted project: ${project.title}`, `${company.companyName ?? 'Client company'} accepted the project contract for ${project.title}.`);
     await CompanyNotification.create({
       companyId: company._id,
@@ -324,7 +328,9 @@ export async function listCompanyProjects(req: Request, res: Response, next: Nex
   } catch (error) { next(error); }
 }
 
-export async function createProjectTask(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function createProjectTask(req:Request,res:Response,next:NextFunction){return createAssignedTask(req,res,next,false);}
+export async function createAdminProjectTask(req:Request,res:Response,next:NextFunction){return createAssignedTask(req,res,next,true);}
+async function createAssignedTask(req: Request, res: Response, next: NextFunction,admin:boolean): Promise<void> {
   let attachment: Awaited<ReturnType<typeof uploadTaskAttachmentFile>> | undefined;
   let savedTask: InstanceType<typeof ProjectTask> | undefined;
   let committed=false;
@@ -332,22 +338,24 @@ export async function createProjectTask(req: Request, res: Response, next: NextF
     let payload=req.body;
     if(req.body.payload){try{payload=JSON.parse(req.body.payload);}catch{throw new AppError('Invalid task details.',422,'INVALID_TASK');}}
     const data=taskSchema.parse(payload);
-    const company = await getCompanyForUser(req.user!.sub);
-    const project = await Project.findOne({ _id: req.params.id, companyId: company._id, status: { $in: ['active', 'payment_submitted'] } });
+    const company = admin?null:await getCompanyForUser(req.user!.sub);
+    const project = await Project.findOne({ _id: req.params.id, ...(company?{companyId:company._id}:{}), status: { $in: ['active', 'payment_submitted'] } });
     if (!project) throw new AppError('Only active projects can receive tasks.', 400, 'PROJECT_NOT_ACTIVE');
 
+    if(admin?project.deliveryMode!=='bridge_managed':project.deliveryMode==='bridge_managed')throw new AppError(admin?'Task assignment is managed by the client for this project.':'Bridge assigns tasks for this project.',403,'TASK_ASSIGNMENT_FORBIDDEN');
     const permittedWorkerIds = new Set(project.teamMembers.map((member) => member.workerId.toString()));
     if (data.assigneeWorkerIds.some((workerId) => !permittedWorkerIds.has(workerId))) throw Errors.Forbidden();
 
     const task = new ProjectTask({
       ...data,
       projectId: project._id,
-      companyId: company._id,
+      companyId: project.companyId,
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
-      createdByCompanyUserId: req.user!.sub,
+      createdByCompanyUserId:admin?null:req.user!.sub,
+      createdByAdminEmail:admin?req.user!.email:null,
     });
 
-    if(req.file){attachment=await uploadTaskAttachmentFile(req.file,String(company._id),'tasks/'+task._id);task.attachmentName=attachment.fileName;task.assignmentAttachment=attachment;}
+    if(req.file){attachment=await uploadTaskAttachmentFile(req.file,String(project.companyId),'tasks/'+task._id);task.attachmentName=attachment.fileName;task.assignmentAttachment=attachment;}
     await task.save();savedTask=task;
     committed=true;
     await Project.updateOne({_id:project._id},{$pull:{deliveryCompletions:{workerId:{$in:data.assigneeWorkerIds}}},$set:{deliveryCompletedAt:null}});
@@ -362,7 +370,7 @@ export async function createProjectTask(req: Request, res: Response, next: NextF
         type: 'general',
         title: 'New project task assigned',
         message: `You have been assigned "${task.title}" in ${project.title}.`,
-        actionUrl: `/contractor/dashboard?tab=projects&project=${project._id}`,
+        actionUrl: `/contractor/dashboard?tab=projects&project=${project._id}&task=${task._id}`,
       })));
       await Promise.all(workers.map((worker) => sendEmail(worker.email, `New task: ${task.title}`, `<p>Hi ${worker.firstName},</p><p>You have a new task in ${project.title}: <strong>${task.title}</strong>.</p>`)));
 
@@ -420,13 +428,15 @@ export async function verifyProjectPayment(req: Request, res: Response, next: Ne
 async function serializeWorkerProject(project: InstanceType<typeof Project>, workerId: string) {
   const company = await Company.findById(project.companyId).select('companyName companyWebsite companyCountry addressLine1 addressCity');
   const team = await Worker.find({ _id: { $in: project.teamMembers.map(member => member.workerId) } }).select('firstName lastName');
+  const talentContract = project.teamMembers.find(member => String(member.workerId) === workerId)?.talentContract;
   const agreedAmount = project.teamMembers.find(member => String(member.workerId) === workerId)?.agreedAmount ?? null;
   const acceptance = project.contractorAcceptances?.find(entry => entry.workerId.toString() === workerId);
   return {
-    _id: project._id, title: project.title, description: project.description, scope: project.scope,
-    deliverables: project.deliverables, budget: agreedAmount ?? 0, agreedAmount, currency: project.currency,
-    paymentTerms: project.paymentTerms, startDate: project.startDate, targetEndDate: project.targetEndDate,
+    _id: project._id, title: project.title, description: project.description, scope: talentContract?.scope ?? project.scope,
+    deliverables: talentContract?.deliverables ?? project.deliverables, budget: agreedAmount ?? 0, agreedAmount, currency: project.currency,
+    paymentTerms: talentContract?.paymentTerms ?? project.paymentTerms, startDate: project.startDate, targetEndDate: project.targetEndDate,
     status: project.status, createdAt: project.createdAt, teamMembers: project.teamMembers.map(member => ({ workerId: member.workerId, role: member.role })),
+    talentContractAvailable: !project.manualTalentContracts||!!talentContract,
     clientAcceptedAt: project.clientAcceptedAt, contractorAcceptedAt: acceptance?.acceptedAt ?? null,
     deliveryCompletedAt: project.deliveryCompletedAt,
     contractorCompletedAt: project.deliveryCompletions?.find(entry => entry.workerId.toString() === workerId)?.completedAt ?? null,
@@ -453,6 +463,7 @@ export async function acceptWorkerProjectContract(req: Request, res: Response, n
     const worker = await getWorkerFromRequest(req);
     const project = await Project.findOne({ _id: req.params.id, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted'] } });
     if (!project) throw new AppError('This project contract is not available for your acceptance. The client must approve it first.', 409, 'CONTRACT_NOT_AVAILABLE');
+    if(project.manualTalentContracts&&!project.teamMembers.find(m=>String(m.workerId)===String(worker._id))?.talentContract)throw new AppError('Admin has not sent your individual talent contract yet.',409,'TALENT_CONTRACT_NOT_SENT');
     const updated = await Project.findOneAndUpdate({
       _id: project._id, 'teamMembers.workerId': worker._id, clientAcceptedAt: { $ne: null }, status: { $in: ['active', 'payment_submitted'] },
       'contractorAcceptances.workerId': { $ne: worker._id },
@@ -514,6 +525,7 @@ export async function updateWorkerProjectTask(req: Request, res: Response, next:
     if (!project || !project.clientAcceptedAt || !project.contractorAcceptances?.some(entry => entry.workerId.toString() === worker._id.toString())) throw new AppError('Accept the project contract in Contracts before updating tasks.', 403, 'PROJECT_CONTRACT_REQUIRED');
     if (!['active', 'payment_submitted'].includes(project.status)) throw new AppError('This task cannot be updated.', 400, 'TASK_NOT_ACTIVE');
 
+    if(project.deliveryMode==='bridge_managed')throw new AppError('Submit through Work Updates for admin review.',403,'ADMIN_REVIEW_REQUIRED');
     if (project.deliveryCompletions?.some(entry => entry.workerId.toString() === worker._id.toString())) throw new AppError('This delivery has been completed and is ready for invoicing.', 409, 'DELIVERY_COMPLETED');
     task.status = data.status;
     task.completionNote = data.completionNote ?? task.completionNote;

@@ -1,3 +1,5 @@
+import {startEmailQueue} from './services/emailQueue.service';
+import {startITAccessAdminEmails} from './services/itAccessAdminEmail.service';
 import {startStripeReconciliation} from './services/monthlyStripe.service';
 import {startStripePaymentEmails} from './services/stripePaymentEmails.service';
 import {startMonthlyInvoiceEmails} from './services/monthlyInvoiceEmail.service';
@@ -23,6 +25,8 @@ function configureDns(): void {
 async function bootstrap(): Promise<void> {
   configureDns();
   await connectDB();
+  startEmailQueue();
+  startITAccessAdminEmails();
   startMonthlyInvoiceEmails();
   startStripePaymentEmails();
   startStripeReconciliation();

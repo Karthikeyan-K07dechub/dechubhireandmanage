@@ -15,7 +15,7 @@ import { MarketplaceOrderDraft } from '../models/MarketplaceOrderDraft';
 import { TalentRequest } from '../models/TalentRequest';
 import { ok, created, Errors, AppError } from '../utils/response';
 import { logger } from '../utils/logger';
-import { sendEmail, sendTalentRequestAdminNotificationEmail, sendDemoClientConfirmationEmail } from '../utils/email';
+import { queueEmail as sendEmail, sendTalentRequestAdminNotificationEmail, sendDemoClientConfirmationEmail } from '../utils/email';
 import { queueBookDemoSubmissionToGoogleSheets } from '../services/googleSheets.service';
 import { env } from '../config/env';
 
@@ -281,6 +281,8 @@ const marketplaceOrderDraftSchema = z.object({
 });
 
 const marketplaceTalentRequestSchema = z.object({
+  deliveryMode:z.enum(['client_managed','bridge_managed']).optional(),
+  projectStage:z.enum(['existing_project','new_project']).optional(),
   projectName: z.string().trim().min(1).max(180).optional(),
   companyName: z.string().trim().min(1).max(120),
   companyWebsite: z.union([z.string().trim().url().max(300), z.literal('')]),
@@ -576,16 +578,20 @@ export async function createMarketplaceOrderDraft(req: Request, res: Response, n
 export async function createCompanyProjectRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const details = z.object({
+      deliveryMode:z.enum(['client_managed','bridge_managed']).optional(),
+      projectStage:z.enum(['existing_project','new_project']),
       projectName: z.string().trim().min(1).max(180),
       projectType: z.string().trim().min(1).max(100),
       projectDescription: z.string().trim().min(1).max(3000),
       expectedStartDate: z.string().min(1),
       expectedEndDate: z.string().min(1),
     }).and(expectedProjectDatesSchema).parse(req.body);
+    if(details.projectStage==='new_project'&&!details.deliveryMode)throw new AppError('Choose how you want to deliver the new project.',422,'DELIVERY_MODE_REQUIRED');
     const { account, company } = await getCompanyForUser(req.user!.sub);
     const defaults = await resolveCompanyRequestDetails({ companyId: company._id, email: account.email });
     req.body = {
       ...details,
+      deliveryMode:details.projectStage==='existing_project'?'client_managed':details.deliveryMode,
       companyName: defaults.companyName || 'Company name not provided',
       companyWebsite: defaults.companyWebsite || '',
       contactName: `${defaults.contactFirstName ?? ''} ${defaults.contactLastName ?? ''}`.trim(),
@@ -640,6 +646,7 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
     const companyWebsite = data.companyWebsite.trim();
     const projectType = data.projectType.trim();
     const projectDescription = data.projectDescription.trim();
+    const notificationDescription = data.projectStage?'Hiring for: '+(data.projectStage==='existing_project'?'Existing project':'New project')+'. Delivery: '+(data.deliveryMode==='bridge_managed'?'Bridge delivers the entire project':'Talents work with the client team')+'\n\n'+projectDescription:projectDescription;
 
     const buildAdminNotificationPayload = (request: InstanceType<typeof TalentRequest> | null, dbSaveSucceeded: boolean) => ({
       requestId: request?._id?.toString() ?? null,
@@ -650,7 +657,7 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       contactEmail,
       phoneNumber: contactPhone,
       projectType,
-      projectDescription,
+      projectDescription:notificationDescription,
       requestedServices,
       dbSaveSucceeded,
     });
@@ -663,7 +670,7 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       workEmail: contactEmail,
       phoneNumber: contactPhone,
       projectType,
-      projectDescription,
+      projectDescription:notificationDescription,
       requestedServices,
       dbSaveStatus,
       requestId: request?._id?.toString() ?? null,
@@ -674,6 +681,8 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
         companyId,
         workerId: null,
         workerName: 'Open talent request',
+        deliveryMode:data.projectStage==='existing_project'?'client_managed':data.deliveryMode,
+        projectStage:data.projectStage,
         projectName: data.projectName ?? '',
         expectedStartDate: data.expectedStartDate ? new Date(`${data.expectedStartDate}T00:00:00.000Z`) : null,
         expectedEndDate: data.expectedEndDate ? new Date(`${data.expectedEndDate}T00:00:00.000Z`) : null,

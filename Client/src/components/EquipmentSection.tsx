@@ -14,7 +14,7 @@ const statusLabel=(item:Equipment,role:Role)=>item.status==='approved'?'Client a
 export default function EquipmentSection({role,readOnly=false,onViewed,unreadIds=[]}:{role:Role;readOnly?:boolean;onViewed?:(id:string)=>void;unreadIds?:string[]}){
  const [items,setItems]=useState<Equipment[]>([]),[projects,setProjects]=useState<DeliveryProject[]>([]);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[loadError,setLoadError]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('');
- const [selectedId,setSelectedId]=useState(new URLSearchParams(window.location.search).get(role==='admin'?'equipment':'request')||'');
+ const [selectedId,setSelectedId]=useState('');
  const [rejecting,setRejecting]=useState(false),[rejection,setRejection]=useState('');
  const [form,setForm]=useState({projectId:'',equipmentType:'Laptop',otherEquipment:'',reason:'',specifications:'',details:''});
  const [filter,setFilter]=useState('all');
@@ -104,7 +104,7 @@ export default function EquipmentSection({role,readOnly=false,onViewed,unreadIds
       <footer><button type="button" disabled={busy} onClick={()=>requestDialog.current?.close()}>Cancel</button><button className="equipment-primary" disabled={busy||!form.projectId||!form.reason.trim()||(form.equipmentType==='Other'&&!form.otherEquipment.trim())}>{busy?'Sending...':'Send request'}</button></footer>
     </form>
   </dialog>
-  <dialog ref={viewDialog} className="equipment-dialog" aria-labelledby="equipment-detail-title" onCancel={event=>{event.preventDefault();closeView();}}>
+  <dialog data-update-resource={selected?'equipment:'+selected._id:undefined} ref={viewDialog} className="equipment-dialog" aria-labelledby="equipment-detail-title" onCancel={event=>{event.preventDefault();closeView();}}>
    <header><h2 id="equipment-detail-title">Equipment request</h2><button type="button" disabled={busy} onClick={closeView}>Close</button></header>
    {selected&&<><span className={'equipment-status '+selected.status}>{statusLabel(selected,role)}</span><dl>{[['Project',selected.projectName],['Project status',selected.projectStatus==='completed'?'Completed':'In progress'],['Contractor',selected.contractorName],['Company',selected.companyName],...(role==='admin'?[['Client email',selected.clientEmail||'Not provided'],['Client contact number',selected.clientPhone||'Not provided']]:[]),['Equipment',selected.equipmentType==='Other'?(selected.otherEquipment||'Other'):selected.equipmentType],['Reason',selected.reason],['Specifications',selected.specifications||'Not specified'],['Additional details',selected.details||'Not provided'],...(role!=='contractor'?[['Contractor email',selected.contractorEmail]]:[]),...(selected.rejectionReason?[['Rejection reason',selected.rejectionReason]]:[])].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{label==='Client email'&&selected.clientEmail?<a className="equipment-contact-link" href={'mailto:'+selected.clientEmail}>{value}</a>:label==='Client contact number'&&selected.clientPhone?<a className="equipment-contact-link" href={'tel:'+selected.clientPhone.replace(/[^+0-9]/g,'')}>{value}</a>:value}</dd></div>)}</dl>
    <p>Dechub admin will coordinate equipment management and contact the relevant people about next steps.</p>

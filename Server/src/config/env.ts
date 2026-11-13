@@ -8,6 +8,7 @@ const envSchema = z.object({
  SUPABASE_SECRET_KEY: z.string().default(''),
  SUPABASE_CONTRACTOR_KYC_BUCKET: z.string().default('KYC-Contractor-docs'),
  SUPABASE_CLIENT_KYB_BUCKET: z.string().default('KYC-client-docs'),
+ SUPABASE_WORK_UPDATES_BUCKET: z.string().default('work_updates'),
  SUPABASE_INVOICE_BUCKET: z.string().default('client-invoices'),
   PORT:                  z.string().default('4000'),
   NODE_ENV:              z.enum(['development', 'production', 'test']).default('development'),

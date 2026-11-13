@@ -1,3 +1,4 @@
+import useAdminUpdateAttention from '../../components/useAdminUpdateAttention';
 import MonthlyInvoices from './MonthlyInvoices';
 import AttentionDot from '../../components/AttentionDot';
 import {api,unwrapApiData} from '../../api/client';
@@ -20,6 +21,9 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   const [loadError,setLoadError]=useState('');
   const fetching=useRef(false);
   const [equipmentUnread,setEquipmentUnread]=useState(false);
+  const invoiceUpdates=useAdminUpdateAttention();
+  const [projectUnread,setProjectUnread]=useState<Record<string,number>>({});
+  useEffect(()=>{let active=true;const load=()=>{if(document.hidden)return;void api.get('/admin/work-updates/projects').then(r=>{if(active)setProjectUnread(Object.fromEntries(r.data.data.map((p:{_id:string;unreadCount:number})=>[p._id,p.unreadCount])));}).catch(()=>{});};load();const timer=setInterval(load,15000);window.addEventListener('project-updates-read',load);return()=>{active=false;clearInterval(timer);window.removeEventListener('project-updates-read',load);};},[]);
 
   const statusTone: Record<string, string> = {
     pending_review: 'new',
@@ -66,7 +70,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   const approvedCount = items.filter((item) => !isHired(item) && ['approved', 'candidate_selected', 'hire_started'].includes(item.status)).length;
   const hiredCount = items.filter(isHired).length;
 
-  if(showInvoices)return <div className="atr-root"><header className="atr-hero"><div className="atr-hero-copy"><span className="atr-kicker">Admin cockpit</span><h1>Invoices</h1><p>Monthly client billing across your projects.</p></div><div className="atr-hero-actions"><button className="atr-logout" onClick={()=>{setShowInvoices(false);window.history.replaceState({},'','/admin/talent-requests');}}>Back to talent requests</button><button className="atr-logout" onClick={onLogout}>Logout</button></div></header><main className="atr-main"><MonthlyInvoices/></main></div>;
+  if(showInvoices)return <div className="atr-root"><header className="atr-hero"><div className="atr-hero-copy"><span className="atr-kicker">Admin cockpit</span><h1>Invoices</h1><p>Monthly client billing across your projects.</p></div><div className="atr-hero-actions"><button className="atr-logout" onClick={()=>{setShowInvoices(false);window.history.replaceState({},'','/admin/talent-requests');}}>Back to talent requests</button><button className="atr-logout" onClick={onLogout}>Logout</button></div></header><main className="atr-main"><MonthlyInvoices unreadUpdates={invoiceUpdates}/></main></div>;
   if(showEquipment)return <div className="atr-root"><header className="atr-hero"><div className="atr-hero-copy"><span className="atr-kicker">Admin cockpit</span><h1>Equipment</h1></div><div className="atr-hero-actions"><button className="atr-logout" type="button" onClick={()=>{setShowEquipment(false);const params=new URLSearchParams(window.location.search);params.delete('equipment');window.history.replaceState({},'','/admin/talent-requests'+(params.size?'?'+params.toString():''));}}>Back to talent requests</button><button className="atr-logout" onClick={onLogout}>Logout</button></div></header><main className="atr-main"><EquipmentSection role="admin"/></main></div>;
   return (
     <div className="atr-root">
@@ -79,7 +83,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
       <header className="atr-hero">
         <div className="atr-hero-copy">
           <span className="atr-kicker">Admin cockpit</span>
-          <h1>Talent requests{badge>0&&<AttentionDot/>}</h1>
+          <h1>Talent requests{(badge>0||Object.values(projectUnread).some(count=>count>0))&&<AttentionDot/>}</h1>
           <p>
             Review incoming hiring demand, track pipeline movement, and respond quickly with a cleaner
             premium workspace.
@@ -91,7 +95,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
             <span className="atr-badge-label">Unread queue</span>
             <strong>{badge}</strong>
           </div>
-          <button className="atr-logout" type="button" onClick={()=>{setShowInvoices(true);window.history.replaceState({},'','/admin/talent-requests?invoices=all');}}>Invoices</button><button className="atr-logout" type="button" onClick={()=>{setShowEquipment(true);window.history.replaceState({},'','/admin/talent-requests?equipment=all');}}>Equipment{equipmentUnread&&<AttentionDot label="New equipment request or client decision"/>}</button><button className="atr-logout" onClick={onLogout}>Logout</button>
+          <button className="atr-logout" type="button" onClick={()=>{setShowInvoices(true);window.history.replaceState({},'','/admin/talent-requests?invoices=all');}}>Invoices{invoiceUpdates.length>0&&<AttentionDot label="Unread invoice updates"/>}</button><button className="atr-logout" type="button" onClick={()=>{setShowEquipment(true);window.history.replaceState({},'','/admin/talent-requests?equipment=all');}}>Equipment{equipmentUnread&&<AttentionDot label="New equipment request or client decision"/>}</button><button className="atr-logout" onClick={onLogout}>Logout</button>
         </div>
       </header>
       <section className="atr-stats" aria-label="Summary">
@@ -155,7 +159,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
                         <span>{it.email}</span>
                       </div>
                     </td>
-                    <td><div className="atr-person-cell"><strong>{it.projectName?.trim() || it.deliveryProject?.title || 'Project name not provided'}{it.unread&&<AttentionDot/>}</strong></div></td>
+                    <td><div className="atr-person-cell"><strong>{it.projectName?.trim() || it.deliveryProject?.title || 'Project name not provided'}{(it.unread||!!projectUnread[it.deliveryProject?._id||''])&&<AttentionDot label="Unread request or task updates"/>}</strong></div></td>
                     <td>
                       <div className="atr-person-cell">
                         <strong>{it.workerName}</strong>

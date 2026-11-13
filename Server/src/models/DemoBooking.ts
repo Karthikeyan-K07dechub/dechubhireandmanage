@@ -1,6 +1,8 @@
 import mongoose,{Schema} from 'mongoose';
 const schema=new Schema({
  firstName:{type:String,required:true},lastName:{type:String,required:true},email:{type:String,required:true},
+ deliveryMode:{type:String,enum:['client_managed','bridge_managed'],default:null},
+ projectStage:{type:String,enum:['existing_project','new_project'],default:null},
  employeeCount:{type:String,required:true},country:{type:String,required:true},website:{type:String,required:true},phone:{type:String,required:true},
  requestedServices:{type:[String],default:[]},startAt:{type:Date,required:true},hostEmail:{type:String,default:'prasanna@dechub.in'},
  status:{type:String,enum:['scheduled','cancelled'],default:'scheduled'},managementHash:{type:String,required:true,unique:true},

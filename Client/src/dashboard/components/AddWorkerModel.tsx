@@ -7,7 +7,7 @@ import { inviteWorker } from '../api/dashboard.api';
 // ─── Step labels ──────────────────────────────────────────────────────────────
 
 const SHOW_WORKER_TYPE_STEP = false;
-const ALL_STEPS = ['Worker type', 'Details', 'Services', 'Contract', 'Review'];
+const ALL_STEPS = ['Talent type', 'Details', 'Services', 'Contract', 'Review'];
 const STEPS = SHOW_WORKER_TYPE_STEP ? ALL_STEPS : ALL_STEPS.slice(1);
 const DETAILS_STEP = SHOW_WORKER_TYPE_STEP ? 1 : 0;
 const SERVICES_STEP = DETAILS_STEP + 1;
@@ -47,7 +47,7 @@ function Step1Type({ data, onChange }: {
     <div>
       <div style={{ marginBottom: 24 }}>
         <div className="db-form-group" style={{ marginBottom: 8 }}>
-          <label className="db-label" style={{ marginBottom: 10 }}>Worker Type</label>
+          <label className="db-label" style={{ marginBottom: 10 }}>Talent Type</label>
         </div>
         <div className="db-type-grid">
           <button
@@ -85,7 +85,7 @@ function Step1Type({ data, onChange }: {
 
       <div>
         <div className="db-form-group" style={{ marginBottom: 8 }}>
-          <label className="db-label" style={{ marginBottom: 10 }}>Worker Location Track</label>
+          <label className="db-label" style={{ marginBottom: 10 }}>Talent Location Track</label>
         </div>
         <div className="db-type-grid">
           <button
@@ -162,7 +162,7 @@ function Step2Details({ data, onChange, errors, locked }: {
   return (
     <div>
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.6 }}>
-        Enter the worker's basic information. An invitation email will be sent
+        Enter the talent's basic information. An invitation email will be sent
         to their email address to complete their profile and KYC.
       </p>
 
@@ -318,7 +318,7 @@ function Step3Services({ data, onToggle }: {
     <div>
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 1.6 }}>
         Choose which Dechub-Bridge services to activate for{' '}
-        <strong>{data.firstName || 'this worker'}</strong>.
+        <strong>{data.firstName || 'this talent'}</strong>.
       </p>
 
       <p className="db-service-section-label">Available services</p>
@@ -487,9 +487,9 @@ function Step5Review({ data }: { data: AddWorkerFormData }) {
       </div>
 
       <div className="db-review-section">
-        <div className="db-review-section-title">Worker info</div>
+        <div className="db-review-section-title">Talent info</div>
         <div className="db-review-row"><span className="db-review-key">Email</span><span className="db-review-val">{data.email}</span></div>
-        <div className="db-review-row"><span className="db-review-key">Worker type</span><span className="db-review-val">{typeLabel}</span></div>
+        <div className="db-review-row"><span className="db-review-key">Talent type</span><span className="db-review-val">{typeLabel}</span></div>
         <div className="db-review-row"><span className="db-review-key">Track</span><span className="db-review-val">{trackLabel}</span></div>
         <div className="db-review-row"><span className="db-review-key">Department</span><span className="db-review-val">{data.department || '—'}</span></div>
       </div>
@@ -540,7 +540,7 @@ function validateStep(step: number, data: AddWorkerFormData): Record<string, str
   const errors: Record<string, string> = {};
 
   if (SHOW_WORKER_TYPE_STEP && step === 0) {
-    if (!data.workerType) errors.workerType = 'Select a worker type';
+    if (!data.workerType) errors.workerType = 'Select a talent type';
     if (!data.track)      errors.track      = 'Select a track';
   }
 
@@ -673,7 +673,7 @@ export default function AddWorkerModal({
       onSuccess(worker);
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setApiError(e?.message ?? 'Failed to invite worker. Please try again.');
+      setApiError(e?.message ?? 'Failed to invite talent. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -689,7 +689,7 @@ export default function AddWorkerModal({
         {/* Header */}
         <div className="db-modal-header">
           <div>
-            <div className="db-modal-title">Add Worker</div>
+            <div className="db-modal-title">Add Talent</div>
             <div className="db-modal-sub">
               Step {step + 1} of {STEPS.length} — {STEPS[step]}
             </div>
