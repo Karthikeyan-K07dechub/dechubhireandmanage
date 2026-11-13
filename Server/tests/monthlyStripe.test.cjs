@@ -1,0 +1,36 @@
+// Run from repository root after building Server. No network, DB, or email delivery.
+const assert=require('node:assert/strict');
+process.chdir(require('node:path').join(__dirname,'..'));
+const {MonthlyInvoice}=require('../dist/models/MonthlyInvoice');
+const {CompanyAuth}=require('../dist/models/CompanyAuth');
+const stripe=require('../dist/services/stripeInvoices.service');
+const {env}=require('../dist/config/env');
+const Stripe=require('stripe');
+env.STRIPE_SECRET_KEY='sk_test_local_fixture';env.STRIPE_WEBHOOK_SECRET='whsec_local_fixture';
+let remote={id:'in_fixture',number:'INV-001',customer_email:'billing@example.test',currency:'aed',total:500000,status:'open',hosted_invoice_url:'https://invoice.stripe.com/i/test',livemode:false,status_transitions:{paid_at:1794393000}};
+const sdk=new Stripe('sk_test_local_fixture',{apiVersion:'2023-10-16'});
+stripe.stripeClient=()=>({invoices:{retrieve:async()=>remote},webhooks:sdk.webhooks});
+CompanyAuth.findById=async()=>({email:'owner@example.test'});
+let row={_id:'local',__v:0,companyId:'company',stripeInvoiceId:remote.id,stripeLiveMode:false,stripeStatus:'open',currency:'AED',amount:5000,status:'sent',history:[]};
+let writes=0;
+MonthlyInvoice.findOne=async q=>q.stripeInvoiceId===row.stripeInvoiceId?structuredClone(row):null;
+MonthlyInvoice.updateOne=async(q,u)=>{if(q.__v!==row.__v)return {matchedCount:0};writes++;Object.assign(row,u.$set);row.__v++;row.history.push(u.$push.history);return {matchedCount:1};};
+const service=require('../dist/services/monthlyStripe.service');
+(async()=>{
+ const company={ownerId:'owner',billingEmail:'billing@example.test'};
+ assert.equal((await service.verifyMonthlyStripe('in_fixture',company,5000,'AED','INV-001')).stripeInvoiceId,'in_fixture');
+ await assert.rejects(()=>service.verifyMonthlyStripe('in_fixture',company,4000,'AED','INV-001'),/must match/);
+ remote.customer_email='other@example.test';await assert.rejects(()=>service.verifyMonthlyStripe('in_fixture',company,5000,'AED','INV-001'),/customer email/);remote.customer_email='billing@example.test';
+ remote.hosted_invoice_url='https://example.test/pay';await assert.rejects(()=>service.verifyMonthlyStripe('in_fixture',company,5000,'AED','INV-001'),/invalid invoice/);remote.hosted_invoice_url='https://invoice.stripe.com/i/test';
+ remote.status='paid';await service.synchronizeMonthlyStripe(remote.id);assert.equal(row.status,'paid');assert.equal(row.receiptPending,true);assert.equal(row.paymentReference,'in_fixture');
+ await service.synchronizeMonthlyStripe(remote.id);assert.equal(writes,1,'Duplicate delivery must not queue another receipt');
+ await service.synchronizeMonthlyStripe('in_unrelated');assert.equal(writes,1);
+ let status,body,error;const res={status(v){status=v;return this},json(v){body=v}};
+ await service.monthlyStripeWebhook({body:Buffer.from('{}'),get:()=> 'invalid'},res,e=>error=e);assert.equal(status,400);
+ const payload=JSON.stringify({id:'evt_fixture',object:'event',type:'invoice.paid',data:{object:{id:'in_fixture'}}});
+ const signature=sdk.webhooks.generateTestHeaderString({payload,secret:env.STRIPE_WEBHOOK_SECRET});status=200;
+ await service.monthlyStripeWebhook({body:Buffer.from(payload),get:()=>signature},res,e=>error=e);assert.ifError(error);assert.equal(body.received,true);assert.equal(writes,1);
+ remote.total=1;await assert.rejects(()=>service.synchronizeMonthlyStripe(remote.id),/admin review/);
+ assert(MonthlyInvoice.schema.indexes().some(([keys,options])=>keys.stripeInvoiceId&&options.unique));
+ console.log('PASS: invoice/customer/amount matching, trusted payment URL, paid synchronization, receipt deduplication, unrelated events, valid/invalid webhook signatures, changed totals, unique Stripe ID. No live operations.');
+process.exit(0);})().catch(error=>{console.error(error);process.exit(1)});

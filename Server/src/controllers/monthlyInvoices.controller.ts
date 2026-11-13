@@ -1,3 +1,4 @@
+import {verifyMonthlyStripe,synchronizeMonthlyStripe} from '../services/monthlyStripe.service';
 import {Invoice} from '../models/Invoice';
 ﻿import {Request,Response,NextFunction} from 'express';
 import mongoose from 'mongoose';
@@ -13,7 +14,7 @@ import {logger} from '../utils/logger';
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 function legacyMonthFilter(billingMonth:string){const [year,m]=billingMonth.split('-').map(Number);return {clientSentAt:{$ne:null},periodStart:{$gte:new Date(Date.UTC(year,m-1,1)-330*60000),$lt:new Date(Date.UTC(year,m,1)-330*60000)}};}
 const id=z.string().regex(/^[a-f\d]{24}$/i);
-const input=z.object({projectId:id,billingMonth:month,invoiceNumber:z.string().trim().min(1).max(120),amount:z.coerce.number().finite().min(0.01).max(100000000).refine(value=>Math.abs(value*100-Math.round(value*100))<0.00001,'Use at most two decimal places.'),currency:z.enum(['AED','USD','INR']),dueDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),message:z.string().trim().max(5000).default(''),kind:z.enum(['original','additional','correction']).default('original'),correctionOf:id.nullable().optional(),action:z.enum(['draft','send']),version:z.number().int().min(0).optional()});
+const input=z.object({stripeInvoiceId:z.string().trim().regex(/^in_[a-zA-Z0-9]+$/).optional(),projectId:id,billingMonth:month,invoiceNumber:z.string().trim().min(1).max(120),amount:z.coerce.number().finite().min(0.01).max(100000000).refine(value=>Math.abs(value*100-Math.round(value*100))<0.00001,'Use at most two decimal places.'),currency:z.enum(['AED','USD','INR']),dueDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),message:z.string().trim().max(5000).default(''),kind:z.enum(['original','additional','correction']).default('original'),correctionOf:id.nullable().optional(),action:z.enum(['draft','send']),version:z.number().int().min(0).optional()});
 const audit=(action:string,req:Request,note='')=>({action,at:new Date(),by:req.user!.email,note});
 function kickEmails(){void processMonthlyInvoiceEmails().catch(error=>logger.error('Invoice email queue failed',error));}
 export async function listMonthlyInvoices(req:Request,res:Response,next:NextFunction){try{
@@ -38,6 +39,10 @@ export async function saveMonthlyInvoice(req:Request,res:Response,next:NextFunct
  if(isNew&&data.kind==='original'&&legacyExists)throw new AppError('This project already has a sent invoice for the month. Use Additional invoice.',409,'ORIGINAL_EXISTS');
  if(data.kind==='additional'&&!legacyExists&&!await MonthlyInvoice.exists({projectId:project._id,billingMonth:data.billingMonth,sentAt:{$ne:null},status:{$ne:'void'}}))throw new AppError('Send the first invoice before adding an additional invoice.',409,'ORIGINAL_REQUIRED');
  if(data.kind==='correction'&&!await MonthlyInvoice.exists({_id:data.correctionOf,projectId:project._id,billingMonth:data.billingMonth,status:'sent'}))throw new AppError('Only an unpaid, sent invoice for this project and month can be corrected.',409,'INVALID_CORRECTION');
+ if(data.kind==='correction'&&await MonthlyInvoice.exists({_id:data.correctionOf,stripeInvoiceId:{$exists:true},stripeStatus:{$ne:'void'}}))throw new AppError('Void the original invoice in Stripe before sending a correction.',409,'STRIPE_VOID_REQUIRED');
+ const stripeFields=data.stripeInvoiceId?await verifyMonthlyStripe(data.stripeInvoiceId,company,data.amount,data.currency,data.invoiceNumber):null;
+ if(data.action==='send'&&!stripeFields)throw new AppError('Enter the Stripe invoice ID to enable client payment.',422,'STRIPE_INVOICE_REQUIRED');
+ if(stripeFields)Object.assign(invoice,stripeFields);else {invoice.stripeInvoiceId=undefined;invoice.stripeHostedInvoiceUrl=undefined;invoice.stripeStatus=undefined;}
  const previous=invoice.document;
  if(req.file)uploaded=await uploadInvoiceDocument(req.file,String(project.companyId),String(invoice._id));
  Object.assign(invoice,{companyId:project.companyId,projectId:project._id,projectName:project.title,companyName:company.companyName||'Company',billingMonth:data.billingMonth,invoiceNumber:data.invoiceNumber,amount:data.amount,currency:data.currency,dueDate,message:data.message,kind:data.kind,correctionOf:data.correctionOf||null,document:uploaded||previous});
@@ -50,7 +55,7 @@ export async function saveMonthlyInvoice(req:Request,res:Response,next:NextFunct
    await invoice!.save({session});
   });
  }else await invoice.save();
- committed=true;if(uploaded&&previous)void removeInvoiceDocument(previous).catch(error=>logger.error('Old draft document cleanup failed',error));
+ committed=true;if(data.action==='send'&&invoice.stripeInvoiceId)void synchronizeMonthlyStripe(invoice.stripeInvoiceId).catch(error=>logger.error('Stripe synchronization deferred to webhook',error));if(uploaded&&previous)void removeInvoiceDocument(previous).catch(error=>logger.error('Old draft document cleanup failed',error));
  if(data.action==='send'){
   void CompanyNotification.create({companyId:invoice.companyId,projectId:invoice.projectId,type:'general',title:'Monthly invoice received',message:invoice.invoiceNumber+' for '+invoice.billingMonth+' is ready for review.',actionUrl:'/dashboard?tab=invoices'}).catch(error=>logger.error('Monthly invoice notification failed',error));kickEmails();
  }
@@ -63,6 +68,6 @@ export async function remindMonthlyInvoice(req:Request,res:Response,next:NextFun
 }catch(error){next(error);}}
 export async function markMonthlyInvoicePaid(req:Request,res:Response,next:NextFunction){try{
  const data=z.object({reference:z.string().trim().min(3).max(240),confirmed:z.literal(true)}).parse(req.body);
- const invoice=await MonthlyInvoice.findOneAndUpdate({_id:id.parse(req.params.id),status:'sent'},{$set:{status:'paid',paidAt:new Date(),paymentReference:data.reference,emailNextAt:null},$inc:{__v:1},$push:{history:audit('payment_verified',req,data.reference)}},{new:true});if(!invoice)throw new AppError('Only sent unpaid invoices can be marked paid.',409,'INVOICE_CONFLICT');ok(res,monthlyInvoiceView(invoice));
+ const invoice=await MonthlyInvoice.findOneAndUpdate({_id:id.parse(req.params.id),status:'sent',stripeInvoiceId:{$exists:false}},{$set:{status:'paid',paidAt:new Date(),paymentReference:data.reference,emailNextAt:null},$inc:{__v:1},$push:{history:audit('payment_verified',req,data.reference)}},{new:true});if(!invoice)throw new AppError('Only sent unpaid invoices can be marked paid.',409,'INVOICE_CONFLICT');ok(res,monthlyInvoiceView(invoice));
 }catch(error){next(error);}}
 export async function downloadMonthlyAdmin(req:Request,res:Response,next:NextFunction){try{const invoice=await MonthlyInvoice.findById(id.parse(req.params.id));if(!invoice?.document)throw Errors.NotFound('Invoice document');res.setHeader('Content-Type',invoice.document.mimeType||'application/pdf');res.setHeader('Content-Disposition','attachment; filename="'+invoice.document.fileName+'"');res.setHeader('Cache-Control','no-store');res.send(await downloadInvoiceDocument(invoice.document));}catch(error){next(error);}}
