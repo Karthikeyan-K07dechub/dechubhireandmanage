@@ -1010,8 +1010,8 @@ export default function App() {
     setAuthMode('signup');
   };
 
-  if(page==='bridge-landing')return <BridgeLandingPage/>;
-  if(page==='book-demo')return <BookDemoPage/>;
+  if(page==='bridge-landing')return <MarketingPage><BridgeLandingPage/></MarketingPage>;
+  if(page==='book-demo')return <MarketingPage><BookDemoPage/></MarketingPage>;
 
   if (page === 'company-dashboard-auth') {
     return (
