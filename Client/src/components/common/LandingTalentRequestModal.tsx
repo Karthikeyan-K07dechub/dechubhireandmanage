@@ -7,6 +7,7 @@ import { createCompanyProjectRequest, createPublicTalentRequest } from '../../ap
 import './landing-talent-request-modal.css';
 
 interface LandingTalentRequestModalProps {
+  initialProjectDescription?: string;
   isOpen: boolean;
   onClose: () => void;
   requestedServices?: string[];
@@ -47,6 +48,7 @@ export default function LandingTalentRequestModal({
   requestedServices = [],
   onSuccess,
   variant = 'demo',
+  initialProjectDescription,
 }: LandingTalentRequestModalProps) {
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -54,6 +56,7 @@ export default function LandingTalentRequestModal({
   const requestedServicesRef = useRef<string[]>(requestedServices);
   const {
     register,
+    setValue,
     reset,
     handleSubmit,
     getValues,
@@ -77,6 +80,7 @@ export default function LandingTalentRequestModal({
       phoneNumber: '',
     },
   });
+  useEffect(()=>{if(isOpen&&initialProjectDescription!==undefined)setValue('projectDescription',initialProjectDescription,{shouldValidate:true});},[isOpen,initialProjectDescription,setValue]);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 

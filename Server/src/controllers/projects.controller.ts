@@ -30,7 +30,7 @@ const projectSchema = z.object({
   scope: z.string().trim().min(1),
   budget: z.coerce.number().min(0),
   currency: z.enum(['USD', 'INR', 'AED']),
-  paymentTerms: z.string().trim().min(3).max(1200),
+  paymentTerms: z.string().trim().max(1200).default(''),
   startDate: z.string().datetime().optional().nullable(),
   targetEndDate: z.string().datetime().optional().nullable(),
   deliverables: z.array(z.string().trim().min(1).max(600)).max(50).default([]),
@@ -211,7 +211,8 @@ export async function createProject(req: Request, res: Response, next: NextFunct
 
 export async function listAdminProjects(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const projects = await Project.find().sort({ createdAt: -1 }).limit(200);
+    const filter = _req.query.requestId ? {talentRequestId:z.string().regex(/^[a-f0-9]{24}$/i).parse(_req.query.requestId)} : {};
+    const projects = await Project.find(filter).sort({ createdAt: -1 }).limit(200);
     ok(res, projects.map(serializeProject));
   } catch (error) { next(error); }
 }
@@ -220,8 +221,11 @@ export async function sendProjectContract(req: Request, res: Response, next: Nex
   try {
     const project = await Project.findById(req.params.id);
     if (!project) throw Errors.NotFound('Project');
-    if (project.status === 'contract_sent') { ok(res, { ...serializeProject(project), alreadySent: true }); return; }
-    if (project.status !== 'draft') throw new AppError('Only draft projects can be sent for client acceptance.', 400, 'INVALID_PROJECT_STATUS');
+    const revision = req.body?.revision ? z.object({version:z.number().int().min(0),title:z.string().trim().min(3).max(180),description:z.string().trim().min(1),scope:z.string().trim().min(1),budget:z.number().finite().min(0),currency:z.enum(['USD','INR','AED']),paymentTerms:z.string().trim().max(1200).default('')}).parse(req.body.revision) : null;
+    if (project.status === 'contract_sent' && !revision) { ok(res, { ...serializeProject(project), alreadySent: true }); return; }
+    if (!['draft','contract_sent','active'].includes(project.status)) throw new AppError('This project cannot have its contract resent in its current status.',409,'INVALID_PROJECT_STATUS');
+    if(project.contractSentAt && !revision) throw new AppError('Open the latest contract before resending.',409,'CONTRACT_VERSION_REQUIRED');
+    if(revision && revision.version !== (project.contractVersion || 0)) throw new AppError('The contract changed. Reload before resending.',409,'CONTRACT_VERSION_CONFLICT');
     if (project.talentRequestId) {
       const request = await TalentRequest.findById(project.talentRequestId);
       if (request?.clientSelectionSubmittedAt) {
@@ -255,8 +259,25 @@ export async function sendProjectContract(req: Request, res: Response, next: Nex
       await account.save();
     }
 
+    // Archive the exact previous terms and acceptance before publishing a new version.
+    project.$where = {__v: project.__v};
+    if(project.contractSentAt && !project.contractVersions?.length) {
+      project.contractVersions = [{version:project.contractVersion||0,title:project.title,description:project.description,scope:project.scope,budget:project.budget,currency:project.currency,paymentTerms:project.paymentTerms,deliverables:[...project.deliverables],teamMembers:project.teamMembers.map(m=>({workerId:m.workerId,role:m.role})),startDate:project.startDate,targetEndDate:project.targetEndDate,sentAt:project.contractSentAt,acceptedAt:project.clientAcceptedAt,acceptedBy:project.clientAcceptedBy}];
+    }
+    if(revision) { const {version,...terms}=revision; Object.assign(project,terms); }
+    const isRevision=Boolean(project.contractSentAt);
+    project.contractVersion = (project.contractVersion || 0) + 1;
+    if(!project.contractActivity)project.contractActivity=[];
+    const activityAt=new Date();
+    if(isRevision)project.contractActivity.push({event:'revised',version:project.contractVersion,at:activityAt,by:req.user!.email});
+    project.contractActivity.push({event:'sent',version:project.contractVersion,at:activityAt,by:req.user!.email});
     project.status = 'contract_sent';
     project.contractSentAt = new Date();
+    project.clientAcceptedAt = null;
+    project.clientAcceptedBy = null;
+    project.contractVersions.push({version:project.contractVersion,title:project.title,description:project.description,scope:project.scope,budget:project.budget,currency:project.currency,paymentTerms:project.paymentTerms,deliverables:[...project.deliverables],teamMembers:project.teamMembers.map(m=>({workerId:m.workerId,role:m.role})),startDate:project.startDate,targetEndDate:project.targetEndDate,sentAt:project.contractSentAt,sentBy:req.user!.email,acceptedAt:null,acceptedBy:null});
+    project.markModified('contractVersions');
+    project.increment();
     await project.save();
 
     const actionUrl = `/dashboard?tab=contracts#project-contract-${project._id.toString()}`;
@@ -298,9 +319,17 @@ export async function acceptProjectContract(req: Request, res: Response, next: N
       project.targetEndDate = project.targetEndDate ?? request?.expectedEndDate ?? null;
     }
 
+    const viewedVersion = z.object({version:z.number().int().min(0).default(0)}).parse(req.body||{}).version;
+    if(viewedVersion !== (project.contractVersion||0)) throw new AppError('This contract has been revised. Refresh and review the latest version before accepting.',409,'CONTRACT_VERSION_CONFLICT');
+    project.$where = {__v:project.__v,status:'contract_sent'};
+    project.increment();
     project.status = 'active';
     project.clientAcceptedAt = new Date();
     project.clientAcceptedBy = account.email;
+    if(!project.contractActivity)project.contractActivity=[];
+    project.contractActivity.push({event:'accepted',version:project.contractVersion||0,at:project.clientAcceptedAt,by:account.email});
+    const signedVersion=project.contractVersions?.find(v=>v.version===project.contractVersion);
+    if(signedVersion){signedVersion.acceptedAt=project.clientAcceptedAt;signedVersion.acceptedBy=account.email;project.markModified('contractVersions');}
     await project.save();
     if (project.talentRequestId) await TalentRequest.updateOne({ _id: project.talentRequestId, companyId: company._id }, { $set: { unread: true } });
 
@@ -317,7 +346,31 @@ export async function acceptProjectContract(req: Request, res: Response, next: N
     });
 
     ok(res, serializeProject(project));
-  } catch (error) { next(error); }
+  } catch (error) { if(error instanceof Error && ['DocumentNotFoundError','VersionError'].includes(error.name)){next(new AppError('The contract changed. Refresh before accepting.',409,'CONTRACT_VERSION_CONFLICT'));return;} next(error); }
+}
+
+export async function recordClientContractActivity(req:Request,res:Response,next:NextFunction){
+  try{
+    const input=z.object({event:z.enum(['viewed','changes_requested']),version:z.number().int().min(0),note:z.string().trim().max(2000).optional()}).parse(req.body);
+    if(input.event==='changes_requested'&&!input.note)throw new AppError('Enter the changes you need.',422,'CHANGE_REASON_REQUIRED');
+    const company=await getCompanyForUser(req.user!.sub);
+    const account=await CompanyAuth.findById(req.user!.sub).select('email');
+    if(!account)throw Errors.NotFound('Company account');
+    const project=await Project.findOne({_id:req.params.id,companyId:company._id});
+    if(!project||!project.contractSentAt)throw Errors.NotFound('Sent contract');
+    if((project.contractVersion||0)!==input.version)throw new AppError('This contract was revised. Refresh to review the latest version.',409,'CONTRACT_VERSION_CONFLICT');
+    if(input.event==='changes_requested'&&project.status!=='contract_sent')throw new AppError('Changes can only be requested for a contract awaiting acceptance.',409,'INVALID_PROJECT_STATUS');
+    const filter:any={_id:project._id,companyId:company._id,__v:project.__v};
+    if(input.event==='viewed')filter.contractActivity={$not:{$elemMatch:{event:'viewed',version:input.version,by:account.email}}};
+    const result=await Project.updateOne(filter,{$push:{contractActivity:{event:input.event,version:input.version,at:new Date(),by:account.email,note:input.note||''}},$inc:{__v:1}});
+    if(result.modifiedCount&&input.event==='changes_requested'){
+      if(project.talentRequestId)await TalentRequest.updateOne({_id:project.talentRequestId,companyId:company._id},{$set:{unread:true}});
+      void sendAdminEmail('Contract changes requested: '+project.title,'The client requested changes to contract version '+input.version+'. Review the contract activity in Bridge.').catch(error=>logger.error('Contract change email failed',error));
+    }
+    if(!result.modifiedCount&&input.event==='changes_requested')throw new AppError('The contract changed. Refresh and try again.',409,'CONTRACT_VERSION_CONFLICT');
+    const latest=await Project.findOne({_id:project._id,companyId:company._id});
+    ok(res,{activity:latest?.contractActivity||[]});
+  }catch(error){next(error);}
 }
 
 export async function listCompanyProjects(req: Request, res: Response, next: NextFunction): Promise<void> {

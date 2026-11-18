@@ -1,0 +1,32 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+process.chdir(path.join(__dirname,'..'));
+const {env}=require('../dist/config/env');
+// Test recipients only; never use configured inboxes or send SMTP.
+env.DECHUB_ADMIN_EMAILS='admin@example.test, billing@example.test, admin@example.test';
+env.CLIENT_URL='https://bridge.example.test';
+const queue=require('../dist/services/emailQueue.service');
+const queued=[];queue.queueEmail=async(to,subject,html)=>queued.push({to,subject,html});
+const email=require('../dist/utils/email');
+const sent=[];email.sendEmail=async(to,subject,html,options)=>sent.push({to,subject,html,options});
+const {DemoBooking}=require('../dist/models/DemoBooking');
+DemoBooking.updateOne=async()=>({matchedCount:1});
+const demo=require('../dist/controllers/demoBooking.controller');
+const input={requestId:'aaaaaaaaaaaaaaaaaaaaaaaa',companyName:'Example Technologies',companyWebsite:'https://example.test',contactFirstName:'Alex',contactLastName:'Morgan',contactEmail:'alex@example.test',phoneNumber:'+971 50 000 0000',projectName:'Customer portal',projectType:'Web Development',projectDescription:'Hiring for: Existing project. Delivery: Talents work with the client team.\n\nWe need a frontend developer for our customer portal.',requestedServices:['Web Development'],expectedStartDate:'2026-11-23',expectedEndDate:'2026-12-31',dbSaveSucceeded:true};
+(async()=>{
+ await email.sendTalentRequestAdminNotificationEmail(env.DECHUB_ADMIN_EMAILS,input);
+ assert.deepEqual(queued.map(e=>e.to),['admin@example.test','billing@example.test']);
+ assert.match(queued[0].subject,/New Bridge requirement/);assert.match(queued[0].html,/Customer portal/);assert.match(queued[0].html,/2026-11-23/);assert.match(queued[0].html,/admin\/talent-requests\/aaaaaaaa/);
+ const escaped=email.buildTalentRequestAdminEmail({...input,companyName:'<script>bad</script>',requestedServices:['<script>bad</script>']});assert(!escaped.html.includes('<script>'));assert(escaped.html.includes('&lt;script&gt;'));
+ const booking={_id:'bbbbbbbbbbbbbbbbbbbbbbbb',firstName:'Alex',lastName:'Morgan',email:'alex@example.test',website:'https://example.test',phone:'+971 50 000 0000',employeeCount:'21-200',country:'United Arab Emirates',projectStage:'new_project',deliveryMode:'bridge_managed',requestedServices:['Web Development'],startAt:new Date('2026-11-23T08:00:00Z'),status:'scheduled',sequence:0};
+ await demo.deliverDemoBookingEmails(booking,'00000000-0000-4000-8000-000000000000','scheduled');
+ const admin=sent.find(e=>e.to==='admin@example.test');assert(admin);assert(sent.some(e=>e.to==='billing@example.test'));assert(sent.some(e=>e.to==='alex@example.test'));assert(admin.options.attachments.length===1);assert.match(admin.html,/Bridge manages project delivery/);assert.match(admin.html,/Asia\/Kolkata/);
+ await demo.deliverDemoBookingEmails({...booking,sequence:1},'00000000-0000-4000-8000-000000000000','rescheduled',new Date('2026-11-20T08:00:00Z'));
+ assert(sent.some(e=>e.to==='admin@example.test'&&e.subject.includes('rescheduled')));
+ await demo.deliverDemoBookingEmails({...booking,status:'cancelled',sequence:2},'00000000-0000-4000-8000-000000000000','cancelled');
+ assert(sent.some(e=>e.to==='admin@example.test'&&e.subject.includes('cancelled')));
+ const output=path.resolve('../merge-recovery/landing-email-previews');fs.mkdirSync(output,{recursive:true});
+ fs.writeFileSync(path.join(output,'requirement.html'),queued[0].html);
+ fs.writeFileSync(path.join(output,'demo.html'),admin.html);
+ console.log('PASS: configured admin recipients deduplicated; requirement details, escaping and dashboard link; demo admin/guest/host routing, calendar, reschedule/cancel notifications. Mock delivery only.');process.exit(0);
+})().catch(error=>{console.error(error);process.exit(1)});

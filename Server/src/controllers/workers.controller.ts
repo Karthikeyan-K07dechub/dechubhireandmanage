@@ -35,7 +35,7 @@ const DEFAULT_MARKETPLACE_BIOS = new Set([
 ]);
 
 const DEFAULT_RESPONSE_TIME_HOURS = 2;
-const BOOK_A_DEMO_NOTIFICATION_TO = 'karthik@dechub.in';
+const BOOK_A_DEMO_NOTIFICATION_TO = env.DECHUB_ADMIN_EMAILS;
 
 const DEFAULT_SERVICE_PACKAGES = [
   {
@@ -656,6 +656,9 @@ export async function createMarketplaceTalentRequest(req: Request, res: Response
       contactLastName,
       contactEmail,
       phoneNumber: contactPhone,
+      projectName:data.projectName,
+      expectedStartDate:data.expectedStartDate,
+      expectedEndDate:data.expectedEndDate,
       projectType,
       projectDescription:notificationDescription,
       requestedServices,

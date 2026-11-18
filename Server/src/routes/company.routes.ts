@@ -1,3 +1,4 @@
+import {recordClientContractActivity} from '../controllers/projects.controller';
 import {clientWorkUpdates,reviewWorkUpdateFile,reviewClientWorkUpdate,workUpdateProjects,readWorkUpdates} from '../controllers/workUpdateReview.controller';
 import {listITAccessChats,getITAccessChat,postITAccessChat,readITAccessChat} from '../controllers/itAccessChat.controller';
 import {equipmentDeliveryFile,readEquipmentDelivery,updateEquipmentDelivery,confirmEquipmentDelivery} from '../controllers/equipmentDelivery.controller';
@@ -81,6 +82,7 @@ router.get  ('/projects', listCompanyProjects);
 router.post('/projects/:id/close', closeCompanyProject);
 router.post ('/project-requests', createCompanyProjectRequest);
 router.post ('/projects/:id/accept-contract', acceptProjectContract);
+router.post('/projects/:id/contract-activity',recordClientContractActivity);
 router.get  ('/projects/:id/tasks', listCompanyProjectTasks);
 const assignmentUpload=multer({storage:multer.memoryStorage(),limits:{fileSize:10*1024*1024,files:1,fields:1}}).single('attachment');
 router.post('/projects/:id/tasks',(req,res,next)=>assignmentUpload(req,res,error=>next(error?new AppError('Choose one file up to 10 MB.',422,'INVALID_ATTACHMENT'):undefined)),createProjectTask);

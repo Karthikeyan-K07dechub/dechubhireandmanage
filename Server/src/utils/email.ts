@@ -208,7 +208,10 @@ export async function sendContractActivatedEmail(
   await queueEmail(to, `Your ${companyName} contract is active`, html);
 }
 
-type TalentRequestAdminNotificationInput = {
+export type TalentRequestAdminNotificationInput = {
+  projectName?:string;
+  expectedStartDate?:string;
+  expectedEndDate?:string;
   requestId?: string | null;
   companyName: string;
   companyWebsite: string;
@@ -225,10 +228,10 @@ type TalentRequestAdminNotificationInput = {
   aiShownProfiles?: Array<{ name: string; role: string; adminLink: string }>;
 };
 
-export async function sendTalentRequestAdminNotificationEmail(
-  to: string,
-  input: TalentRequestAdminNotificationInput,
-): Promise<void> {
+export function buildTalentRequestAdminEmail(input: TalentRequestAdminNotificationInput) {
+  const escape = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character] || character));
   const contactName = [input.contactFirstName, input.contactLastName]
     .filter(Boolean)
     .join(' ')
@@ -236,12 +239,9 @@ export async function sendTalentRequestAdminNotificationEmail(
 
   const requestedServicesMarkup = input.requestedServices.length
     ? `<ul style="margin:8px 0 16px;padding-left:20px;color:#475569;font-size:15px;line-height:1.8;">${input.requestedServices
-        .map((service) => `<li>${service}</li>`)
+        .map((service) => `<li>${escape(service)}</li>`)
         .join('')}</ul>`
     : '<p style="margin:8px 0 16px;font-size:15px;color:#475569;">None selected</p>';
-  const escape = (value: string) => value.replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[character] || character));
   const aiMatchesMarkup = input.aiShownProfiles?.length
     ? `<ul style="margin:8px 0 16px;padding-left:20px;color:#475569;font-size:15px;line-height:1.8;">${input.aiShownProfiles
       .map((profile) => `<li>${escape(profile.name)} - ${escape(profile.role)} - <a href="${escape(profile.adminLink)}">Open in admin</a></li>`)
@@ -249,30 +249,36 @@ export async function sendTalentRequestAdminNotificationEmail(
     : '<p style="margin:8px 0 16px;font-size:15px;color:#475569;">No marketplace profiles shown; sourcing needed.</p>';
 
   const html = baseTemplate(`
-    <h1>New Book a demo request</h1>
+    <h1>New Bridge requirement request</h1>
     <p>A new landing-page hiring request was submitted.</p>
     <p><strong>DB save status:</strong> ${input.dbSaveSucceeded ? 'Saved successfully' : 'Email fallback only'}</p>
-    ${input.source ? `<p><strong>Source:</strong> ${input.source}</p>` : ''}
-    ${input.requestId ? `<p><strong>Request ID:</strong> ${input.requestId}</p>` : ''}
+    ${input.source ? `<p><strong>Source:</strong> ${escape(input.source)}</p>` : ''}
+    ${input.requestId ? `<p><strong>Request ID:</strong> ${escape(input.requestId)}</p>` : ''}
     ${input.aiMatchStatus ? `<p><strong>AI match status:</strong> ${input.aiMatchStatus}</p><p><strong>Profiles shown by AI:</strong></p>${aiMatchesMarkup}` : ''}
-    <p><strong>Company name:</strong> ${input.companyName}</p>
-    <p><strong>Company website:</strong> ${input.companyWebsite}</p>
-    <p><strong>Contact name:</strong> ${contactName}</p>
-    <p><strong>Contact email:</strong> ${input.contactEmail}</p>
-    <p><strong>Phone number:</strong> ${input.phoneNumber || 'Not provided'}</p>
-    <p><strong>Project type:</strong> ${input.projectType}</p>
+    ${input.projectName ? `<p><strong>Project name:</strong> ${escape(input.projectName)}</p>` : ''}
+    <p><strong>Company name:</strong> ${escape(input.companyName)}</p>
+    <p><strong>Company website:</strong> ${escape(input.companyWebsite)}</p>
+    <p><strong>Contact name:</strong> ${escape(contactName)}</p>
+    <p><strong>Contact email:</strong> ${escape(input.contactEmail)}</p>
+    <p><strong>Phone number:</strong> ${escape(input.phoneNumber || 'Not provided')}</p>
+    <p><strong>Project type:</strong> ${escape(input.projectType)}</p>
     <p><strong>Requested services:</strong></p>
     ${requestedServicesMarkup}
+    ${input.expectedStartDate ? `<p><strong>Expected start:</strong> ${escape(input.expectedStartDate)}</p>` : ''}
+    ${input.expectedEndDate ? `<p><strong>Expected end:</strong> ${escape(input.expectedEndDate)}</p>` : ''}
     <p><strong>Project description:</strong></p>
-    <p>${input.projectDescription.replace(/\n/g, '<br />')}</p>
+    <p>${escape(input.projectDescription).replace(/\n/g, '<br />')}</p>
+    <p><a href="${escape(env.CLIENT_URL.replace(/\/$/,'')+'/admin/talent-requests'+(input.requestId?'/'+encodeURIComponent(input.requestId):''))}">Open Bridge admin dashboard</a></p>
   `, { includeLogo: false });
 
-  await sendEmail(
-    to,
-    `New Book a demo request - ${input.companyName}`,
-    html,
-    { includeLogo: false },
-  );
+  return {subject:`New Bridge requirement - ${input.companyName}`,html};
+}
+
+export async function sendTalentRequestAdminNotificationEmail(to:string,input:TalentRequestAdminNotificationInput):Promise<void>{
+ const recipients=[...new Set(to.split(',').map(value=>value.trim().toLowerCase()).filter(Boolean))];
+ if(!recipients.length)throw new Error('Configure DECHUB_ADMIN_EMAILS to receive requirement requests.');
+ const message=buildTalentRequestAdminEmail(input);
+ await Promise.all(recipients.map(recipient=>queueEmail(recipient,message.subject,message.html,{includeLogo:false})));
 }
 
 export async function sendAiCallbackAdminNotificationEmail(

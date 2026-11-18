@@ -33,6 +33,9 @@ export interface IProject extends Document {
   deliverables: string[];
   teamMembers: IProjectTeamMember[];
   status: ProjectStatus;
+  contractActivity: Array<{event:'sent'|'viewed'|'changes_requested'|'revised'|'accepted';version:number;at:Date;by:string;note?:string}>;
+  contractVersion: number;
+  contractVersions: Array<any>;
   contractSentAt: Date | null;
   clientAcceptedAt: Date | null;
   clientAcceptedBy: string | null;
@@ -73,12 +76,15 @@ const projectSchema = new Schema<IProject>(
     scope: { type: String, required: true, trim: true },
     budget: { type: Number, required: true, min: 0 },
     currency: { type: String, enum: ['USD', 'INR', 'AED'], default: 'USD' },
-    paymentTerms: { type: String, required: true, trim: true, maxlength: 1200 },
+    paymentTerms: { type: String, default: '', trim: true, maxlength: 1200 },
     startDate: { type: Date, default: null },
     targetEndDate: { type: Date, default: null },
     deliverables: [{ type: String, trim: true, maxlength: 600 }],
     teamMembers: { type: [projectTeamMemberSchema], validate: [(value: IProjectTeamMember[]) => value.length > 0, 'At least one team member is required'] },
     status: { type: String, enum: ['draft', 'contract_sent', 'active', 'payment_submitted', 'completed', 'cancelled'], default: 'draft', index: true },
+    contractActivity: {type:[new Schema({event:{type:String,enum:['sent','viewed','changes_requested','revised','accepted'],required:true},version:{type:Number,required:true},at:{type:Date,required:true},by:{type:String,required:true},note:{type:String,maxlength:2000}},{_id:false})],default:[]},
+    contractVersion: { type: Number, default: 0 },
+    contractVersions: { type: Schema.Types.Mixed, default: [] },
     contractSentAt: { type: Date, default: null },
     clientAcceptedAt: { type: Date, default: null },
     clientAcceptedBy: { type: String, default: null, trim: true },

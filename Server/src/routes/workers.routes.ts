@@ -1,3 +1,4 @@
+import {createLandingRequirement} from '../controllers/landingRequirement.controller';
 import { Router } from 'express';
 import {
   listWorkers,
@@ -25,6 +26,7 @@ const inviteLimiter = rateLimit({
 
 // ── Workers ────────────────────────────────────────────────────────────────────
 router.get  ('/marketplace',      getMarketplaceTalent);
+router.post('/marketplace/landing-requirements',rateLimit({windowMs:15*60*1000,max:10,standardHeaders:true,legacyHeaders:false,message:{success:false,error:{code:'RATE_LIMITED',message:'Too many requests. Please try again later.'}}}),createLandingRequirement);
 router.post ('/marketplace/talent-requests', softAuth, createMarketplaceTalentRequest);
 router.get  ('/marketplace/talent-requests/:id/signup-prefill', getMarketplaceTalentRequestSignupPrefill);
 router.get  ('/marketplace/:id',   getMarketplaceTalentProfile);

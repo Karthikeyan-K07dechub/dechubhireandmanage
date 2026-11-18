@@ -19,6 +19,10 @@ export interface ProjectTeamAccess extends ProjectTeamMember {
   taskSummary: { total: number; todo: number; inProgress: number; completed: number; };
 }
 export interface DeliveryProject {
+  contractActivity?:import('../components/ContractActivity').ContractActivityItem[];
+  contractVersion?:number;
+  contractSentAt?:string|null;
+  contractVersions?:Array<{version:number;title:string;description:string;scope:string;budget:number;currency:string;paymentTerms:string;sentAt:string;acceptedAt?:string|null;acceptedBy?:string|null}>;
   deliveryMode?:'client_managed'|'bridge_managed';
   talentContractAvailable?:boolean;
   invoiceBillingMonth?:string;
@@ -48,7 +52,7 @@ async function companyRequest<T>(request: Promise<{ data: ApiResponse<T> }>): Pr
   try { return unwrapApiData((await request).data); } catch (error) { throw normalizeError(error); }
 }
 export const getCompanyProjects = () => companyRequest<DeliveryProject[]>(api.get('/company/projects'));
-export const acceptProjectContract = (id: string) => companyRequest<DeliveryProject>(api.post(`/company/projects/${id}/accept-contract`));
+export const acceptProjectContract = (id: string, version = 0) => companyRequest<DeliveryProject>(api.post(`/company/projects/${id}/accept-contract`,{version}));
 export const getCompanyProjectTasks = (id: string) => companyRequest<DeliveryTask[]>(api.get(`/company/projects/${id}/tasks`));
 export const createCompanyProjectTask = (id: string, payload: { title: string; description: string; assigneeWorkerIds: string[]; priority: 'low' | 'medium' | 'high'; dueDate?: string | null }, attachment?: File) => {
  if (!attachment) return companyRequest<DeliveryTask>(api.post('/company/projects/'+id+'/tasks',payload));
@@ -82,8 +86,11 @@ export interface CreateDeliveryProjectPayload {
 }
 
 export const createAdminProject = (payload: CreateDeliveryProjectPayload) => companyRequest<DeliveryProject>(api.post('/admin/projects', payload));
-export const sendAdminProjectContract = (id: string) => companyRequest<DeliveryProject>(api.post(`/admin/projects/${id}/send-contract`));
+export const getAdminProjects = (requestId?:string) => companyRequest<DeliveryProject[]>(api.get('/admin/projects',{params:{requestId}}));
+export const sendAdminProjectContract = (id: string, revision?: {version:number;title:string;description:string;scope:string;budget:number;currency:string;paymentTerms:string}) => companyRequest<DeliveryProject>(api.post(`/admin/projects/${id}/send-contract`,{revision}));
 
 export const acceptTeamMemberProjectContract = (id: string) => contractorRequest<DeliveryProject>(contractorApi.post(`/projects/${id}/accept-contract`));
 
 export const completeTeamMemberProject = (id: string) => contractorRequest<DeliveryProject>(contractorApi.post(`/projects/${id}/complete`));
+
+export const recordContractActivity = (id:string,payload:{event:'viewed'|'changes_requested';version:number;note?:string}) => companyRequest<{activity:import('../components/ContractActivity').ContractActivityItem[]}>(api.post('/company/projects/'+id+'/contract-activity',payload));
