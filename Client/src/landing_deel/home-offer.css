@@ -10,3 +10,40 @@
 .deel-clone-root .bridge-expert-banner{gap:14.72px;padding:7.36px 34.96px 7.36px 7.36px}.deel-clone-root .bridge-expert-banner__avatar{flex-basis:57.04px;width:57.04px;height:57.04px;font-size:25.76px}.deel-clone-root .bridge-expert-banner>strong{font-size:16.56px}.deel-clone-root .bridge-expert-banner>a{min-height:47.84px;padding:11.04px 18.4px;font-size:13.8px}.deel-clone-root .bridge-expert-banner>button{right:9.2px;width:22.08px;height:22.08px}.deel-clone-root .bridge-expert-banner>button svg{width:14.72px;height:14.72px}@media(max-width:700px){.deel-clone-root .bridge-expert-banner{width:calc((100vw - 24px)*.92);gap:9.2px;padding:11.04px 33.12px 11.04px 11.04px;border-radius:18.4px}.deel-clone-root .bridge-expert-banner__avatar{flex-basis:33.12px;width:33.12px;height:33.12px;font-size:18.4px}.deel-clone-root .bridge-expert-banner>strong{font-size:13.8px}.deel-clone-root .bridge-expert-banner>a{min-height:38.64px;padding:9.2px 12.88px;font-size:12.88px}.deel-clone-root .bridge-expert-banner>button{top:12.88px;right:9.2px}}
 
 .deel-clone-root .bridge-expert-banner__avatar{position:relative;overflow:hidden}.deel-clone-root .bridge-expert-banner__avatar>img{display:block;width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 38%;transform:scale(1.45);transform-origin:50% 38%}
+
+/* Keep the expert popup available on desktop, but hide it on mobile. */
+@media(max-width:700px){.deel-clone-root .bridge-expert-banner{display:none}}
+
+/* Leave the bottom-right corner free for the AI chatbot on larger screens. */
+@media(min-width:701px){
+ .deel-clone-root .bridge-expert-banner{left:24px;right:auto;transform:none;max-width:calc(100vw - 208px);animation-name:bridge-expert-enter-left}
+ .deel-clone-root .bridge-expert-banner.is-leaving{animation-name:bridge-expert-exit-left}
+ .deel-clone-root .bridge-expert-banner>strong{min-width:0}
+ .deel-clone-root .bridge-expert-banner>a{white-space:normal}
+}
+@keyframes bridge-expert-enter-left{from{opacity:0;transform:translateY(24px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bridge-expert-exit-left{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(24px) scale(.98)}}
+
+/* Match the compact height of the chatbot launcher. */
+@media(min-width:701px){
+ .deel-clone-root .bridge-expert-banner{height:60px;gap:10px;padding:5px 28px 5px 5px;border-radius:999px}
+ .deel-clone-root .bridge-expert-banner__avatar{flex-basis:46px;width:46px;height:46px}
+ .deel-clone-root .bridge-expert-banner>strong{font-size:13px;line-height:1.25}
+ .deel-clone-root .bridge-expert-banner>a{min-height:0;align-self:stretch;padding:7px 14px;font-size:12px;line-height:1.25}
+ .deel-clone-root .bridge-expert-banner>button{right:6px;width:20px;height:20px}
+}
+
+/* Tablet: align the expert popup with the chatbot launcher. */
+@media(min-width:701px) and (max-width:1024px){
+ .deel-clone-root .bridge-expert-banner{bottom:calc(34px + env(safe-area-inset-bottom,0px))}
+}
+
+/* PC: restore the centered, larger expert popup. */
+@media(min-width:1025px){
+ .deel-clone-root .bridge-expert-banner{left:50%;right:auto;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);height:auto;max-width:calc(100vw - 32px);gap:14.72px;padding:7.36px 34.96px 7.36px 7.36px;animation-name:bridge-expert-enter}
+ .deel-clone-root .bridge-expert-banner.is-leaving{animation-name:bridge-expert-exit}
+ .deel-clone-root .bridge-expert-banner__avatar{flex-basis:57.04px;width:57.04px;height:57.04px}
+ .deel-clone-root .bridge-expert-banner>strong{font-size:16.56px;line-height:1.3}
+ .deel-clone-root .bridge-expert-banner>a{min-height:47.84px;align-self:auto;padding:11.04px 18.4px;font-size:13.8px;line-height:1.4;white-space:nowrap}
+ .deel-clone-root .bridge-expert-banner>button{right:9.2px;width:22.08px;height:22.08px}
+}
