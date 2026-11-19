@@ -1,3 +1,4 @@
+import useHomeScrollReveal from '../landing_deel/useHomeScrollReveal';
 import { useEffect, useRef, useState } from 'react';
 import '../landing_deel/landing.css';
 import '../landing_deel/overrides.css';
@@ -61,6 +62,7 @@ export default function LandingPageDeel({
   onMarketplace,
 }: LandingPageDeelProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  useHomeScrollReveal(rootRef);
   const [expertVisible,setExpertVisible]=useState(false);
   const [expertDismissed,setExpertDismissed]=useState(false);
   const [expertMounted,setExpertMounted]=useState(false);

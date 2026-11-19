@@ -43,6 +43,8 @@ const envSchema = z.object({
   GOOGLE_SHEETS_ENABLED:    z.string().default('false'),
   GOOGLE_SHEETS_WEBHOOK_URL:z.string().default(''),
   // Optional until the ElevenLabs Bridge Visitor agent is configured.
+  GEMINI_API_KEY: z.string().default(''),
+  GEMINI_MODEL: z.string().regex(/^[a-zA-Z0-9._-]+$/).default('gemini-3.1-flash-lite'),
   AI_TOOL_SECRET:           z.string().default(''),
   AI_TALENT_REQUIRE_VERIFIED: z.string().default('false'),
   ELEVENLABS_WEBHOOK_SECRET:z.string().default(''),

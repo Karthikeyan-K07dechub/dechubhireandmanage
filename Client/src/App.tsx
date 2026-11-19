@@ -1,3 +1,4 @@
+import BridgeCaseStudiesPage from './pages/BridgeCaseStudiesPage';
 import BridgeLandingPage from './pages/BridgeLandingPage';
 import BridgePrivacyPage from './pages/BridgePrivacyPage';
 import BookDemoPage from './pages/BookDemoPage';
@@ -50,6 +51,7 @@ import {
 } from './api/talentRequests.api';
 
 type AppPage =
+  | 'bridge-case-studies'
   | 'bridge-landing'
   | 'book-demo'
   | 'landing'
@@ -133,6 +135,7 @@ function writeSessionJson<T>(key: string, value: T | null): void {
 
 function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+  if(normalizedPath==='/case-studies'||normalizedPath.startsWith('/case-studies/'))return {page:'bridge-case-studies',mode:'login'};
   if(normalizedPath==='/landing-bridge')return {page:'bridge-landing',mode:'login'};
   if(normalizedPath==='/book-demo'||normalizedPath==='/request-a-demo')return {page:'book-demo',mode:'login'};
 
@@ -573,6 +576,7 @@ export default function App() {
     const shortlistClaimQuery = buildShortlistClaimQuery(getActiveShortlistClaimContext());
 
     switch (page) {
+      case 'bridge-case-studies': targetPath=window.location.pathname;break;
       case 'bridge-landing': targetPath='/landing-bridge';break;
       case 'book-demo': targetPath='/book-demo'+window.location.search;break;
       case 'landing':
@@ -1010,8 +1014,14 @@ export default function App() {
     setAuthMode('signup');
   };
 
-  if(page==='bridge-landing')return <MarketingPage><BridgeLandingPage/></MarketingPage>;
-  if(page==='book-demo')return <MarketingPage><BookDemoPage/></MarketingPage>;
+if (page === 'bridge-case-studies')
+  return <BridgeCaseStudiesPage key={window.location.pathname} />;
+
+if (page === 'bridge-landing')
+  return <MarketingPage><BridgeLandingPage /></MarketingPage>;
+
+if (page === 'book-demo')
+  return <MarketingPage><BookDemoPage /></MarketingPage>;
 
   if (page === 'company-dashboard-auth') {
     return (

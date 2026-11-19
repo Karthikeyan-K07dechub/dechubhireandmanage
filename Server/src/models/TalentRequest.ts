@@ -1,3 +1,4 @@
+import type {RequirementBrief} from '../services/requirementBrief.service';
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type TalentRequestStatus =
@@ -37,6 +38,8 @@ export interface ITalentRequest extends Document {
   projectStage?:'existing_project'|'new_project'|null;
   projectName: string;
   projectDescription: string;
+  originalRequirement?:string;
+  requirementBrief?:RequirementBrief|null;
   expectedStartDate: Date | null;
   expectedEndDate: Date | null;
   requestedServices: string[];
@@ -98,6 +101,8 @@ const talentRequestSchema = new Schema<ITalentRequest>(
     deliveryMode:{type:String,enum:['client_managed','bridge_managed'],default:null},
     projectStage:{type:String,enum:['existing_project','new_project'],default:null},
     projectName: { type: String, default: '', trim: true, maxlength: 180 },
+    originalRequirement: {type:String,default:''},
+    requirementBrief: {type:Schema.Types.Mixed,default:null},
     projectDescription: { type: String, required: true, trim: true },
     expectedStartDate: { type: Date, default: null },
     expectedEndDate: { type: Date, default: null },

@@ -637,7 +637,8 @@ function Header({showOfferBanner=false}={}) {
           <div className="MuiBox-root mui-geidku" id="navbar-category-area" />
 
           <div className="MuiBox-root mui-f5u9bk">
-            {Object.entries(megaMenus).map(([label, menu]) => {
+            {Object.entries(megaMenus).flatMap(entry=>entry[0]==='Solutions'?[entry,['Case studies',{href:'/case-studies'}]]:[entry]).map(([label, menu]) => {
+              if(menu.href)return <div key={label} className="MuiBox-root mui-1d9b0hw"><a href={menu.href} className="mui-1moi9ht" onClick={event=>handleInternalNavigation(event,menu.href)}>{label}</a></div>;
               const open = activeDropdown === label;
               const closing = closingDropdown === label;
               const showDropdown = open || closing;
@@ -991,7 +992,7 @@ function Header({showOfferBanner=false}={}) {
                   Log in
                 </button>
               </a>
-              <button type="button" className="mui-1wshw4o">
+              <button type="button" className="mui-1wshw4o" onClick={event=>handleInternalNavigation(event,"/book-demo")}>
                 Book a demo
               </button>
               <button
@@ -1017,7 +1018,7 @@ function Header({showOfferBanner=false}={}) {
             }}
           >
             <div style={{ display: "grid", gap: "12px" }}>
-              {Object.entries(megaMenus).map(([label, menu]) => (
+              {Object.entries(megaMenus).flatMap(entry=>entry[0]==='Solutions'?[entry,['Case studies',{href:'/case-studies'}]]:[entry]).map(([label, menu]) => (menu.href ? <a key={label} href={menu.href} className="mui-15k05j0" onClick={event=>handleInternalNavigation(event,menu.href)}>{label}</a> :
                 <div key={label} style={{ borderBottom: "1px solid rgba(27, 27, 27, 0.08)", paddingBottom: "12px" }}>
                   <p style={{ margin: "0 0 8px", fontWeight: 600, fontSize: "15px" }}>{label}</p>
                   <div style={{ display: "grid", gap: "8px" }}>

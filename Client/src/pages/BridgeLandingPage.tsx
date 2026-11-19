@@ -1,7 +1,11 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import BridgeLogo from '../components/common/BridgeLogo';
 import BridgeRequirementForm from '../components/BridgeRequirementForm';
 import './bridge-landing.css';
+import '../landing_deel/landing.css';
+import '../landing_deel/overrides.css';
+import Header from '../landing_deel/components/Header.jsx';
+import useBridgeLandingMotion from './useBridgeLandingMotion';
 
 function Arrow(){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>;}
 function Icon({kind}:{kind:'people'|'check'|'file'|'message'|'link'|'grid'}){
@@ -25,12 +29,13 @@ const faqs=[
  ['Where should I start?','Send your project requirement, explore the talent marketplace, or book a demo to walk through Bridge with the team.'],
 ];
 export default function BridgeLandingPage(){
- const [contactOpen,setContactOpen]=useState(false);const [menuOpen,setMenuOpen]=useState(false);
+ const pageRef=useRef<HTMLDivElement>(null);
+ useBridgeLandingMotion(pageRef);
+ const [contactOpen,setContactOpen]=useState(false);
  useEffect(()=>{const previous=document.title;document.title='Bridge | Hire talents. Move projects forward.';return()=>{document.title=previous;};},[]);
- const openRequest=()=>{setMenuOpen(false);setContactOpen(true);document.getElementById('bl-brief-input')?.scrollIntoView({block:'center',behavior:'smooth'});};
- return <div className="bl-page">
+ const openRequest=()=>{setContactOpen(true);document.getElementById('bl-brief-input')?.scrollIntoView({block:'center',behavior:'smooth'});};
+ return <><div className="deel-clone-root"><Header/></div><div className="bl-page" ref={pageRef}>
   <a className="bl-skip" href="#bl-main">Skip to content</a>
-  <header className="bl-header"><div className="bl-nav-wrap"><a href="/" className="bl-brand" aria-label="Bridge home"><BridgeLogo/></a><button className="bl-menu-toggle" aria-expanded={menuOpen} aria-controls="bl-nav" onClick={()=>setMenuOpen(!menuOpen)}>{menuOpen?'Close menu':'Menu'}</button><nav id="bl-nav" className={menuOpen?'is-open':''} aria-label="Main navigation"><a href="#bl-how" onClick={()=>setMenuOpen(false)}>How it works</a><a href="#bl-workspace" onClick={()=>setMenuOpen(false)}>Workspace</a><a href="/marketplace">Explore talents</a><a href="/freelancer/login">For talents</a></nav><div className="bl-nav-actions"><a href="/company/login" className="bl-login">Log in</a><a href="/book-demo" className="bl-button bl-button-small">Book a demo <Arrow/></a></div></div></header>
   <main id="bl-main">
    <section className="bl-hero bl-container"><div className="bl-eyebrow"><span/> HIRING & PROJECT DELIVERY, CONNECTED</div><h1>The right talent.<br/><mark>A clearer way to work.</mark></h1><p className="bl-lead">Find talents for your team or let Bridge manage your project.<br className="bl-desktop-break"/> Keep contracts, work updates, and feedback in one place.</p>
     <BridgeRequirementForm expanded={contactOpen} onExpand={()=>setContactOpen(true)}/><a href="/book-demo" className="bl-hero-secondary">Prefer a conversation? <strong>Book a demo <Arrow/></strong></a>
@@ -44,6 +49,6 @@ export default function BridgeLandingPage(){
    <section className="bl-band"><div className="bl-container bl-section bl-faq"><div className="bl-section-heading"><span className="bl-eyebrow">A FEW THINGS TO KNOW</span><h2>Common questions.</h2></div>{faqs.map(([question,answer])=><details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
    <section className="bl-container bl-section bl-final"><span className="bl-eyebrow">LET’S GET TO WORK</span><h2>Your next project<br/>starts with a brief.</h2><p>Tell us what you need. We’ll help connect the right people and the next steps.</p><div className="bl-centered-actions"><button className="bl-button" onClick={openRequest}>Send a requirement <Arrow/></button><a href="/book-demo" className="bl-button bl-button-outline">Book a demo</a></div></section>
   </main>
-  <footer className="bl-footer"><div className="bl-container"><div className="bl-footer-grid"><div><a href="/" aria-label="Bridge home"><BridgeLogo/></a><p>Connect talent, projects,<br/>and the work that comes next.</p><small>Bridge by DECHUB</small></div><div><h3>For clients</h3><a href="/marketplace">Explore talents</a><button onClick={openRequest}>Send a requirement</button><a href="/company/signup">Create an account</a><a href="/company/login">Client sign in</a></div><div><h3>For talents</h3><a href="/freelancer/signup">Create your profile</a><a href="/freelancer/login">Talent sign in</a></div><div><h3>Explore Bridge</h3><a href="#bl-how">How it works</a><a href="#bl-workspace">Workspace</a><a href="/book-demo">Book a demo</a><a href="/legal-pages/privacy-policy">Privacy policy</a></div></div><div className="bl-footer-bottom"><span>© {new Date().getFullYear()} DECHUB. All rights reserved.</span><a href="/">Bridge home <Arrow/></a></div></div></footer>
- </div>;
+  <footer className="bl-footer"><div className="bl-container"><div className="bl-footer-grid"><div><a href="/" aria-label="Bridge home"><BridgeLogo/></a><p>Connect talent, projects,<br/>and the work that comes next.</p><small>Bridge by DECHUB</small></div><div><h3>For clients</h3><a href="/marketplace">Explore talents</a><button onClick={openRequest}>Send a requirement</button><a href="/company/signup">Create an account</a><a href="/company/login">Client sign in</a></div><div><h3>For talents</h3><a href="/freelancer/signup">Create your profile</a><a href="/freelancer/login">Talent sign in</a></div><div><h3>Explore Bridge</h3><a href="#bl-how">How it works</a><a href="#bl-workspace">Workspace</a><a href="/case-studies">Case studies</a><a href="/book-demo">Book a demo</a><a href="/legal-pages/privacy-policy">Privacy policy</a></div></div><div className="bl-footer-bottom"><span>© {new Date().getFullYear()} DECHUB. All rights reserved.</span><a href="/">Bridge home <Arrow/></a></div></div></footer>
+ </div></>;
 }

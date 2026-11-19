@@ -1,0 +1,19 @@
+const assert=require('node:assert/strict');process.chdir(require('node:path').join(__dirname,'..'));
+const {env}=require('../dist/config/env');env.GEMINI_API_KEY='test-only-key';
+const service=require('../dist/services/requirementBrief.service');
+const brief={title:'Accountant',summary:'Support financial records and reconciliation.',location:'',workArrangement:'',experience:'',engagementType:'',budget:'',duration:'',responsibilities:['Maintain accurate records'],kpis:['Complete reconciliations accurately'],qualifications:[],skills:['Bookkeeping'],questions:['What country will this role support?']};
+let sent;global.fetch=async(url,options)=>{sent={url,options,body:JSON.parse(options.body)};return{ok:true,json:async()=>({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(brief)}]}}]})};};
+(async()=>{
+ const result=await service.generateRequirementBrief('Need an accountant');assert.deepEqual(result,brief);assert.equal(sent.options.headers['x-goog-api-key'],'test-only-key');assert(!sent.url.includes('test-only-key'));assert.equal(sent.body.contents[0].parts[0].text,'Need an accountant');assert(sent.body.generationConfig.responseJsonSchema);assert.equal(sent.body.generationConfig.thinkingConfig.thinkingLevel,'low');assert.match(sent.body.systemInstruction.parts[0].text,/Do not invent/);
+ global.fetch=async()=>({ok:false,status:503});await assert.rejects(()=>service.generateRequirementBrief('Need a designer'),e=>e.code==='AI_PROVIDER_BUSY');
+ global.fetch=async()=>({ok:false,status:429});await assert.rejects(()=>service.generateRequirementBrief('Need a designer'),e=>e.code==='AI_RATE_LIMITED');
+ global.fetch=async()=>({ok:true,json:async()=>({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[{text:'{}'}]}}]})});await assert.rejects(()=>service.generateRequirementBrief('Need a designer'),e=>e.code==='AI_INVALID_BRIEF');
+ global.fetch=async()=>({ok:true,json:async()=>({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({...brief,title:''})}]}}]})});await assert.rejects(()=>service.generateRequirementBrief('Need a designer'),e=>e.code==='AI_INVALID_BRIEF');
+ assert.match(service.formatRequirementBrief({...brief,summary:'USER EDITED',skills:['Client selected skill']}),/USER EDITED/);
+ const {TalentRequest}=require('../dist/models/TalentRequest'),{CompanyAuth}=require('../dist/models/CompanyAuth');
+ let saved,notification;TalentRequest.create=async data=>{saved=data;return{...data,_id:'aaaaaaaaaaaaaaaaaaaaaaaa'}};CompanyAuth.findOne=()=>({select:async()=>null});require('../dist/utils/email').sendTalentRequestAdminNotificationEmail=async(to,input)=>notification=input;
+ const controller=require('../dist/controllers/landingRequirement.controller');let error;
+ await controller.createLandingRequirement({body:{requirement:'Need an accountant',brief:{...brief,location:'Remote',experience:'Fresher',duration:'3 months',summary:'USER EDITED',skills:['Client selected skill']},email:'client@example.test',phone:'+971501234567',companyName:'Example company'}},{status(){return this},json(){}},e=>error=e);
+ assert.ifError(error);assert.equal(saved.requirementBrief.summary,'USER EDITED');assert.equal(saved.originalRequirement,'Need an accountant');assert.match(saved.projectDescription,/Client selected skill/);assert.match(notification.projectDescription,/USER EDITED/);assert.match(notification.projectDescription,/Original requirement/);assert.equal(notification.contactEmail,'client@example.test');assert.equal(notification.phoneNumber,'+971501234567');assert.equal(notification.companyName,'Example company');
+ console.log('PASS: structured Gemini response, safe errors, incomplete output rejection, edited brief/original saved and included with all contact details in admin email. Mock AI/DB/email only.');process.exit(0);
+})().catch(e=>{console.error(e);process.exit(1)});

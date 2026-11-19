@@ -258,9 +258,7 @@ async function sendTalentRequestUpdateEmail(
   }
 
   const reviewNotes = item.reviewNotes?.trim();
-  const absoluteProfileUrl = options.profileUrl.startsWith('http')
-    ? options.profileUrl
-    : `${env.CLIENT_URL}${options.profileUrl}`;
+  const clientDashboardUrl = env.CLIENT_URL.replace(/\/$/, '') + '/dashboard?tab=hiring&amp;hiringView=requests';
 
   const html = `
 <!DOCTYPE html>
@@ -294,9 +292,9 @@ body { font-family: 'DM Sans', Arial, sans-serif; background: #f8fafc; color: #0
       </div>
       <p><a href="${env.CLIENT_URL}/dashboard?tab=hiring&amp;hiringView=requests">Review workers and submit selections</a></p>
       ${reviewNotes ? `<p class="note"><strong>Dechub note:</strong> ${reviewNotes}</p>` : ''}
-      <a href="${absoluteProfileUrl}" class="button">Review marketplace profile</a>
+      <a href="${clientDashboardUrl}" class="button">Review in client dashboard</a>
       <p class="note">
-        When you open the profile link, you’ll be redirected to the candidate’s marketplace page where you can review the fit and proceed with hiring.
+        Open Manage Requests in your client dashboard to review candidates and submit your selections.
       </p>
     </div>
   </div>
@@ -330,7 +328,7 @@ async function sendShortlistedProfilesEmail(
     workerName: string;
     workerRole: string;
   }>,
-  token: string,
+  _token: string,
 ): Promise<void> {
   if (!item.email?.trim() || workerProfiles.length === 0) {
     return;
@@ -338,14 +336,12 @@ async function sendShortlistedProfilesEmail(
 
   const profileLinks = workerProfiles
     .map((profile) => {
-      const profileUrl = item.companyId
-        ? `${env.CLIENT_URL}/marketplace/${profile.workerId}`
-        : `${env.CLIENT_URL}/marketplace/${profile.workerId}?requestId=${encodeURIComponent(item._id.toString())}&token=${encodeURIComponent(token)}`;
+      const profileUrl = env.CLIENT_URL.replace(/\/$/, '') + '/dashboard?tab=hiring&amp;hiringView=requests';
       return `
         <li style="margin: 0 0 18px;">
           <div style="font-weight: 700; color: #0f172a;">${profile.workerName}</div>
           <div style="color: #475569; margin: 6px 0 10px;">${profile.workerRole}</div>
-          <a href="${profileUrl}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #111827; color: #fff !important; text-decoration: none; font-weight: 700;">Review marketplace profile</a>
+          <a href="${profileUrl}" style="display: inline-block; padding: 12px 18px; border-radius: 999px; background: #111827; color: #fff !important; text-decoration: none; font-weight: 700;">Review in client dashboard</a>
         </li>
       `.trim();
     })
