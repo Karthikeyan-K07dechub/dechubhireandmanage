@@ -72,7 +72,7 @@ function projectActionUrl(projectId: string): string {
 }
 
 async function notifyWorkers(project: InstanceType<typeof Project>, title: string, message: string, destination?: string): Promise<void> {
-  const actionUrl = destination ?? `/contractor/dashboard?tab=projects&project=${project._id}`;
+  const actionUrl = destination ?? `/talent/dashboard?tab=projects&project=${project._id}`;
   await ContractorNotification.insertMany(project.teamMembers.map((member) => ({
     workerId: member.workerId,
     type: 'general',
@@ -334,7 +334,7 @@ export async function acceptProjectContract(req: Request, res: Response, next: N
     if (project.talentRequestId) await TalentRequest.updateOne({ _id: project.talentRequestId, companyId: company._id }, { $set: { unread: true } });
 
 
-    if(!project.manualTalentContracts) void notifyWorkers(project, 'Review your project contract', `The client has approved ${project.title}. Open Contracts in your contractor dashboard to review and accept.`, `/contractor/dashboard?tab=contract&project=${project._id}`).catch(error => logger.error('Worker project contract email failed', error));
+    if(!project.manualTalentContracts) void notifyWorkers(project, 'Review your project contract', `The client has approved ${project.title}. Open Contracts in your contractor dashboard to review and accept.`, `/talent/dashboard?tab=contract&project=${project._id}`).catch(error => logger.error('Worker project contract email failed', error));
     await sendAdminEmail(`Client accepted project: ${project.title}`, `${company.companyName ?? 'Client company'} accepted the project contract for ${project.title}.`);
     await CompanyNotification.create({
       companyId: company._id,
@@ -423,7 +423,7 @@ async function createAssignedTask(req: Request, res: Response, next: NextFunctio
         type: 'general',
         title: 'New project task assigned',
         message: `You have been assigned "${task.title}" in ${project.title}.`,
-        actionUrl: `/contractor/dashboard?tab=projects&project=${project._id}&task=${task._id}`,
+        actionUrl: `/talent/dashboard?tab=projects&project=${project._id}&task=${task._id}`,
       })));
       await Promise.all(workers.map((worker) => sendEmail(worker.email, `New task: ${task.title}`, `<p>Hi ${worker.firstName},</p><p>You have a new task in ${project.title}: <strong>${task.title}</strong>.</p>`)));
 

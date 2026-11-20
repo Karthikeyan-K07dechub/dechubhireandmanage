@@ -32,7 +32,7 @@ export default function Step5ReviewSign({ onComplete, onBack, allowBack = true, 
       .catch((err: unknown) => {
         const message = (err as Error).message ?? 'Failed to load contract. Please refresh.';
         if (message.toLowerCase().includes('session expired')) {
-          window.location.href = '/freelancer/login';
+          window.location.href = '/talent/login';
           return;
         }
         setError(message);

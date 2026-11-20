@@ -190,7 +190,7 @@ async function sendWorkerInvite(
   roleTitle: string,
   token: string,
 ): Promise<void> {
-  const inviteUrl = `${env.CLIENT_URL}/worker/join?token=${token}`;
+  const inviteUrl = `${env.CLIENT_URL}/talent/join?token=${token}`;
 
   const html = `
 <!DOCTYPE html>
@@ -328,6 +328,7 @@ function mapWorkerToMarketplaceTalent(worker: any) {
     rate: basicPackage?.price && basicPackage.price > 0
       ? basicPackage.price
       : worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0,
+    monthlyRate: worker.contractorProfile?.marketplaceMonthlyRate ?? null,
     currency: worker.payCurrency ?? 'USD',
     availability,
     availabilityLabel: MARKETPLACE_AVAILABILITY_LABELS[availability],

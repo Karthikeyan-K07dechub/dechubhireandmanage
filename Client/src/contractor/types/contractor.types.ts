@@ -188,6 +188,7 @@ export interface ContractorProfile {
   marketplaceAvailability: 'available_now' | 'this_week' | 'two_weeks' | 'next_month' | 'not_available';
   marketplaceAvailabilityLabel: string;
   marketplaceRate: number;
+  marketplaceMonthlyRate?: number | null;
   city: string;
   country: string;
   responseTimeHours: number;

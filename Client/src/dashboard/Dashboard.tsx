@@ -3,7 +3,6 @@ import ITAccessPanel from '../components/ITAccessPanel';
 import ClientBillingPage from './pages/ClientBillingPage';
 import EquipmentSection from '../components/EquipmentSection';
 import AnalyticsPage, { ANALYTICS_VIEWS, getAnalyticsView, type AnalyticsView } from './pages/AnalyticsPage';
-import { resolveImageUrl } from '../utils/imageUrl';
 import DocumentsPage from './pages/DocumentsPage';
 import SettingsPage from './pages/SettingsPage';
 import SignOutButton from '../components/common/SignOutButton';
@@ -25,12 +24,6 @@ import MarketplaceTalentRequestsPage from '../pages/MarketplaceTalentRequestsPag
 import MarketplaceTalentProfilePage from '../pages/MarketplaceTalentProfilePage';
 import MarketplaceProjectConsultationPage from '../pages/MarketplaceProjectConsultationPage';
 import type { MarketplaceCheckoutSelection } from '../api/marketplace.api';
-
-function CompanyAvatar({ name, logo }: { name: string; logo: string }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [logo]);
-  return logo && !failed ? <img className="db-company-profile-image" src={resolveImageUrl(logo)} alt={name + ' logo'} onError={() => setFailed(true)} /> : <>{Array.from(name.trim())[0]?.toUpperCase() || 'C'}</>;
-}
 
 interface NavItem {
   id: DashboardPage;
@@ -294,7 +287,8 @@ export default function Dashboard({
   userRole = 'Company Admin',
   initialPage = 'home',
 }: DashboardProps) {
-  const [companyIdentity, setCompanyIdentity] = useState({ name: companyName, logo: '' });
+  const [workspaceName, setWorkspaceName] = useState(companyName);
+  const [clientName, setClientName] = useState('');
   const [sectionCounts, setSectionCounts] = useState<Record<string, number>>({});
   const initialHireRequestId = new URLSearchParams(window.location.search).get('hireRequest')?.trim() ?? '';
   const [page, setPage] = useState<DashboardPage>(() => getDashboardPageFromQuery(initialPage, initialHireRequestId));
@@ -376,7 +370,8 @@ export default function Dashboard({
         if (cancelled) return;
         const nextSignupStep = typeof company.user?.signupStep === 'number' ? company.user.signupStep : null;
         setSignupStep(nextSignupStep);
-        setCompanyIdentity({ name: String(company.company.companyName || companyName), logo: String(company.company.companyLogoUrl || '') });
+        setWorkspaceName(String(company.company.companyName || companyName));
+        setClientName([company.user?.firstName, company.user?.lastName].map(name => name?.trim()).filter(Boolean).join(' '));
       } catch {
         if (cancelled) return;
         setSignupStep(null);
@@ -388,9 +383,8 @@ export default function Dashboard({
     }
 
     const updateIdentity = (event: Event) => {
-      const details = (event as CustomEvent<{ companyName?: string | null; companyLogoUrl?: string | null }>).detail;
-      if (!details) return;
-      setCompanyIdentity(previous => ({ name: typeof details.companyName === 'string' && details.companyName.trim() ? details.companyName : previous.name, logo: 'companyLogoUrl' in details ? String(details.companyLogoUrl || '') : previous.logo }));
+      const details = (event as CustomEvent<{ companyName?: string | null }>).detail;
+      if (details?.companyName?.trim()) setWorkspaceName(details.companyName);
     };
     window.addEventListener('dechub:company-profile-updated', updateIdentity);
     void loadCompanySetupStatus();
@@ -419,15 +413,17 @@ export default function Dashboard({
     window.location.href = '/company/onboarding?start=identity';
   };
 
-  const companyInitial = Array.from(companyIdentity.name.trim())[0]?.toUpperCase() || 'C';
+  const companyInitial = Array.from(workspaceName.trim())[0]?.toUpperCase() || 'C';
+  const displayName = clientName || userName;
+  const clientInitial = Array.from(displayName.trim())[0]?.toUpperCase() || '?';
   const isSetupIncomplete = typeof signupStep === 'number' && signupStep < 7;
   const completedSteps = useMemo(() => {
     if (!isSetupIncomplete || typeof signupStep !== 'number') return 0;
-    return Math.max(0, Math.min(signupStep, 6));
+    return Math.max(0, Math.min(signupStep, 4));
   }, [isSetupIncomplete, signupStep]);
   const progressPercent = useMemo(() => {
     if (!isSetupIncomplete || completedSteps <= 0) return 0;
-    return Math.round((completedSteps / 6) * 100);
+    return Math.round((completedSteps / 5) * 100);
   }, [completedSteps, isSetupIncomplete]);
   const currentPageTitle = page === 'hiring'
     ? hiringView === 'marketplace'
@@ -465,7 +461,7 @@ export default function Dashboard({
 
         <div className="db-company-switcher">
           <div className="db-company-avatar">{companyInitial}</div>
-          <span className="db-company-name">{companyIdentity.name}</span>
+          <span className="db-company-name">{workspaceName}</span>
           <span className="db-company-chevron">⌄</span>
         </div>
 
@@ -546,9 +542,9 @@ export default function Dashboard({
         </nav>
 
         <div className="db-sidebar-user">
-          <a href="/company/profile" className="db-user-avatar" aria-label="Open company profile"><CompanyAvatar name={companyIdentity.name} logo={companyIdentity.logo} /></a>
+          <a href="/company/profile" className="db-user-avatar" aria-label="Open company profile">{clientInitial}</a>
           <a href="/company/profile" className="db-user-info">
-            <div className="db-user-name">{userName}</div>
+            <div className="db-user-name">{displayName}</div>
             <div className="db-user-role">{userRole}</div>
           </a>
           <SignOutButton className="db-signout-btn" />
@@ -597,9 +593,9 @@ export default function Dashboard({
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
-              title={companyIdentity.name}
+              title={displayName}
             >
-              <CompanyAvatar name={companyIdentity.name} logo={companyIdentity.logo} />
+              {clientInitial}
             </a>
           </div>
         </header>
@@ -622,7 +618,7 @@ export default function Dashboard({
                   You can keep exploring the dashboard now and come back to complete the remaining company onboarding steps later.
                 </p>
                 <div className="db-setup-banner__meta">
-                  <span>{completedSteps}/6 setup steps completed</span>
+                  <span>{completedSteps}/5 setup steps completed</span>
                   <span>{progressPercent}% done</span>
                 </div>
                 <div className="db-setup-banner__progress" aria-hidden="true">

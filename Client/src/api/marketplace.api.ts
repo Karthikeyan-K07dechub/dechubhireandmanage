@@ -11,6 +11,7 @@ export interface MarketplaceTalentProfile {
   country: string;
   skills: string[];
   rate: number;
+  monthlyRate?: number | null;
   currency: string;
   availability: 'available_now' | 'this_week' | 'two_weeks' | 'next_month' | 'not_available';
   availabilityLabel: string;

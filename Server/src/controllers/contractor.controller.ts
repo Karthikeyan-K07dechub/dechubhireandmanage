@@ -276,6 +276,7 @@ function getMarketplaceProfile(worker: InstanceType<typeof Worker>) {
     marketplaceAvailabilityLabel:
       MARKETPLACE_AVAILABILITY_LABELS[worker.contractorProfile?.marketplaceAvailability ?? 'available_now'],
     marketplaceRate: worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0,
+    marketplaceMonthlyRate: worker.contractorProfile?.marketplaceMonthlyRate ?? null,
     city:
       worker.contractorProfile?.city?.trim()
       || worker.contractorProfile?.address?.city?.trim()
@@ -628,11 +629,12 @@ const faqItemSchema = z.object({
 const profileUpdateSchema = z.object({
   firstName: z.string().trim().min(1).max(50),
   lastName: z.string().trim().min(1).max(50),
-  marketplaceTitle: z.string().trim().min(1).max(120),
+  marketplaceTitle: z.string().trim().min(1).max(120).refine(value => value.toLowerCase() !== 'freelancer', 'Enter a professional title, such as Frontend Developer.'),
   yearsOfExperience: z.number().int().min(0).max(50),
   marketplaceBio: z.string().trim().min(2).max(600),
   marketplaceAvailability: z.enum(['available_now', 'this_week', 'two_weeks', 'next_month', 'not_available']),
-  marketplaceRate: z.number().min(0).max(100000),
+  marketplaceRate: z.number().min(0).max(100000).optional(),
+  marketplaceMonthlyRate: z.number().min(0).max(100000).nullable().optional(),
   city: z.string().trim().min(1).max(80),
   country: z.string().trim().min(1).max(80),
   responseTimeHours: z.number().int().min(1).max(168),
@@ -640,11 +642,43 @@ const profileUpdateSchema = z.object({
   languages: z.array(z.string().trim().min(1).max(50)).max(8),
   profilePhotoUrl: z.string().trim().optional(),
   bannerImageUrl: z.string().trim().optional(),
-  profileOverview: z.string().trim().min(2).max(2000),
+  profileOverview: z.string().trim().min(2).max(2000).optional(),
   portfolioProjects: z.array(portfolioProjectSchema).max(12),
-  servicePackages: z.array(servicePackageSchema).min(1).max(3),
+  servicePackages: z.array(servicePackageSchema).min(1).max(3).optional(),
   faqItems: z.array(faqItemSchema).max(12),
 });
+
+const profileFieldLabels: Record<string, string> = {
+  firstName: 'First name', lastName: 'Last name', marketplaceTitle: 'Professional title',
+  yearsOfExperience: 'Years of experience', marketplaceBio: 'Profile summary',
+  marketplaceAvailability: 'Availability', marketplaceRate: 'Expected hourly rate',
+  marketplaceMonthlyRate: 'Expected monthly rate', city: 'City', country: 'Country',
+  responseTimeHours: 'Average response time', skills: 'Skills shown in marketplace',
+  languages: 'Languages', profilePhotoUrl: 'Profile photo', bannerImageUrl: 'Marketplace banner',
+  profileOverview: 'Public profile overview', portfolioProjects: 'Portfolio projects',
+  servicePackages: 'Service packages', faqItems: 'FAQ',
+};
+
+const profileItemFieldLabels: Record<string, string> = {
+  title: 'Title', description: 'Description', imageUrl: 'Project image', tags: 'Tags',
+  name: 'Name', price: 'Price', deliveryDays: 'Delivery days', revisions: 'Revisions',
+  features: 'Features', question: 'Question', answer: 'Answer',
+};
+
+const profileValidationErrorMap: z.ZodErrorMap = (issue, context) => {
+  const [field, index, itemField] = issue.path;
+  let label = profileFieldLabels[String(field)] ?? 'Public profile';
+  if (typeof index === 'number') label += ` #${index + 1}`;
+  if (typeof itemField === 'string') label += ` → ${profileItemFieldLabels[itemField] ?? itemField}`;
+
+  if (issue.code === 'too_small' && issue.type === 'string') {
+    return { message: issue.minimum === 1 ? `${label} is required.` : `${label} must be at least ${issue.minimum} characters.` };
+  }
+  if (issue.code === 'too_big' && issue.type === 'string') {
+    return { message: `${label} must be at most ${issue.maximum} characters.` };
+  }
+  return { message: `${label}: ${context.defaultError}` };
+};
 
 export async function savePersonalDetails(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -660,6 +694,7 @@ export async function savePersonalDetails(req: Request, res: Response, next: Nex
       marketplaceBio: worker.contractorProfile?.marketplaceBio ?? worker.scopeOfWork ?? '',
       marketplaceAvailability: worker.contractorProfile?.marketplaceAvailability ?? 'available_now',
       marketplaceRate: worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0,
+      marketplaceMonthlyRate: worker.contractorProfile?.marketplaceMonthlyRate ?? null,
       city: worker.contractorProfile?.city ?? data.city,
       address: {
         line1:      data.addressLine1,
@@ -781,6 +816,7 @@ export async function updateSkills(req: Request, res: Response, next: NextFuncti
       marketplaceBio: worker.contractorProfile?.marketplaceBio ?? worker.scopeOfWork ?? '',
       marketplaceAvailability: worker.contractorProfile?.marketplaceAvailability ?? 'available_now',
       marketplaceRate: worker.contractorProfile?.marketplaceRate ?? worker.payRate ?? 0,
+      marketplaceMonthlyRate: worker.contractorProfile?.marketplaceMonthlyRate ?? null,
       city: worker.contractorProfile?.city ?? worker.contractorProfile?.address?.city ?? '',
       address: {
         line1: worker.contractorProfile?.address?.line1 ?? '',
@@ -823,7 +859,7 @@ export async function uploadProfileAsset(req: Request, res: Response, next: Next
 
 export async function updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = profileUpdateSchema.parse(req.body);
+    const data = profileUpdateSchema.parse(req.body, { errorMap: profileValidationErrorMap });
     const worker = await getWorkerFromReq(req);
 
     const cleanedSkills = Array.from(
@@ -852,7 +888,9 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       yearsOfExperience: data.yearsOfExperience,
       marketplaceBio: data.marketplaceBio,
       marketplaceAvailability: data.marketplaceAvailability,
-      marketplaceRate: data.marketplaceRate,
+      marketplaceRate: data.marketplaceRate ?? worker.contractorProfile?.marketplaceRate,
+      marketplaceMonthlyRate: data.marketplaceMonthlyRate === undefined
+        ? worker.contractorProfile?.marketplaceMonthlyRate : data.marketplaceMonthlyRate,
       city: data.city,
       profilePhotoUrl,
       bannerImageUrl,
@@ -868,9 +906,10 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       skills: cleanedSkills,
       responseTimeHours: data.responseTimeHours,
       languages: normalizeStringList(data.languages, 8),
-      profileOverview: data.profileOverview.trim(),
+      profileOverview: data.profileOverview ?? worker.contractorProfile?.profileOverview ?? '',
       portfolioProjects: normalizePortfolioProjects(data.portfolioProjects),
-      servicePackages: normalizeServicePackages(data.servicePackages),
+      servicePackages: data.servicePackages === undefined
+        ? worker.contractorProfile?.servicePackages : normalizeServicePackages(data.servicePackages),
       faqItems: normalizeFaqItems(data.faqItems),
     };
 
@@ -906,6 +945,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
       marketplaceAvailability: marketplaceProfile.marketplaceAvailability,
       marketplaceAvailabilityLabel: marketplaceProfile.marketplaceAvailabilityLabel,
       marketplaceRate: marketplaceProfile.marketplaceRate,
+      marketplaceMonthlyRate: marketplaceProfile.marketplaceMonthlyRate,
       city: marketplaceProfile.city,
       country: marketplaceProfile.country,
       responseTimeHours: marketplaceProfile.responseTimeHours,
@@ -934,7 +974,7 @@ export async function getSigningUrl(req: Request, res: Response, next: NextFunct
     if (!company) throw Errors.NotFound('Company');
 
     // Create or refresh DocuSign envelope
-    const returnUrl = `${env.CLIENT_URL}/worker/signed?contractId=${contract._id}`;
+    const returnUrl = `${env.CLIENT_URL}/talent/signed?contractId=${contract._id}`;
 
     const { envelopeId, signingUrl } = await createEnvelopeAndGetSigningUrl({
       contractId:   contract._id.toString(),
@@ -983,7 +1023,7 @@ export async function signMyContract(req: Request, res: Response, next: NextFunc
         type: 'contract_pending',
         title: 'Contract signed',
         message: `You signed your contract with ${updatedContract.companyName}. It is now waiting for the company countersignature.`,
-        actionUrl: '/contractor/dashboard?tab=contract',
+        actionUrl: '/talent/dashboard?tab=contract',
       });
     }
 
@@ -1107,6 +1147,7 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
       marketplaceAvailability: marketplaceProfile.marketplaceAvailability,
       marketplaceAvailabilityLabel: marketplaceProfile.marketplaceAvailabilityLabel,
       marketplaceRate: marketplaceProfile.marketplaceRate,
+      marketplaceMonthlyRate: marketplaceProfile.marketplaceMonthlyRate,
       city: marketplaceProfile.city,
       country: marketplaceProfile.country,
       responseTimeHours: marketplaceProfile.responseTimeHours,

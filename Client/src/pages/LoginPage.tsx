@@ -340,13 +340,13 @@ export default function LoginPage({
                 </button>
               )}
             </div>
-          ) : (
+          ) : allowedRoles[0] === 'company' ? (
             <div className="login-role-tabs" style={{ gridTemplateColumns: '1fr' }}>
               <button className="login-role-tab active" type="button">
-                {allowedRoles[0] === 'company' ? 'Company' : 'Freelancer'}
+                Company
               </button>
             </div>
-          )}
+          ) : null}
 
           {error && (
             <div className="login-error-banner">

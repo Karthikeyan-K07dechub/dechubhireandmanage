@@ -51,11 +51,11 @@ export async function updateEquipmentDelivery(req:Request,res:Response,next:Next
  const label={delivered:'Equipment delivered',ready_to_return:'Equipment ready to return?',return_completed:'Equipment return completed'}[data.status];
  await Promise.allSettled([
   ...(data.status==='ready_to_return'?[]:[CompanyNotification.create({companyId:record.companyId,projectId:record.projectId,type:'general',title:label,message:(record.projectName+': '+data.message).slice(0,500),actionUrl:'/dashboard?tab=equipment&request='+record._id})]),
-  ContractorNotification.create({workerId:record.workerId,type:'general',title:label,message:(record.projectName+': '+data.message).slice(0,500),actionUrl:'/contractor/dashboard?tab=equipment&request='+record._id}),
+  ContractorNotification.create({workerId:record.workerId,type:'general',title:label,message:(record.projectName+': '+data.message).slice(0,500),actionUrl:'/talent/dashboard?tab=equipment&request='+record._id}),
  ]).then(results=>results.forEach(result=>{if(result.status==='rejected')logger.error('Equipment delivery notification failed',result.reason);}));
  let emailWarning:null|string=null;
  if(data.status==='ready_to_return'){
-  try{await queueEmail(record.contractorEmail,'Ready to return equipment? - '+record.projectName,'<h2>Ready to return your equipment?</h2><p>Project: '+esc(record.projectName)+'</p><p style="white-space:pre-wrap">'+esc(data.message)+'</p><p>Please open My Equipment and choose Yes or No. If No, explain why.</p><p><a href="'+esc(env.CLIENT_URL.replace(/\/$/,'')+'/contractor/dashboard?tab=equipment&request='+record._id)+'">Respond to return request</a></p><p>Thank you,<br/>Bridge equipment management</p>',{tracking:{kind:'equipment_return',recordId:String(record._id),version:now}});}
+  try{await queueEmail(record.contractorEmail,'Ready to return equipment? - '+record.projectName,'<h2>Ready to return your equipment?</h2><p>Project: '+esc(record.projectName)+'</p><p style="white-space:pre-wrap">'+esc(data.message)+'</p><p>Please open My Equipment and choose Yes or No. If No, explain why.</p><p><a href="'+esc(env.CLIENT_URL.replace(/\/$/,'')+'/talent/dashboard?tab=equipment&request='+record._id)+'">Respond to return request</a></p><p>Thank you,<br/>Bridge equipment management</p>',{tracking:{kind:'equipment_return',recordId:String(record._id),version:now}});}
   catch(error){await EquipmentRequest.updateOne({_id:record._id,deliveryUpdatedAt:now},{$set:{returnEmailStatus:'failed'}});logger.error('Equipment return email failed',error);emailWarning='Return request saved, but the contractor email could not be sent.';}
  }
  ok(res,{message:data.status==='ready_to_return'?'Return request sent to contractor.':'Equipment update sent to the client and contractor.',emailWarning});
@@ -71,7 +71,7 @@ export const readEquipmentDelivery=(role:'client'|'contractor')=>async(req:Reque
  const version=z.string().datetime().parse(req.body.version);
  const result=await EquipmentRequest.updateOne({_id:record._id,deliveryUpdatedAt:new Date(version)},{$set:{[role==='client'?'clientDeliveryReadAt':'contractorDeliveryReadAt']:new Date()}});
  if(!result.matchedCount)throw new AppError('The update changed. Reopen it.',409,'UPDATE_CHANGED');
- const actionUrl=(role==='client'?'/dashboard':'/contractor/dashboard')+'?tab=equipment&request='+record._id;
+ const actionUrl=(role==='client'?'/dashboard':'/talent/dashboard')+'?tab=equipment&request='+record._id;
  if(role==='client')await CompanyNotification.updateMany({companyId:record.companyId,actionUrl,readAt:null,createdAt:{$lte:new Date(version)}},{$set:{readAt:new Date()}});
  else await ContractorNotification.updateMany({workerId:record.workerId,actionUrl,readAt:null,createdAt:{$lte:new Date(version)}},{$set:{readAt:new Date()}});
  ok(res,{message:'Update viewed.'});

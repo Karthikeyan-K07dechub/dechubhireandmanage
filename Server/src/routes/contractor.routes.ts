@@ -15,6 +15,7 @@ import multer from 'multer';
 import path from 'path';
 import { requireContractorAuth } from '../middleware/contractorAuth.middleware';
 import { profileImageUpload } from '../middleware/upload.middleware';
+import { downloadMyVerificationDocument, listMyVerificationDocuments, replaceMyVerificationDocuments } from '../controllers/contractorVerification.controller';
 import {
   verifyToken,
   setPassword,
@@ -94,6 +95,12 @@ router.post('/onboarding/bank-details',     saveBankDetails);
 router.put ('/me/skills',                   updateSkills);
 router.post('/me/profile/assets',           profileImageUpload.single('image'), uploadProfileAsset);
 router.put ('/me/profile',                  updateProfile);
+router.get('/me/verification-documents', listMyVerificationDocuments);
+router.get('/me/verification-documents/:field', downloadMyVerificationDocument);
+router.patch('/me/verification-documents', rateLimit({ windowMs: 60_000, max: 10, keyGenerator: req => req.worker!.sub }),
+  (req, res, next) => kycUpload(req, res, error => next(error
+    ? new TaskUploadError('Choose PDF, PNG, JPEG, or WebP files up to 2 MB each.', 422, 'INVALID_VERIFICATION_FILE')
+    : undefined)), replaceMyVerificationDocuments);
 
 // Contract + signing
 router.get ('/contract',             getMyContract);

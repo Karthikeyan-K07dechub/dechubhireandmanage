@@ -5,6 +5,7 @@ import { ContractorNotification } from '../models/ContractorNotification';
 import { uploadPaymentProofFile, downloadPaymentProofFile, removePaymentProofFile } from '../services/paymentProofStorage.service';
 import { AppError, Errors, ok } from '../utils/response';
 import { logger } from '../utils/logger';
+import { storageOwnerFolder } from '../utils/storageOwnerFolder';
 
 export async function sendContractorPaymentProof(req:Request,res:Response,next:NextFunction) {
   try {
@@ -14,13 +15,14 @@ export async function sendContractorPaymentProof(req:Request,res:Response,next:N
     if(!req.file)throw new AppError('Select a payment receipt.',422,'FILE_REQUIRED');
     const worker=await Worker.findById(invoice.workerId).select('firstName lastName');
     if(!worker)throw Errors.NotFound('Contractor');
-    const name=[worker.firstName,worker.lastName].filter(Boolean).join(' ').normalize('NFKD').replace(/[^a-zA-Z0-9 -]/g,'').trim().replace(/\s+/g,'-').slice(0,100)||'contractor';
-    const document=await uploadPaymentProofFile(req.file,name+'-'+invoice.workerId,String(invoice._id),'sent_pay_proof_contractor');
+    const name = [worker.firstName, worker.lastName].filter(Boolean).join(' ');
+    const folder = storageOwnerFolder(String(invoice.workerId), name, 'contractor');
+    const document = await uploadPaymentProofFile(req.file, folder, String(invoice._id), 'sent_pay_proof_contractor');
     const old=invoice.contractorPaymentProof;
     try { invoice.contractorPaymentProof=document;invoice.contractorPaymentProofSentAt=new Date();invoice.contractorPaymentApprovedAt=null;invoice.markModified('contractorPaymentApprovedAt');await invoice.save(); }
     catch(error){await removePaymentProofFile(document).catch(()=>{});throw error;}
     if(old)await removePaymentProofFile(old).catch(error=>logger.error('Old contractor receipt cleanup failed',error));
-    await ContractorNotification.create({workerId:invoice.workerId,type:'general',title:'Payment proof received',message:'Dechub sent a payment receipt for '+invoice.invoiceNumber+'.',actionUrl:'/contractor/dashboard?tab=invoices'}).catch(error=>logger.error('Payment receipt notification failed',error));
+    await ContractorNotification.create({workerId:invoice.workerId,type:'general',title:'Payment proof received',message:'Dechub sent a payment receipt for '+invoice.invoiceNumber+'.',actionUrl:'/talent/dashboard?tab=invoices'}).catch(error=>logger.error('Payment receipt notification failed',error));
     ok(res,{message:'Payment proof sent to contractor.'});
   } catch(error){next(error);}
 }

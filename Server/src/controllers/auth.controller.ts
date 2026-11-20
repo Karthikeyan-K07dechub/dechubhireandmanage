@@ -344,7 +344,7 @@ export async function googleCallback(req: Request, res: Response, next: NextFunc
     if (!data.email || !data.id) throw new AppError('Google profile incomplete', 400, 'OAUTH_ERROR');
 
     if (isContractor) {
-      const loginError = (message: string) => res.redirect(`${env.CLIENT_URL}/freelancer/login?${new URLSearchParams({ error: message })}`);
+      const loginError = (message: string) => res.redirect(`${env.CLIENT_URL}/talent/login?${new URLSearchParams({ error: message })}`);
       if (!data.verified_email) {
         loginError('Please use a verified Google email address.');
         return;

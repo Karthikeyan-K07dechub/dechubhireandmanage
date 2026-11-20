@@ -24,7 +24,7 @@ export default function Step4Kyb({ state, handlers }: Props) {
   const {
     goToStep,
     submitKyb,
-    goBillingAfterKyb,
+    goPreferencesAfterKyb,
     handleFileInput,
     onDragOver,
     onDragLeave,
@@ -32,7 +32,6 @@ export default function Step4Kyb({ state, handlers }: Props) {
   } = handlers;
 
   const isVerifying = loadingAction === 'kyb';
-  const isGoingNext = loadingAction === 'go-billing';
 
   // ── Status banner config ───────────────────────────────────────────────────
 
@@ -53,7 +52,7 @@ export default function Step4Kyb({ state, handlers }: Props) {
       cls:   'vb-approved',
       icon:  '✅',
       title: 'Business verified successfully!',
-      body:  'Your KYB check passed. You can now proceed to set up billing.',
+      body:  'Your KYB check passed. You can now set your HR preferences.',
     },
     rejected: {
       cls:   'vb-pending',
@@ -185,8 +184,8 @@ export default function Step4Kyb({ state, handlers }: Props) {
         </button>
 
         {kybStatus === 'approved' ? (
-          <ActionButton loading={isGoingNext} onClick={goBillingAfterKyb}>
-            Continue to Billing <ArrowIcon />
+          <ActionButton onClick={goPreferencesAfterKyb}>
+            Continue to HR preferences <ArrowIcon />
           </ActionButton>
         ) : (
           <ActionButton

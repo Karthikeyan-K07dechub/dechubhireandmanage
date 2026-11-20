@@ -52,6 +52,7 @@ export interface IWorker extends Document {
     marketplaceBio?: string;
     marketplaceAvailability?: 'available_now' | 'this_week' | 'two_weeks' | 'next_month' | 'not_available';
     marketplaceRate?: number | null;
+    marketplaceMonthlyRate?: number | null;
     city?: string;
     address: {
       line1: string;

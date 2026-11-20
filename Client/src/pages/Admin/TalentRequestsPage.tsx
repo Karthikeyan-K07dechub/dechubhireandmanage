@@ -66,7 +66,7 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
   const formatDate = (value?: string) => (value ? new Date(value).toLocaleString() : 'Unknown');
   const formatStatus = (value?: string) => (value ? value.replace(/_/g, ' ') : 'unknown');
   const pendingCount = items.filter((item) => item.status === 'pending_review').length;
-  const isHired = (item: TalentRequestItem) => Boolean(['hired', 'talent_hired'].includes(item.status) || (item.clientContractApprovedAt && item.contractorContractApproved) || item.projectCompleted);
+  const isHired = (item: TalentRequestItem) => Boolean(['hired', 'talent_hired'].includes(item.status) || (item.clientContractApprovedAt && item.contractorContractApproved) || item.projectCompleted || item.projectPaymentDone);
   const approvedCount = items.filter((item) => !isHired(item) && ['approved', 'candidate_selected', 'hire_started'].includes(item.status)).length;
   const hiredCount = items.filter(isHired).length;
 
@@ -174,8 +174,8 @@ export default function TalentRequestsPage({ onLogout, onOpenRequest }: TalentRe
                     </td>
                     <td>{formatDate(it.createdAt)}</td>
                     <td>
-                      <span className={`atr-status-pill ${it.projectCompleted ? 'project-completed' : statusTone[it.status] || 'new'}`}>
-                        {it.projectCompleted ? 'Project completed' : it.clientContractApprovedAt && it.contractorContractApproved ? <span className="atr-contract-approvals"><span>&#9745; Client approved</span><span>&#9745; Contractor approved</span></span> : it.clientContractApprovedAt ? 'Contract approved by client' : it.clientSelectionSubmittedAt && it.status === 'candidate_selected' ? 'Worker list updated' : formatStatus(it.status)}
+                      <span className={`atr-status-pill ${it.projectCompleted || it.projectPaymentDone ? 'project-completed' : statusTone[it.status] || 'new'}`}>
+                        {it.projectPaymentDone ? 'Project done' : it.projectCompleted ? 'Project completed' : it.clientContractApprovedAt && it.contractorContractApproved ? <span className="atr-contract-approvals"><span>&#9745; Client approved</span><span>&#9745; Contractor approved</span></span> : it.clientContractApprovedAt ? 'Contract approved by client' : it.clientSelectionSubmittedAt && it.status === 'candidate_selected' ? 'Worker list updated' : formatStatus(it.status)}
                       </span>
                     </td>
                     <td>

@@ -1,5 +1,7 @@
 import {observeVisibleUpdates,updateResource} from '../components/updateVisibility';
 import TalentHomeSections from './TalentHomeSections';
+import VerificationDocuments from './VerificationDocuments';
+import { talentDashboardLink } from './talentRoutes';
 
 import AttentionDot from '../components/AttentionDot';
 import EquipmentSection from '../components/EquipmentSection';
@@ -70,38 +72,12 @@ const MARKETPLACE_AVAILABILITY_OPTIONS = [
 const SKILL_SUGGESTIONS: string[] = [];
 
 const DEFAULT_MARKETPLACE_TITLE = 'Freelancer';
+const PROFILE_SUMMARY_PLACEHOLDER = 'Tell companies about your strongest skills and the kind of freelance work you want.';
 const DEFAULT_MARKETPLACE_SUMMARIES = new Set([
-  'Tell companies about your strongest skills and the kind of freelance work you want.',
+  PROFILE_SUMMARY_PLACEHOLDER,
   'Experienced freelancer available for contract work.',
   'Self-signup freelancer profile',
 ]);
-
-const DEFAULT_PACKAGE_PRESETS: ContractorProfile['servicePackages'] = [
-  {
-    name: 'Basics',
-    price: 0,
-    description: 'Share a simple starter package for companies browsing your profile.',
-    deliveryDays: 5,
-    revisions: 1,
-    features: ['Scope outline', 'Starter delivery'],
-  },
-  {
-    name: 'Standard',
-    price: 0,
-    description: 'Describe your most common package and what clients typically receive.',
-    deliveryDays: 7,
-    revisions: 2,
-    features: ['Expanded scope', 'Progress updates'],
-  },
-  {
-    name: 'Premium',
-    price: 0,
-    description: 'Use this for your most complete offer with your best turnaround.',
-    deliveryDays: 14,
-    revisions: 3,
-    features: ['Full delivery', 'Priority collaboration'],
-  },
-];
 
 function inferOnboardingStepFromProfile(profile: Partial<ContractorProfile>): number {
   const hasPersonalDetails = Boolean(
@@ -206,6 +182,7 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
     marketplaceAvailability: availabilityOption ? availabilityOption.value : 'available_now',
     marketplaceAvailabilityLabel: profile.marketplaceAvailabilityLabel ?? (availabilityOption?.label ?? 'Available now'),
     marketplaceRate: typeof profile.marketplaceRate === 'number' ? profile.marketplaceRate : 0,
+    marketplaceMonthlyRate: profile.marketplaceMonthlyRate ?? null,
     city: profile.city ?? '',
     country: profile.country ?? '',
     responseTimeHours: typeof profile.responseTimeHours === 'number' ? profile.responseTimeHours : 2,
@@ -231,7 +208,7 @@ function normalizeContractorProfile(profile: Partial<ContractorProfile>): Contra
           revisions: typeof pkg.revisions === 'number' ? pkg.revisions : 0,
           features: Array.isArray(pkg.features) ? pkg.features : [],
         }))
-      : DEFAULT_PACKAGE_PRESETS,
+      : [],
     faqItems: Array.isArray(profile.faqItems)
       ? profile.faqItems.map((item) => ({ question: item.question ?? '', answer: item.answer ?? '' }))
       : [],
@@ -412,7 +389,7 @@ function SkillsPage({
         </div>
 
         {message && <div style={{ marginBottom: 14, color: '#15803d', fontSize: 13, fontWeight: 600 }}>{message}</div>}
-        {error && <div style={{ marginBottom: 14, color: '#dc2626', fontSize: 13, fontWeight: 600 }}>{error}</div>}
+        {error && <div role="alert" style={{ marginBottom: 14, color: '#dc2626', fontSize: 13, fontWeight: 600 }}>{error}</div>}
 
         <button type="button" className="cp-btn-primary" style={{ width: 'auto', padding: '0 24px' }} onClick={handleSave} disabled={saving}>
           {saving ? 'Saving...' : 'Save skills'}
@@ -500,7 +477,7 @@ function ProfilePage({
     yearsOfExperience: number;
     marketplaceBio: string;
     marketplaceAvailability: ContractorProfile['marketplaceAvailability'];
-    marketplaceRate: number;
+    marketplaceMonthlyRate?: number | null;
     city: string;
     country: string;
     responseTimeHours: number;
@@ -508,20 +485,18 @@ function ProfilePage({
     languages: string[];
     profilePhotoUrl?: string;
     bannerImageUrl?: string;
-    profileOverview: string;
     portfolioProjects: ContractorProfile['portfolioProjects'];
-    servicePackages: ContractorProfile['servicePackages'];
     faqItems: ContractorProfile['faqItems'];
   }) => Promise<void>;
 }) {
   const buildFormState = useCallback(() => ({
     firstName: profile.firstName,
     lastName: profile.lastName,
-    marketplaceTitle: profile.marketplaceTitle,
+    marketplaceTitle: profile.marketplaceTitle.trim().toLowerCase() === DEFAULT_MARKETPLACE_TITLE.toLowerCase() ? '' : profile.marketplaceTitle,
     yearsOfExperience: profile.yearsOfExperience === null || profile.yearsOfExperience === undefined ? '' : String(profile.yearsOfExperience),
-    marketplaceBio: profile.marketplaceBio,
+    marketplaceBio: profile.marketplaceBio.trim() === PROFILE_SUMMARY_PLACEHOLDER ? '' : profile.marketplaceBio,
     marketplaceAvailability: profile.marketplaceAvailability,
-    marketplaceRate: String(profile.marketplaceRate ?? 0),
+    marketplaceMonthlyRate: profile.marketplaceMonthlyRate?.toString() ?? '',
     city: profile.city,
     country: profile.country,
     responseTimeHours: String(profile.responseTimeHours ?? 2),
@@ -529,7 +504,6 @@ function ProfilePage({
     languagesInput: Array.isArray(profile.languages) ? profile.languages.join(', ') : '',
     profilePhotoUrl: profile.profilePhotoUrl ?? '',
     bannerImageUrl: profile.bannerImageUrl ?? '',
-    profileOverview: profile.profileOverview,
     portfolioProjects: Array.isArray(profile.portfolioProjects) ? profile.portfolioProjects.map((project) => ({
       title: project.title ?? '',
       description: project.description ?? '',
@@ -538,10 +512,6 @@ function ProfilePage({
       tags: Array.isArray(project.tags) ? project.tags : [],
     })) : [],
     faqItems: Array.isArray(profile.faqItems) ? profile.faqItems.map((item) => ({ question: item.question ?? '', answer: item.answer ?? '' })) : [],
-    servicePackages: (Array.isArray(profile.servicePackages) && profile.servicePackages.length ? profile.servicePackages : DEFAULT_PACKAGE_PRESETS).map((pkg, index) => ({
-      ...pkg,
-      name: DEFAULT_PACKAGE_PRESETS[index]?.name ?? pkg.name,
-    })),
   }), [profile]);
 
   const [form, setForm] = useState(buildFormState);
@@ -567,17 +537,18 @@ function ProfilePage({
       ? profile.country.trim()
       : 'Not added yet';
   const rateValue =
-    typeof profile.marketplaceRate === 'number' && profile.marketplaceRate > 0
+    profile.marketplaceMonthlyRate != null
+      ? `${profile.payCurrency} ${profile.marketplaceMonthlyRate}/mo`
+      : typeof profile.marketplaceRate === 'number' && profile.marketplaceRate > 0
       ? `${profile.payCurrency} ${profile.marketplaceRate}/hr`
       : 'Not added yet';
   const summaryValue =
     profile.marketplaceBio?.trim() && !DEFAULT_MARKETPLACE_SUMMARIES.has(profile.marketplaceBio.trim())
       ? profile.marketplaceBio.trim()
       : 'No profile summary added yet.';
-  const overviewValue = profile.profileOverview?.trim() || 'No detailed overview added yet.';
   const skillsValue = Array.isArray(profile.skills) && profile.skills.length ? profile.skills.join(', ') : 'No skills added yet';
   const languagesValue = Array.isArray(profile.languages) && profile.languages.length ? profile.languages.join(', ') : 'Not added yet';
-  const hasRateBadge = typeof profile.marketplaceRate === 'number' && profile.marketplaceRate > 0;
+  const hasRateBadge = (profile.marketplaceMonthlyRate ?? profile.marketplaceRate) > 0;
   const heroSkills = Array.isArray(profile.skills) ? profile.skills.slice(0, 2) : [];
   const extraSkillCount = Math.max(Array.isArray(profile.skills) ? profile.skills.length - heroSkills.length : 0, 0);
   const hasDomainValue = domainValue !== 'Not added yet';
@@ -633,6 +604,12 @@ function ProfilePage({
   }, [message]);
 
   const handleSave = async () => {
+    const marketplaceTitle = form.marketplaceTitle.trim();
+    if (!marketplaceTitle || marketplaceTitle.toLowerCase() === DEFAULT_MARKETPLACE_TITLE.toLowerCase()) {
+      setError('Enter a professional title, such as Frontend Developer.');
+      document.getElementById('profile-professional-title')?.focus();
+      return;
+    }
     const yearsOfExperience = Number(form.yearsOfExperience);
     if (
       form.yearsOfExperience.trim() === ''
@@ -676,16 +653,6 @@ function ProfilePage({
           .map((item) => ({ question: item.question.trim(), answer: item.answer.trim() }))
           .filter((item) => item.question && item.answer)
       : [];
-    const servicePackages = form.servicePackages.map((pkg, index) => ({
-      ...pkg,
-      name: DEFAULT_PACKAGE_PRESETS[index]?.name ?? pkg.name.trim(),
-      description: pkg.description.trim(),
-      price: Number(pkg.price) || 0,
-      deliveryDays: Number(pkg.deliveryDays) || 1,
-      revisions: Number(pkg.revisions) || 0,
-      features: Array.from(new Set((Array.isArray(pkg.features) ? pkg.features : []).map((feature) => feature.trim()).filter(Boolean))),
-    }));
-
     setSaving(true);
     setMessage('');
     setError('');
@@ -693,11 +660,11 @@ function ProfilePage({
       await onSave({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        marketplaceTitle: form.marketplaceTitle.trim(),
+        marketplaceTitle,
         yearsOfExperience,
         marketplaceBio: form.marketplaceBio.trim(),
         marketplaceAvailability: form.marketplaceAvailability,
-        marketplaceRate: Number(form.marketplaceRate) || 0,
+        marketplaceMonthlyRate: form.marketplaceMonthlyRate === '' ? null : Number(form.marketplaceMonthlyRate),
         city: form.city.trim(),
         country: form.country.trim(),
         responseTimeHours: Number(form.responseTimeHours) || 2,
@@ -705,9 +672,7 @@ function ProfilePage({
         languages,
         profilePhotoUrl: form.profilePhotoUrl?.trim() || '',
         bannerImageUrl: form.bannerImageUrl?.trim() || '',
-        profileOverview: form.profileOverview.trim(),
         portfolioProjects,
-        servicePackages,
         faqItems,
       });
       setMessage('Marketplace profile updated successfully.');
@@ -734,7 +699,7 @@ function ProfilePage({
 
   if (readOnly || !isEditing) {
     return (
-      <div className="cd-page">
+      <div className="cd-page cd-profile-page">
         <div className="cd-page-title">My Profile</div>
         <div className="cd-page-sub">
           {readOnly
@@ -829,13 +794,7 @@ function ProfilePage({
             <p>{summaryValue}</p>
           </div>
 
-          <div className="cd-profile-summary-card">
-            <div className="cd-profile-section-title">Public profile overview</div>
-            <p>{overviewValue}</p>
-          </div>
-
-          <div className="cd-profile-grid">
-            <div className="cd-profile-info-card">
+          <div className="cd-profile-info-card">
               <div className="cd-profile-section-title">Client signals</div>
               <div className="cd-profile-info-list">
                 <DetailRow label="Response time" value={`${profile.responseTimeHours} hours`} />
@@ -849,20 +808,9 @@ function ProfilePage({
                   value={Array.isArray(profile.faqItems) && profile.faqItems.length ? `${profile.faqItems.length} added` : 'Not added yet'}
                 />
               </div>
-            </div>
-
-            <div className="cd-profile-info-card">
-              <div className="cd-profile-section-title">Service packages</div>
-              <div className="cd-profile-metrics">
-                {(Array.isArray(profile.servicePackages) ? profile.servicePackages : []).map((pkg) => (
-                  <div key={`${pkg.name}-${pkg.price}`} className="cd-profile-metric">
-                    <span className="cd-profile-metric-label">{pkg.name}</span>
-                    <strong>{pkg.price > 0 ? `${profile.payCurrency} ${pkg.price}` : 'Custom quote'}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
+
+          {!readOnly && <VerificationDocuments />}
 
           <div className="cd-profile-summary-card">
             <div className="cd-profile-section-title">Skills visible to companies</div>
@@ -878,15 +826,15 @@ function ProfilePage({
           <div className="cd-profile-summary-card">
             <div className="cd-profile-section-title">Portfolio preview</div>
             {Array.isArray(profile.portfolioProjects) && profile.portfolioProjects.length ? (
-              <div style={{ display: 'grid', gap: 12 }}>
+              <div className="cd-profile-portfolio">
                 {profile.portfolioProjects.slice(0, 3).map((project) => (
-                  <div className="cd-portfolio-item" key={`${project.title}-${project.imageUrl}`} style={{ border: '1px solid #edf2f7', borderRadius: 18, padding: 16, display: 'grid', gap: 14, alignItems: 'center' }}>
-                    <img src={resolveImageUrl(project.imageUrl)} alt={project.title} style={{ width: '100%', height: 84, objectFit: 'cover', borderRadius: 12, background: '#f8fafc' }} />
+                  <div className="cd-portfolio-item" key={`${project.title}-${project.imageUrl}`}>
+                    <img src={resolveImageUrl(project.imageUrl)} alt={project.title} />
                     <div>
-                      <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>{project.title}</div>
-                      <div style={{ color: '#475569', fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>{project.description}</div>
+                      <h3>{project.title}</h3>
+                      <p>{project.description}</p>
                       {project.projectLink ? (
-                        <a href={project.projectLink} rel="noreferrer noopener" target="_blank" style={{ color: '#2563eb', fontSize: 13, textDecoration: 'underline' }}>
+                        <a href={project.projectLink} rel="noreferrer noopener" target="_blank">
                           View hosted project
                         </a>
                       ) : null}
@@ -904,10 +852,11 @@ function ProfilePage({
   }
 
   return (
-    <div className="cd-page">
+    <div className="cd-page cd-profile-page">
       <div className="cd-page-title">My Profile</div>
       <div className="cd-page-sub">Update the freelancer details that companies see in the marketplace.</div>
 
+      <VerificationDocuments />
       <div className="cd-profile-editor">
         <div className="cd-profile-editor-head">
           <div>
@@ -919,26 +868,26 @@ function ProfilePage({
           <div className="cd-profile-editor-tag">Visible to companies</div>
         </div>
 
-        {error && <div style={{ marginBottom: 14, color: '#dc2626', fontSize: 13, fontWeight: 600 }}>{error}</div>}
+        {error && <div className="cd-profile-error" role="alert">{error}</div>}
 
-        <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
+        <div className="cd-profile-form-grid cd-profile-form-grid--two">
           <div className="cp-field">
-            <label className="cp-label">First name</label>
+            <label className="cp-label">First name *</label>
             <input className="cp-input" value={form.firstName} onChange={(e) => setForm((prev) => ({ ...prev, firstName: e.target.value }))} />
           </div>
           <div className="cp-field">
-            <label className="cp-label">Last name</label>
+            <label className="cp-label">Last name *</label>
             <input className="cp-input" value={form.lastName} onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))} />
           </div>
         </div>
 
-        <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
+        <div className="cd-profile-form-grid cd-profile-form-grid--two">
           <div className="cp-field">
-            <label className="cp-label">Professional title</label>
-            <input className="cp-input" value={form.marketplaceTitle} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceTitle: e.target.value }))} />
+            <label className="cp-label" htmlFor="profile-professional-title">Professional title *</label>
+            <input id="profile-professional-title" className="cp-input" required placeholder="e.g. Frontend Developer" value={form.marketplaceTitle} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceTitle: e.target.value }))} />
           </div>
           <div className="cp-field">
-            <label className="cp-label">Years of experience</label>
+            <label className="cp-label">Years of experience *</label>
             <input
               className="cp-input"
               type="number"
@@ -1016,23 +965,23 @@ function ProfilePage({
           </div>
         </div>
 
-        <div className="app-grid-three" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
+        <div className="cd-profile-form-grid cd-profile-form-grid--three">
           <div className="cp-field">
-            <label className="cp-label">City</label>
+            <label className="cp-label">City *</label>
             <input className="cp-input" value={form.city} onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))} />
           </div>
           <div className="cp-field">
-            <label className="cp-label">Country</label>
+            <label className="cp-label">Country *</label>
             <input className="cp-input" value={form.country} onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))} />
           </div>
           <div className="cp-field">
-            <label className="cp-label">Expected hourly rate ({profile.payCurrency})</label>
-            <input className="cp-input" type="number" min="0" value={form.marketplaceRate} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceRate: e.target.value }))} />
+            <label className="cp-label" htmlFor="profile-monthly-rate">Expected monthly rate ({profile.payCurrency})</label>
+            <input id="profile-monthly-rate" className="cp-input" type="number" min="0" step="0.01" value={form.marketplaceMonthlyRate} onChange={(e) => setForm((prev) => ({ ...prev, marketplaceMonthlyRate: e.target.value }))} />
           </div>
         </div>
 
         <div className="cp-field">
-          <label className="cp-label">Availability</label>
+          <label className="cp-label">Availability *</label>
           <select
             className="cp-input"
             value={form.marketplaceAvailability}
@@ -1048,10 +997,13 @@ function ProfilePage({
         </div>
 
         <div className="cp-field">
-          <label className="cp-label">Profile summary</label>
+          <label className="cp-label" htmlFor="profile-summary">Profile summary *</label>
           <textarea
+            id="profile-summary"
             className="cp-textarea"
             style={{ height: 120 }}
+            placeholder={PROFILE_SUMMARY_PLACEHOLDER}
+            required
             value={form.marketplaceBio}
             onChange={(e) => setForm((prev) => ({ ...prev, marketplaceBio: e.target.value }))}
           />
@@ -1066,31 +1018,20 @@ function ProfilePage({
             onChange={(e) => setForm((prev) => ({ ...prev, skillsInput: e.target.value }))}
             placeholder="React, TypeScript, Node.js"
           />
-          <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+          <div className="cd-profile-form-hint">
             Separate skills with commas. These will appear on your marketplace card.
           </div>
         </div>
 
-        <div className="app-grid-two" style={{ display: 'grid', gap: 14, marginBottom: 16 }}>
+        <div className="cd-profile-form-grid cd-profile-form-grid--two">
           <div className="cp-field">
-            <label className="cp-label">Average response time (hours)</label>
+            <label className="cp-label">Average response time (hours) *</label>
             <input className="cp-input" type="number" min="1" value={form.responseTimeHours} onChange={(e) => setForm((prev) => ({ ...prev, responseTimeHours: e.target.value }))} />
           </div>
           <div className="cp-field">
             <label className="cp-label">Languages</label>
             <input className="cp-input" value={form.languagesInput} onChange={(e) => setForm((prev) => ({ ...prev, languagesInput: e.target.value }))} placeholder="English, Hindi" />
           </div>
-        </div>
-
-        <div className="cp-field">
-          <label className="cp-label">Detailed public overview</label>
-          <textarea
-            className="cp-textarea"
-            style={{ minHeight: 140 }}
-            value={form.profileOverview}
-            onChange={(e) => setForm((prev) => ({ ...prev, profileOverview: e.target.value }))}
-            placeholder="Write a fuller introduction that companies will see on your public profile page."
-          />
         </div>
 
         <div className="cp-field">
@@ -1102,7 +1043,7 @@ function ProfilePage({
           ) : null}
           <div style={{ display: 'grid', gap: 18 }}>
             {form.portfolioProjects.map((project, projectIndex) => (
-              <div key={projectIndex} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
+              <div key={projectIndex} className="cd-profile-form-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
                   <div style={{ fontWeight: 700, color: '#0f172a' }}>Project {projectIndex + 1}</div>
                   <button
@@ -1235,45 +1176,8 @@ function ProfilePage({
           >
             Add portfolio project
           </button>
-          <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+          <div className="cd-profile-form-hint">
             Add a title, description, an uploaded image, a hosted project link, and tags for each portfolio project.
-          </div>
-        </div>
-
-        <div className="cp-field">
-          <label className="cp-label">Service packages</label>
-          <div className="app-grid-three" style={{ display: 'grid', gap: 14 }}>
-            {form.servicePackages.map((pkg, index) => (
-              <div key={`${pkg.name}-${index}`} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
-                <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 12 }}>{pkg.name}</div>
-                <div className="cp-field">
-                  <label className="cp-label">Name</label>
-                  <input className="cp-input" value={pkg.name} disabled style={{ background: '#f8fafc', cursor: 'not-allowed' }} />
-                </div>
-                <div className="cp-field">
-                  <label className="cp-label">Price ({profile.payCurrency})</label>
-                  <input className="cp-input" type="number" min="0" value={pkg.price} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, price: Number(e.target.value) || 0 } : item) }))} />
-                </div>
-                <div className="app-grid-two" style={{ display: 'grid', gap: 10 }}>
-                  <div className="cp-field">
-                    <label className="cp-label">Delivery days</label>
-                    <input className="cp-input" type="number" min="1" value={pkg.deliveryDays} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, deliveryDays: Number(e.target.value) || 1 } : item) }))} />
-                  </div>
-                  <div className="cp-field">
-                    <label className="cp-label">Revisions</label>
-                    <input className="cp-input" type="number" min="0" value={pkg.revisions} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, revisions: Number(e.target.value) || 0 } : item) }))} />
-                  </div>
-                </div>
-                <div className="cp-field">
-                  <label className="cp-label">Description</label>
-                  <textarea className="cp-textarea" style={{ height: 96 }} value={pkg.description} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, description: e.target.value } : item) }))} />
-                </div>
-                <div className="cp-field">
-                  <label className="cp-label">Features</label>
-                  <textarea className="cp-textarea" style={{ height: 84 }} value={Array.isArray(pkg.features) ? pkg.features.join(', ') : ''} onChange={(e) => setForm((prev) => ({ ...prev, servicePackages: prev.servicePackages.map((item, itemIndex) => itemIndex === index ? { ...item, features: e.target.value.split(',').map((feature) => feature.trim()).filter(Boolean) } : item) }))} placeholder="Landing page, API integration, QA" />
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -1286,7 +1190,7 @@ function ProfilePage({
           ) : null}
           <div style={{ display: 'grid', gap: 16 }}>
             {form.faqItems.map((item, faqIndex) => (
-              <div key={faqIndex} style={{ border: '1px solid #e2e8f0', borderRadius: 18, padding: 16, background: '#fff' }}>
+              <div key={faqIndex} className="cd-profile-form-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ fontWeight: 700, color: '#0f172a' }}>FAQ {faqIndex + 1}</div>
                   <button
@@ -1338,7 +1242,7 @@ function ProfilePage({
           >
             Add FAQ item
           </button>
-          <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+          <div className="cd-profile-form-hint">
             Add one FAQ item per block above. Each entry appears separately on your marketplace profile.
           </div>
         </div>
@@ -1405,7 +1309,7 @@ export default function ContractorDashboard({
     params.set('tab', page);
     if(page!=='work-updates')params.delete('task');
     const nextQuery = params.toString();
-    const nextUrl = nextQuery ? `/contractor/dashboard?${nextQuery}` : '/contractor/dashboard';
+    const nextUrl = nextQuery ? `/talent/dashboard?${nextQuery}` : '/talent/dashboard';
     const currentUrl = `${window.location.pathname}${window.location.search}`;
     if (currentUrl !== nextUrl) {
       window.history.replaceState({}, '', nextUrl);
@@ -1444,7 +1348,7 @@ export default function ContractorDashboard({
 
     const handleSessionExpired = () => {
       contractorTokenStore.clear();
-      window.location.href = '/freelancer/login';
+      window.location.href = '/talent/login';
     };
 
     window.addEventListener('dechub:contractor-session-expired', handleSessionExpired);
@@ -1477,7 +1381,7 @@ export default function ContractorDashboard({
         }
 
         if (!profileResult.value.kycDocumentsSubmitted) {
-          window.location.replace('/freelancer/signup?resume=1');
+          window.location.replace('/talent/signup?resume=1');
           return;
         }
         setProfile(normalizeContractorProfile(profileResult.value));
@@ -1549,7 +1453,7 @@ export default function ContractorDashboard({
     yearsOfExperience: number;
     marketplaceBio: string;
     marketplaceAvailability: ContractorProfile['marketplaceAvailability'];
-    marketplaceRate: number;
+    marketplaceMonthlyRate?: number | null;
     city: string;
     country: string;
     responseTimeHours: number;
@@ -1557,9 +1461,7 @@ export default function ContractorDashboard({
     languages: string[];
     profilePhotoUrl?: string;
     bannerImageUrl?: string;
-    profileOverview: string;
     portfolioProjects: ContractorProfile['portfolioProjects'];
-    servicePackages: ContractorProfile['servicePackages'];
     faqItems: ContractorProfile['faqItems'];
   }) => {
     if (isPreviewMode) {
@@ -1603,7 +1505,7 @@ export default function ContractorDashboard({
             className="cp-btn-primary"
             onClick={() => {
               contractorTokenStore.clear();
-              window.location.href = '/freelancer/login';
+              window.location.href = '/talent/login';
             }}
           >
             Go to login
@@ -1708,9 +1610,8 @@ export default function ContractorDashboard({
                       item._id === notification._id ? { ...item, readAt: new Date().toISOString() } : item
                     )));
                   }
-                  if (notification.actionUrl?.startsWith('/contractor/dashboard?')) {
-                    window.location.assign(notification.actionUrl);
-                  }
+                  const destination = talentDashboardLink(notification.actionUrl);
+                  if (destination) window.location.assign(destination);
                 }}
                 style={{
                   width: '100%',

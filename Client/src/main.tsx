@@ -15,17 +15,17 @@ if (!root) throw new Error('Root element #root not found in index.html');
 
 const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
 const isDashboardRoute = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
-const isWorkerRoute = pathname === '/worker' || pathname.startsWith('/worker/');
+const isTalentOnboardingRoute = pathname === '/talent/join' || pathname === '/talent/signed';
 const isResetPasswordRoute = pathname === '/reset-password';
 const isContractorDashboardRoute =
-  pathname === '/contractor/dashboard' || pathname.startsWith('/contractor/dashboard/');
+  pathname === '/talent/dashboard' || pathname.startsWith('/talent/dashboard/');
 
 if (isDashboardRoute && !tokenStore.getAccess()) {
   window.location.replace('/company/login');
 }
 
 if (isContractorDashboardRoute && !contractorTokenStore.get()) {
-  window.location.replace('/freelancer/login');
+  window.location.replace('/talent/login');
 }
 
 const RootComponent = isDashboardRoute
@@ -34,7 +34,7 @@ const RootComponent = isDashboardRoute
   ? ResetPasswordPage
   : isContractorDashboardRoute
   ? ContractorDashboard
-  : isWorkerRoute
+  : isTalentOnboardingRoute
   ? ContractorPortal
   : App;
 

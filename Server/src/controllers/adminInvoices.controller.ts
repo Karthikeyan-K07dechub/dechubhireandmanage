@@ -32,7 +32,8 @@ export async function sendInvoiceToClient(req: Request, res: Response, next: Nex
     const original = await Invoice.findById(req.params.id); if (!original) throw Errors.NotFound('Invoice');
     if (original.clientSentAt || !['pending_admin', 'submitted'].includes(original.status)) throw new AppError('Invoice already sent or unavailable for review.', 409, 'INVOICE_ALREADY_REVIEWED');
     if (!req.file) throw new AppError('Select the final invoice PDF or image before sending.', 422, 'INVOICE_PDF_REQUIRED');
-    const document = await uploadInvoiceDocument(req.file, String(original.companyId), String(original._id));
+    const company = await Company.findById(original.companyId).select('companyName');
+    const document = await uploadInvoiceDocument(req.file, String(original.companyId), String(original._id), company?.companyName ?? '');
     const serviceCharge = Math.round(data.serviceCharge * 100) / 100;
     const clientTotal = Math.round((original.amountGross + serviceCharge) * 100) / 100;
     let invoice;
@@ -67,7 +68,7 @@ export async function reviewContractorInvoice(req:Request,res:Response,next:Next
  if(!invoice)throw new AppError('Invoice has already been reviewed or sent. Refresh the list.',409,'INVOICE_ALREADY_REVIEWED');
  const title=data.decision==='approve'?'Invoice approved by admin':'Invoice changes requested';
  const message=invoice.invoiceNumber+(data.reason?' - '+data.reason:' has been reviewed and approved by Dechub.');
- void ContractorNotification.create({workerId:invoice.workerId,type:'general',title,message:message.slice(0,1200),actionUrl:'/contractor/dashboard?tab=invoices'}).catch(error=>logger.error('Invoice decision notification failed',error));
- void (async()=>{const worker=await Worker.findById(invoice.workerId).select('email');if(worker?.email)await sendEmail(worker.email,title,'<p>'+escapeMessageHtml(message)+'</p><p><a href="'+escapeMessageHtml(env.CLIENT_URL+'/contractor/dashboard?tab=invoices')+'">Open invoices</a></p>');})().catch(error=>logger.error('Invoice decision email failed',error));
+ void ContractorNotification.create({workerId:invoice.workerId,type:'general',title,message:message.slice(0,1200),actionUrl:'/talent/dashboard?tab=invoices'}).catch(error=>logger.error('Invoice decision notification failed',error));
+ void (async()=>{const worker=await Worker.findById(invoice.workerId).select('email');if(worker?.email)await sendEmail(worker.email,title,'<p>'+escapeMessageHtml(message)+'</p><p><a href="'+escapeMessageHtml(env.CLIENT_URL+'/talent/dashboard?tab=invoices')+'">Open invoices</a></p>');})().catch(error=>logger.error('Invoice decision email failed',error));
  ok(res,invoiceView(invoice.toObject()));
 }catch(error){next(error);}}

@@ -4,6 +4,7 @@ export interface TalentRequestItem {
   deliveryProject?: { deliveryMode?:'client_managed'|'bridge_managed'; _id: string; title: string; status: string; startDate: string | null; endDate: string | null; completedAt: string | null; paymentVerifiedAt?: string | null; clientAcceptedAt?: string | null; contractSentAt?:string|null; workers: Array<{ workerId: string; name?:string; role: string; contractSentAt?:string|null; acceptedAt?: string | null; completedAt: string | null }> } | null;
   clientContractApprovedAt?: string | null;
   projectCompleted?: boolean;
+  projectPaymentDone?: boolean;
   contractorContractApproved?: boolean;
   contractorAcceptedCount?: number;
   contractorTotalCount?: number;

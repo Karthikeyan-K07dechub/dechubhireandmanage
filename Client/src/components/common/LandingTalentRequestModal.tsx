@@ -5,6 +5,7 @@ import { getMyCompany } from '../../api/company.api';
 import type { ApiError } from '../../api/client';
 import { createCompanyProjectRequest, createPublicTalentRequest } from '../../api/talentRequests.api';
 import './landing-talent-request-modal.css';
+import { openDatePicker } from '../../utils/openDatePicker';
 
 interface LandingTalentRequestModalProps {
   initialProjectDescription?: string;
@@ -429,12 +430,12 @@ export default function LandingTalentRequestModal({
                 <div className="ltrm-grid ltrm-field-full">
                   <label className="ltrm-field">
                     <span>Expected start date *</span>
-                    <input type="date" {...register('expectedStartDate', { required: 'Expected start date is required.', deps: ['expectedEndDate'] })} />
+                    <input type="date" onClick={openDatePicker} {...register('expectedStartDate', { required: 'Expected start date is required.', deps: ['expectedEndDate'] })} />
                     {errors.expectedStartDate && <small>{errors.expectedStartDate.message}</small>}
                   </label>
                   <label className="ltrm-field">
                     <span>Expected end date *</span>
-                    <input type="date" min={watch('expectedStartDate') || undefined} {...register('expectedEndDate', {
+                    <input type="date" onClick={openDatePicker} min={watch('expectedStartDate') || undefined} {...register('expectedEndDate', {
                       required: 'Expected end date is required.',
                       validate: value => value >= getValues('expectedStartDate') || 'End date must be on or after start date.',
                     })} />

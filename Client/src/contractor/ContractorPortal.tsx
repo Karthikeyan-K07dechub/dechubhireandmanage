@@ -174,12 +174,12 @@ function RejectedScreen() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface ContractorPortalProps {
-  /** Extract from URL: /worker/join?token=xxx */
+  /** Extract from URL: /talent/join?token=xxx */
   inviteToken?: string;
 }
 
 function redirectToContractorDashboard() {
-  window.location.replace('/contractor/dashboard?tab=contract');
+  window.location.replace('/talent/dashboard?tab=contract');
 }
 
 export default function ContractorPortal({ inviteToken }: ContractorPortalProps) {

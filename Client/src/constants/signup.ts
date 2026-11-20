@@ -29,9 +29,6 @@ export const initialData: FormData = {
   referralSource:  '',
 
   // Step 5 — Billing
-  billCurrency:          'USD',
-  billingEmail:          '',
-  stripePaymentMethodId: '',   // ← populated by Stripe Elements in Step5Billing
 
   // Step 6 — Preferences
   payCycle:         'monthly',
@@ -50,12 +47,11 @@ export const initialDocs: UploadedDocs = {};
 
 // ─── Step progress config ─────────────────────────────────────────────────────
 
-export const stepConfig: Record<Exclude<Step, 7>, { label: string; pct: number }> = {
-  1: { label: 'Create account',       pct: 16  },
-  2: { label: 'Company identity',     pct: 33  },
-  3: { label: 'Business details',     pct: 50  },
-  4: { label: 'Verify business',      pct: 66  },
-  5: { label: 'Billing setup',        pct: 83  },
+export const stepConfig: Record<Exclude<Step, 5 | 7>, { label: string; pct: number }> = {
+  1: { label: 'Create account',       pct: 20  },
+  2: { label: 'Company identity',     pct: 40  },
+  3: { label: 'Business details',     pct: 60  },
+  4: { label: 'Verify business',      pct: 80  },
   6: { label: 'HR preferences',       pct: 100 },
 };
 
