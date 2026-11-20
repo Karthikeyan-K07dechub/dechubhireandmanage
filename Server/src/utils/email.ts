@@ -257,7 +257,7 @@ export function buildTalentRequestAdminEmail(input: TalentRequestAdminNotificati
     ${input.aiMatchStatus ? `<p><strong>AI match status:</strong> ${input.aiMatchStatus}</p><p><strong>Profiles shown by AI:</strong></p>${aiMatchesMarkup}` : ''}
     ${input.projectName ? `<p><strong>Project name:</strong> ${escape(input.projectName)}</p>` : ''}
     <p><strong>Company name:</strong> ${escape(input.companyName)}</p>
-    <p><strong>Company website:</strong> ${escape(input.companyWebsite)}</p>
+    <p><strong>Company website:</strong> ${escape(input.companyWebsite.trim() || 'Not provided')}</p>
     <p><strong>Contact name:</strong> ${escape(contactName)}</p>
     <p><strong>Contact email:</strong> ${escape(input.contactEmail)}</p>
     <p><strong>Phone number:</strong> ${escape(input.phoneNumber || 'Not provided')}</p>

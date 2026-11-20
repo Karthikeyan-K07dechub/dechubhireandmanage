@@ -27,7 +27,7 @@ export async function resolveCompanyRequestDetails(source: RequestDetails) {
   }).sort({ createdAt: -1 }).lean();
   return {
     companyName: companyName(company.companyName) || companyName(source.companyName) || companyName(demo?.companyName) || 'Company name not provided',
-    companyWebsite: value(company.companyWebsite) || value(source.companyWebsite) || value(demo?.companyWebsite),
+    companyWebsite: value(source.companyWebsite) || value(company.companyWebsite) || value(demo?.companyWebsite),
     contactFirstName: value(account?.firstName) || value(source.contactFirstName) || value(demo?.contactFirstName),
     contactLastName: value(account?.lastName) || value(source.contactLastName) || value(demo?.contactLastName),
     phoneNumber: value(account?.phone) || value(source.phoneNumber) || value(demo?.phoneNumber),

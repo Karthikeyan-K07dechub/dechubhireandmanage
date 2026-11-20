@@ -1,0 +1,5 @@
+const assert=require('node:assert/strict');process.chdir(require('node:path').join(__dirname,'..'));
+const {Company}=require('../dist/models/Company');const {CompanyAuth}=require('../dist/models/CompanyAuth');const {TalentRequest}=require('../dist/models/TalentRequest');
+Company.findById=()=>({lean:async()=>({_id:'company',ownerId:'owner',companyWebsite:'https://profile.example'})});CompanyAuth.findById=()=>({lean:async()=>({})});TalentRequest.findOne=()=>({sort:()=>({lean:async()=>({companyWebsite:'https://older.example'})})});
+const {resolveCompanyRequestDetails}=require('../dist/utils/companyRequestDetails');
+(async()=>{assert.equal((await resolveCompanyRequestDetails({companyId:'company',companyWebsite:'https://submitted.example'})).companyWebsite,'https://submitted.example');assert.equal((await resolveCompanyRequestDetails({companyId:'company',companyWebsite:''})).companyWebsite,'https://profile.example');console.log('PASS: submitted website takes priority; profile remains fallback. Mock database only.');})().catch(e=>{console.error(e);process.exitCode=1});
