@@ -44,7 +44,7 @@ export async function saveMonthlyInvoice(req:Request,res:Response,next:NextFunct
  if(data.action==='send'&&!stripeFields)throw new AppError('Enter the Stripe invoice ID to enable client payment.',422,'STRIPE_INVOICE_REQUIRED');
  if(stripeFields)Object.assign(invoice,stripeFields);else {invoice.stripeInvoiceId=undefined;invoice.stripeHostedInvoiceUrl=undefined;invoice.stripeStatus=undefined;}
  const previous=invoice.document;
- if(req.file)uploaded=await uploadInvoiceDocument(req.file,String(project.companyId),String(invoice._id));
+ if(req.file)uploaded=await uploadInvoiceDocument(req.file,String(project.companyId),String(invoice._id),company.companyName ?? '');
  Object.assign(invoice,{companyId:project.companyId,projectId:project._id,projectName:project.title,companyName:company.companyName||'Company',billingMonth:data.billingMonth,invoiceNumber:data.invoiceNumber,amount:data.amount,currency:data.currency,dueDate,message:data.message,kind:data.kind,correctionOf:data.correctionOf||null,document:uploaded||previous});
  if(data.action==='send'&&!invoice.document)throw new AppError('Attach the invoice before sending.',422,'INVOICE_FILE_REQUIRED');
  invoice.history.push(audit(data.action==='send'?'sent':isNew?'draft_created':'draft_updated',req));

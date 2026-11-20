@@ -18,7 +18,7 @@ export async function notifyMessageRecipients(input:Alert){
  const workers=input.recipientWorkerIds?.length?await Worker.find({_id:{$in:input.recipientWorkerIds}}).select('email'):[];
  const recipients=input.recipientWorkerIds?.length?workers.map(worker=>({email:worker.email,workerId:String(worker._id)})):[{email:account?.email,workerId:null}];
  await Promise.all(recipients.map(async recipient=>{
-  const path=recipient.workerId?'/contractor/dashboard?tab=projects&project='+input.projectId:'/dashboard?tab=projects&project='+input.projectId;
+  const path=recipient.workerId?'/talent/dashboard?tab=projects&project='+input.projectId:'/dashboard?tab=projects&project='+input.projectId;
   const href=path+(input.taskId?'&task='+input.taskId:recipient.workerId?'&chatPeer='+(input.senderRole==='client'?'client':input.senderId):'&chatWorker='+input.senderId);
   if(recipient.workerId)await ContractorNotification.create({workerId:recipient.workerId,type:'general',title:title.slice(0,140),message:message.slice(0,1200),actionUrl:href});
   else await CompanyNotification.create({companyId:input.companyId,projectId:input.projectId,type:'general',title:title.slice(0,140),message:message.slice(0,1200),actionUrl:href});

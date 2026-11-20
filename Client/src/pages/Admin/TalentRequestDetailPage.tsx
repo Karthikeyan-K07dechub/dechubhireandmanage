@@ -2,7 +2,6 @@ import {observeVisibleUpdates} from '../../components/updateVisibility';
 import ProjectUpdatesModal,{AdminTaskUpdatesButton} from '../../components/ProjectUpdates';
 import AdminAssignTaskForm from './AdminAssignTaskForm';
 import AdminTalentContractForm from './AdminTalentContractForm';
-import AdminInvoiceReview from './AdminInvoiceReview';
 import AdminContractorVerification from './AdminContractorVerification';
 import AdminPaymentProof from './AdminPaymentProof';
 import AdminProjectDocuments from './AdminProjectDocuments';
@@ -373,7 +372,7 @@ export default function TalentRequestDetailPage({
     try {
       const result = await updateAdminProjectPaymentStatus(request.deliveryProject._id, done);
       setRequest(previous => previous?.deliveryProject ? { ...previous, deliveryProject: { ...previous.deliveryProject, status: result.status, paymentVerifiedAt: result.paymentVerifiedAt } } : previous);
-      setActionSuccess(done ? 'Payment marked done.' : 'Payment marked not done.');
+      setActionSuccess(done ? 'Project done. Payment confirmed.' : 'Payment marked not done.');
     } catch (reason) { setActionError((reason as Error).message || 'Unable to update payment status.'); }
     finally { setSavingAction(''); }
   };
@@ -732,7 +731,7 @@ export default function TalentRequestDetailPage({
                                 </div>
                                 <p>{step.description}</p>
                                 {step.label === 'Contract approvals' && <div className="atd-contract-approval-list"><p style={{color:request.deliveryProject?.clientAcceptedAt?'#4ade80':request.deliveryProject?.contractSentAt||request.deliveryProject?.status==='contract_sent'?'#fbbf24':'#94a3b8'}}>Client contract: {request.deliveryProject?.clientAcceptedAt?'Approved':request.deliveryProject?.contractSentAt||request.deliveryProject?.status==='contract_sent'?'Awaiting client acceptance':'Not sent yet'}</p>{request.deliveryProject?.workers.map(worker=><p key={worker.workerId} style={{color:worker.acceptedAt?'#4ade80':worker.contractSentAt?'#fbbf24':'#94a3b8'}}>Talent contract &mdash; {worker.name||request.shortlistedTalentProfiles?.find(profile=>profile.workerId===worker.workerId)?.workerName||worker.role}: {worker.acceptedAt?'Approved':worker.contractSentAt?'Awaiting talent acceptance':'Not sent yet'}</p>)}</div>}
-                                {step.label === 'Invoice' && <><p>Manage client invoices in <a href="/admin/talent-requests?invoices=all">Invoices</a> on the admin home page.</p>{request.deliveryProject&&<AdminInvoiceReview projectId={request.deliveryProject._id} reviewOnly/>}</>}
+                                {step.label === 'Invoice' && <p>Manage client invoices in <a href="/admin/talent-requests?invoices=all">Invoices</a> on the admin home page.</p>}
                                 {step.label === 'Payment status' && <div className="atd-payment-status-actions">{request.deliveryProject && <AdminPaymentProof projectId={request.deliveryProject._id} />}{!request.deliveryProject?.completedAt && <p className="atd-payment-blocked">Waiting for project completion. {request.deliveryProject?.workers.filter(worker => !worker.completedAt).map(worker => request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role).join(', ')}</p>}<button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={Boolean(request.deliveryProject?.paymentVerifiedAt)} onClick={() => void setPaymentStatus(true)}>Done</button><button type="button" className="atd-inline-button" disabled={!request.deliveryProject?.completedAt || Boolean(savingAction)} aria-pressed={!request.deliveryProject?.paymentVerifiedAt} onClick={() => void setPaymentStatus(false)}>Not done</button>{savingAction === 'payment' && <span role="status">Saving...</span>}</div>}
                                 {step.label === 'Project status' && request.deliveryProject && <div className="atd-project-worker-status">{request.deliveryProject.workers.map(worker => <p key={worker.workerId} className={worker.completedAt ? 'completed' : ''}>{request.shortlistedTalentProfiles?.find(profile => profile.workerId === worker.workerId)?.workerName || worker.role}: {worker.completedAt ? 'Completed - invoice eligible' : 'In progress'}</p>)}</div>}
                                 {step.label === 'Candidate selected' && (

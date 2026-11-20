@@ -25,7 +25,27 @@ const identitySchema = z.object({
 const businessSchema = z.object({
   companySize: z.enum(['1-10', '11-50', '51-200', '201-500', '500+']),
   companyIndustry: z.string().trim().min(1),
-  companyWebsite: z.string().trim().url().optional().or(z.literal('')),
+  companyWebsite: z.string().trim().transform((value, ctx) => {
+    if (!value) return '';
+
+    const hasWebScheme = /^https?:\/\//i.test(value);
+    try {
+      const url = new URL(hasWebScheme ? value : `https://${value}`);
+      if (url.hostname && !url.username && !url.password &&
+          (hasWebScheme || url.hostname.includes('.')) &&
+          !/\s|\\/.test(value)) {
+        return hasWebScheme ? value : `https://${value}`;
+      }
+    } catch {
+      // Report the same validation error for malformed URLs.
+    }
+
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Enter a valid company website, such as example.com.',
+    });
+    return z.NEVER;
+  }).optional(),
   addressLine1: z.string().trim().min(1),
   addressCity: z.string().trim().min(1),
   addressZip: z.string().trim().min(1),

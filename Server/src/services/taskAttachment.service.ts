@@ -22,9 +22,8 @@ export function validateTaskAttachmentFile(file: Express.Multer.File,maxBytes=10
  if (!file.buffer?.length || file.buffer.length > maxBytes) throw new AppError('Choose a file up to '+Math.floor(maxBytes/1024/1024)+' MB.',422,'INVALID_ATTACHMENT');
  return { mime: 'application/octet-stream', extension: file.originalname.split('.').pop()?.replace(/[^a-zA-Z0-9]/g,'').slice(0,10) || 'bin' };
 }
-export async function uploadTaskAttachmentFile(file: Express.Multer.File, ownerId: string, docType: string,maxBytes=10*1024*1024, bucket=env.SUPABASE_INVOICE_BUCKET): Promise<TaskAttachmentFile> {
+export async function uploadTaskAttachmentFile(file: Express.Multer.File, folder: string, docType: string,maxBytes=10*1024*1024, bucket=env.SUPABASE_INVOICE_BUCKET): Promise<TaskAttachmentFile> {
   const type = validateTaskAttachmentFile(file,maxBytes);
-  const folder = ownerId;
   const document = { bucket, path: `${folder}/${docType}/${randomUUID()}.${type.extension}`, fileName: file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-160), mimeType: type.mime, size: file.buffer.length, sha256: digest(file.buffer) };
   await requirePrivate(bucket);
   await request(`object/${objectPath(document)}`, { method: 'POST', headers: { 'Content-Type': type.mime, 'x-upsert': 'false' }, body: new Uint8Array(file.buffer) });

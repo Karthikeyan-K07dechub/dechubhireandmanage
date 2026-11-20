@@ -1,8 +1,8 @@
 interface MarketplaceWorker {
   contractorProfile?: {
     marketplaceTitle?: string; marketplaceBio?: string; marketplaceRate?: number | null;
+    marketplaceMonthlyRate?: number | null;
     city?: string; address?: { city?: string; country?: string }; skills?: string[];
-    servicePackages?: Array<{ price?: number | string | null }>;
   } | null;
   payRate?: number | null; country?: string; status?: string; kycStatus?: string;
   kycData?: { idFrontPath?: string } | null;
@@ -21,10 +21,9 @@ export function marketplaceProfileCompletion(worker: MarketplaceWorker) {
   const checks: [string, boolean][] = [
     ['Professional title', Boolean(title && title.toLowerCase() !== 'freelancer')],
     ['Professional bio', Boolean(bio && !defaultBios.has(bio))],
-    ['Rate greater than zero', Number(profile?.marketplaceRate ?? worker.payRate ?? 0) > 0],
+    ['Rate greater than zero', Number(profile?.marketplaceMonthlyRate ?? profile?.marketplaceRate ?? worker.payRate ?? 0) > 0],
     ['City', Boolean(city)], ['Country', Boolean(country && country.toLowerCase() !== 'unknown')],
     ['At least one skill', Boolean(profile?.skills?.some(skill => typeof skill === 'string' && skill.trim()))],
-    ['At least one service package with a price', Boolean(profile?.servicePackages?.some(pkg => Number(pkg?.price) > 0))],
   ];
   return { complete: checks.every(([, ready]) => ready), missingFields: checks.filter(([, ready]) => !ready).map(([name]) => name) };
 }

@@ -23,10 +23,10 @@ const DEFAULT_MARKETPLACE_BLURBS = new Set([
   'Self-signup freelancer profile',
 ]);
 
-function formatRate(rate: number, currency: string): string {
+function formatRate(rate: number, currency: string, period = 'hr'): string {
   if (!rate || rate <= 0) return 'Rate on request';
-  if (currency === 'USD') return `$${rate}/hr`;
-  return `${currency} ${rate}/hr`;
+  if (currency === 'USD') return `$${rate}/${period}`;
+  return `${currency} ${rate}/${period}`;
 }
 
 function formatPackagePrice(price: number, currency: string): string {
@@ -44,7 +44,9 @@ function getMarketplaceCardPrice(profile: MarketplaceTalentProfile): string {
     return formatPackagePrice(basicPackage.price, profile.currency);
   }
 
-  return formatRate(profile.rate, profile.currency);
+  return profile.monthlyRate == null
+    ? formatRate(profile.rate, profile.currency)
+    : formatRate(profile.monthlyRate, profile.currency, 'mo');
 }
 
 function getMarketplaceCardSkills(skills: string[]) {
@@ -101,7 +103,7 @@ function isCompletedMarketplaceProfile(profile: MarketplaceTalentProfile): boole
   return Boolean(
     normalizedRole
     && normalizedRole !== 'freelancer'
-    && profile.rate > 0
+    && (profile.monthlyRate ?? profile.rate) > 0
     && profile.skills.length > 0
     && normalizedBlurb
     && !DEFAULT_MARKETPLACE_BLURBS.has(normalizedBlurb)

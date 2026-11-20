@@ -267,19 +267,19 @@ function getRouteState(pathname: string): { page: AppPage; mode: AuthMode } {
     return { page: 'company-dashboard-auth', mode: 'login' };
   }
 
-  if (normalizedPath === '/freelancer/login') {
+  if (normalizedPath === '/talent/login') {
     return { page: 'freelancer-login', mode: 'login' };
   }
 
-  if (normalizedPath === '/freelancer/signup') {
+  if (normalizedPath === '/talent/signup') {
     return { page: 'freelancer-signup', mode: 'login' };
   }
 
-  if (normalizedPath === '/freelancer/dashboard') {
+  if (normalizedPath === '/talent/dashboard') {
     return { page: 'freelancer-dashboard', mode: 'login' };
   }
 
-  if (normalizedPath === '/freelancer/success') {
+  if (normalizedPath === '/talent/success') {
     return { page: 'freelancer-success', mode: 'login' };
   }
 
@@ -414,6 +414,7 @@ function getCompanyDestination(): CompanyDestination {
 
 function getNextCompanyStep(signupStep: number): Step | null {
   if (signupStep >= 7) return null;
+  if (signupStep >= 4) return 6;
   return Math.min(Math.max(signupStep + 1, 1), 6) as Step;
 }
 
@@ -504,7 +505,7 @@ export default function App() {
     }
 
     if (result.role === 'contractor') {
-      window.location.replace('/contractor/dashboard');
+      window.location.replace('/talent/dashboard');
       return;
     }
 
@@ -694,16 +695,16 @@ export default function App() {
         targetPath = `/marketplace/${encodeURIComponent(selectedMarketplaceProfileId)}${shortlistClaimQuery}`;
         break;
       case 'freelancer-login':
-        targetPath = '/freelancer/login';
+        targetPath = '/talent/login';
         break;
       case 'freelancer-signup':
-        targetPath = '/freelancer/signup';
+        targetPath = '/talent/signup';
         break;
       case 'freelancer-success':
-        targetPath = '/freelancer/success';
+        targetPath = '/talent/success';
         break;
       case 'freelancer-dashboard':
-        targetPath = '/freelancer/dashboard';
+        targetPath = '/talent/dashboard';
         break;
       default:
         break;
@@ -1081,7 +1082,7 @@ if (page === 'book-demo')
           setPage('company-dashboard-auth');
         }}
         onContractorLogin={() => {
-          window.location.replace('/contractor/dashboard');
+          window.location.replace('/talent/dashboard');
         }}
         onSignUp={() => {
           contractorTokenStore.clear();
@@ -1108,14 +1109,14 @@ if (page === 'book-demo')
       <FreelancerSignupSuccessPage
         firstName={freelancerFirstName || 'there'}
         onDashboard={() => {
-          window.location.replace('/contractor/dashboard');
+          window.location.replace('/talent/dashboard');
         }}
       />
     );
   }
 
   if (page === 'freelancer-dashboard') {
-    window.location.replace('/contractor/dashboard');
+    window.location.replace('/talent/dashboard');
     return null;
   }
 

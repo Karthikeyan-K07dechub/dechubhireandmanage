@@ -47,7 +47,7 @@ export default function Step3BusinessDetails({ state, handlers }: { state: AppSt
         <label>Company website</label>
         <div className="input-wrap">
           <div className="input-icon"><GlobeIcon /></div>
-          <input type="url" value={formData.companyWebsite} onChange={(e) => handleInputChange('companyWebsite', e.target.value)} placeholder="https://acmecorp.com" />
+          <input type="text" inputMode="url" autoComplete="url" value={formData.companyWebsite} onChange={(e) => handleInputChange('companyWebsite', e.target.value)} placeholder="acmecorp.com" />
           <span className="input-suffix">optional</span>
         </div>
       </div>

@@ -1,20 +1,35 @@
 import { createHash, randomUUID } from 'crypto';
 import { env } from '../config/env';
+import { logger } from '../utils/logger';
+import { storageOwnerFolder } from '../utils/storageOwnerFolder';
 import { AppError } from '../utils/response';
 
 export const VERIFICATION_MAX_BYTES = 2 * 1024 * 1024;
 export interface VerificationFile { bucket: string; path: string; fileName: string; mimeType: string; size: number; sha256: string }
 const digest = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
-async function request(endpoint: string, init: RequestInit = {}) {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) throw new AppError('Verification storage is not configured.', 503, 'STORAGE_UNAVAILABLE');
+async function request(operation: 'bucket lookup' | 'upload' | 'download' | 'delete', endpoint: string, init: RequestInit = {}) {
+  const url = env.SUPABASE_URL.trim().replace(/\/+$/, '');
+  const secret = env.SUPABASE_SECRET_KEY.trim();
+  if (!url || !secret) {
+    logger.error('Verification storage configuration is missing', { operation, missingUrl: !url, missingSecret: !secret });
+    throw new AppError('Verification storage is not configured.', 503, 'STORAGE_UNAVAILABLE');
+  }
+  let response: Response;
   try {
-    const response = await fetch(`${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/${endpoint}`, { ...init, headers: { apikey: env.SUPABASE_SECRET_KEY, ...(env.SUPABASE_SECRET_KEY.startsWith('eyJ') ? { Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } : {}), ...init.headers }, signal: AbortSignal.timeout(30000) });
-    if (!response.ok) throw new Error('Storage request failed');
-    return response;
-  } catch { throw new AppError('Verification storage is unavailable. Please try again.', 502, 'STORAGE_UNAVAILABLE'); }
+    response = await fetch(`${url}/storage/v1/${endpoint}`, { ...init, headers: { apikey: secret, ...(secret.startsWith('eyJ') ? { Authorization: `Bearer ${secret}` } : {}), ...init.headers }, signal: AbortSignal.timeout(30000) });
+  } catch (error) {
+    logger.error('Verification storage connection failed', { operation, timedOut: error instanceof Error && error.name === 'TimeoutError' });
+    throw new AppError('Verification storage is unavailable. Please try again.', 502, 'STORAGE_UNAVAILABLE');
+  }
+  if (!response.ok) {
+    logger.error('Verification storage request rejected', { operation, upstreamStatus: response.status });
+    await response.body?.cancel().catch(() => undefined);
+    throw new AppError('Verification storage is unavailable. Please try again.', 502, 'STORAGE_UNAVAILABLE');
+  }
+  return response;
 }
 async function requirePrivate(bucket: string) {
-  const response = await request(`bucket/${encodeURIComponent(bucket)}`);
+  const response = await request('bucket lookup', `bucket/${encodeURIComponent(bucket)}`);
   if ((await response.json() as { public?: boolean }).public !== false) throw new AppError('KYC and KYB buckets must be private.', 503, 'PRIVATE_BUCKET_REQUIRED');
 }
 const objectPath = (file: VerificationFile) => [file.bucket, ...file.path.split('/')].map(encodeURIComponent).join('/');
@@ -33,25 +48,24 @@ export function contractorDocumentFolder(ownerId: string, ownerName: string) {
   return verificationDocumentFolder(ownerId, ownerName, 'contractor');
 }
 export function verificationDocumentFolder(ownerId: string, ownerName: string, fallback: 'contractor' | 'company') {
-  const name = ownerName.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, '') || fallback;
-  return `${name}-${ownerId.slice(-8)}`;
+  return storageOwnerFolder(ownerId, ownerName, fallback);
 }
 export async function uploadVerificationFile(file: Express.Multer.File, kind: 'contractor' | 'client', ownerId: string, docType: string, ownerName?: string): Promise<VerificationFile> {
   const type = validateVerificationFile(file);
-  const bucket = kind === 'contractor' ? env.SUPABASE_CONTRACTOR_KYC_BUCKET : env.SUPABASE_CLIENT_KYB_BUCKET;
+  const bucket = (kind === 'contractor' ? env.SUPABASE_CONTRACTOR_KYC_BUCKET : env.SUPABASE_CLIENT_KYB_BUCKET).trim();
   const folder = ownerName ? verificationDocumentFolder(ownerId, ownerName, kind === 'contractor' ? 'contractor' : 'company') : ownerId;
   const document = { bucket, path: `${folder}/${docType}/${randomUUID()}.${type.extension}`, fileName: file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-160), mimeType: type.mime, size: file.buffer.length, sha256: digest(file.buffer) };
   await requirePrivate(bucket);
-  await request(`object/${objectPath(document)}`, { method: 'POST', headers: { 'Content-Type': type.mime, 'x-upsert': 'false' }, body: new Uint8Array(file.buffer) });
+  await request('upload', `object/${objectPath(document)}`, { method: 'POST', headers: { 'Content-Type': type.mime, 'x-upsert': 'false' }, body: new Uint8Array(file.buffer) });
   return document;
 }
 export async function downloadVerificationFile(file: VerificationFile) {
   await requirePrivate(file.bucket);
-  const response = await request(`object/authenticated/${objectPath(file)}`);
+  const response = await request('download', `object/authenticated/${objectPath(file)}`);
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.length !== file.size || digest(bytes) !== file.sha256) throw new AppError('Verification document integrity check failed.', 502, 'INVALID_STORED_DOCUMENT');
   return bytes;
 }
 export async function removeVerificationFile(file: VerificationFile) {
-  await request(`object/${encodeURIComponent(file.bucket)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: [file.path] }) });
+  await request('delete', `object/${encodeURIComponent(file.bucket)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: [file.path] }) });
 }

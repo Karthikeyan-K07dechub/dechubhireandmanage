@@ -61,11 +61,6 @@ function step4(_f: FormData, docs: UploadedDocs): ErrorMap {
   return e;
 }
 
-function step5(_f: FormData): ErrorMap {
-  // Card validation is handled by Stripe Elements — we only validate currency
-  return {};
-}
-
 function step6(f: FormData): ErrorMap {
   const e: ErrorMap = {};
   if (!f.payCycle)          e.payCycle        = 'Select a pay cycle';
@@ -88,7 +83,6 @@ export function validateStep(
     case 2: return step2(formData);
     case 3: return step3(formData);
     case 4: return step4(formData, uploadedDocs);
-    case 5: return step5(formData);
     case 6: return step6(formData);
     default: return {};
   }

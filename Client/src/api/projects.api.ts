@@ -34,6 +34,7 @@ export interface DeliveryProject {
   contractorAcceptedAt?: string | null;
   contractorCompletedAt?: string | null;
   deliveryCompletedAt?: string | null;
+  paymentVerifiedAt?: string | null;
   assignedRole?: string;
   companyDetails?: { name: string | null; website: string | null; country: string | null; address: string } | null;
   completedAt?: string | null;

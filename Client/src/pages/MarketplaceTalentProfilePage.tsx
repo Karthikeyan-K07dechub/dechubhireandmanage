@@ -30,9 +30,9 @@ interface MarketplaceTalentProfilePageProps {
   embedded?: boolean;
 }
 
-function formatRate(rate: number, currency: string): string {
+function formatRate(rate: number, currency: string, period = 'hr'): string {
   if (!rate || rate <= 0) return 'Rate on request';
-  return currency === 'USD' ? `$${rate}/hr` : `${currency} ${rate}/hr`;
+  return currency === 'USD' ? `$${rate}/${period}` : `${currency} ${rate}/${period}`;
 }
 
 function formatPackagePrice(price: number, currency: string): string {
@@ -164,7 +164,7 @@ export default function MarketplaceTalentProfilePage({
   }, [workerId]);
 
   const compareRows = useMemo(() => {
-    if (!profile?.servicePackages.length) return [];
+    if (embedded || !profile?.servicePackages.length) return [];
 
     const allFeatures = Array.from(
       new Set(profile.servicePackages.flatMap((pkg) => pkg.features)),
@@ -174,7 +174,7 @@ export default function MarketplaceTalentProfilePage({
       feature,
       values: profile.servicePackages.map((pkg) => pkg.features.includes(feature)),
     }));
-  }, [profile]);
+  }, [embedded, profile]);
 
   const buildCheckoutSelection = (pkg: MarketplaceServicePackage): MarketplaceCheckoutSelection | null => {
     if (!profile) return null;
@@ -333,7 +333,7 @@ export default function MarketplaceTalentProfilePage({
                 )}
               </section>
 
-              <section className="mpp-section-card">
+              {!embedded && <section className="mpp-section-card">
                 <h2>Compare packages</h2>
                 <div className="mpp-compare-table">
                   <div className="mpp-compare-header">
@@ -354,7 +354,7 @@ export default function MarketplaceTalentProfilePage({
                     </div>
                   ))}
                 </div>
-              </section>
+              </section>}
 
               <section className="mpp-section-card">
                 <h2>FAQ</h2>
@@ -364,7 +364,7 @@ export default function MarketplaceTalentProfilePage({
 
             <aside className="mpp-sidebar">
               <div className="mpp-sticky">
-                <div className="mpp-sidebar-card">
+                {!embedded && <div className="mpp-sidebar-card">
                   <div className="mpp-package-card mpp-package-card-tabbed">
                     <div className="mpp-package-tabs" role="tablist">
                       {profile.servicePackages.map((pkg, index) => (
@@ -427,7 +427,7 @@ export default function MarketplaceTalentProfilePage({
                       </div>
                     ) : null}
                   </div>
-                </div>
+                </div>}
 
                 <div className="mpp-sidebar-card">
                   <div className="mpp-contact-card">
@@ -437,12 +437,12 @@ export default function MarketplaceTalentProfilePage({
                   </div>
                 </div>
 
-                <div className="mpp-sidebar-card">
+                {!embedded && <div className="mpp-sidebar-card">
                   <div className="mpp-hiring-title">Need flexibility when hiring?</div>
-                  <p>Hire by the hour for long-term work with weekly payment visibility.</p>
-                  <div className="mpp-hourly-rate">{formatRate(profile.rate, profile.currency)}</div>
-                  <button className="mpp-secondary-action">Request hourly offer</button>
-                </div>
+                  <p>{profile.monthlyRate == null ? 'Hire by the hour for long-term work with weekly payment visibility.' : 'Discuss a monthly rate for ongoing work.'}</p>
+                  <div className="mpp-hourly-rate">{formatRate(profile.monthlyRate ?? profile.rate, profile.currency, profile.monthlyRate == null ? 'hr' : 'mo')}</div>
+                  <button className="mpp-secondary-action">{profile.monthlyRate == null ? 'Request hourly offer' : 'Request monthly offer'}</button>
+                </div>}
               </div>
             </aside>
           </div>

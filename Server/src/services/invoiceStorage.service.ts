@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 import { env } from '../config/env';
 import { AppError } from '../utils/response';
+import { storageOwnerFolder } from '../utils/storageOwnerFolder';
 
 export type InvoiceDocument = { bucket: string; path: string; fileName: string; mimeType?: string; size: number; sha256: string };
 const digest = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
@@ -22,7 +23,7 @@ async function requirePrivateBucket(bucket: string) {
   if (details.public !== false) throw new AppError('Invoice storage must use a private bucket.', 503, 'PRIVATE_BUCKET_REQUIRED');
 }
 const objectPath = (document: InvoiceDocument) => [document.bucket, ...document.path.split('/')].map(encodeURIComponent).join('/');
-export async function uploadInvoiceDocument(file: Express.Multer.File, companyId: string, invoiceId: string): Promise<InvoiceDocument> {
+export async function uploadInvoiceDocument(file: Express.Multer.File, companyId: string, invoiceId: string, companyName: string): Promise<InvoiceDocument> {
   const bytes = file.buffer;
   let mimeType = ''; let extension = '';
   if (bytes.subarray(0, 5).toString() === '%PDF-') { mimeType = 'application/pdf'; extension = 'pdf'; }
@@ -31,7 +32,8 @@ export async function uploadInvoiceDocument(file: Express.Multer.File, companyId
   else if (bytes.subarray(0,4).toString() === 'RIFF' && bytes.subarray(8,12).toString() === 'WEBP') { mimeType = 'image/webp'; extension = 'webp'; }
   const suffix = file.originalname.split('.').pop()?.toLowerCase();
   if (!bytes.length || bytes.length > 10 * 1024 * 1024 || file.size > 10 * 1024 * 1024 || !mimeType || file.mimetype !== mimeType || !(extension === 'jpg' ? ['jpg','jpeg'].includes(suffix || '') : suffix === extension)) throw new AppError('Choose a valid PDF, PNG, JPEG, or WebP file up to 10 MB.', 422, 'INVALID_INVOICE_FILE');
-  const document = { bucket: env.SUPABASE_INVOICE_BUCKET, path: companyId + '/' + invoiceId + '/' + randomUUID() + '.' + extension, fileName: file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-160), mimeType, size: bytes.length, sha256: digest(bytes) };
+  const folder = storageOwnerFolder(companyId, companyName, 'company');
+  const document = { bucket: env.SUPABASE_INVOICE_BUCKET, path: folder + '/' + invoiceId + '/' + randomUUID() + '.' + extension, fileName: file.originalname.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(-160), mimeType, size: bytes.length, sha256: digest(bytes) };
   await requirePrivateBucket(document.bucket);
   await storageRequest(`object/${objectPath(document)}`, { method: 'POST', headers: { 'Content-Type': document.mimeType, 'x-upsert': 'false' }, body: new Uint8Array(file.buffer) });
   return document;

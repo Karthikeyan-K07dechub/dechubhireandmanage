@@ -89,7 +89,7 @@ export default function Step6Preferences({ state, handlers }: { state: AppState;
       {Object.keys(errors).length > 0 && <p role="alert" style={{ color: '#b91c1c', fontSize: 13 }}>Please complete the highlighted fields above, then click Complete Setup.</p>}
       {state.serverError && <p role="alert" style={{ color: '#b91c1c', fontSize: 13 }}>{state.serverError}</p>}
       <div className="btn-row">
-        <button type="button" className="btn-secondary" onClick={() => goToStep(5)}>← Back</button>
+        <button type="button" className="btn-secondary" onClick={() => goToStep(4)}>← Back</button>
         <ActionButton loading={loadingAction === 'complete'} onClick={completeSignup}>
           Complete Setup →
         </ActionButton>

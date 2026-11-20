@@ -343,6 +343,40 @@ export async function getContractorProfile(): Promise<ContractorProfile> {
   } catch (err) { throw normalizeError(err); }
 }
 
+export type VerificationDocumentField = 'idFront' | 'idBack' | 'selfie';
+export interface ContractorVerificationDocuments {
+  status: string;
+  idType: string | null;
+  canEdit: boolean;
+  documents: { field: VerificationDocumentField; fileName: string }[];
+}
+
+export async function getVerificationDocuments(): Promise<ContractorVerificationDocuments> {
+  try {
+    const { data } = await contractorApi.get<{ data: ContractorVerificationDocuments }>('/me/verification-documents');
+    return data.data;
+  } catch (err) { throw normalizeError(err); }
+}
+
+export async function updateVerificationDocuments(files: Partial<Record<VerificationDocumentField, File>>, removed: VerificationDocumentField[]): Promise<ContractorVerificationDocuments> {
+  const form = new FormData();
+  if (removed.length) form.append('remove', removed.join(','));
+  for (const [field, file] of Object.entries(files)) {
+    if (file) form.append(field, file);
+  }
+  try {
+    const { data } = await contractorApi.patch<{ data: ContractorVerificationDocuments }>('/me/verification-documents', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.data;
+  } catch (err) { throw normalizeError(err); }
+}
+
+export async function downloadVerificationDocument(field: VerificationDocumentField): Promise<Blob> {
+  const { data } = await contractorApi.get<Blob>(`/me/verification-documents/${field}`, { responseType: 'blob' });
+  return data;
+}
+
 export async function updateContractorSkills(skills: string[]): Promise<string[]> {
   try {
     const res = await contractorApi.put<{ success: boolean; data: { skills: string[] } }>('/me/skills', {
@@ -359,7 +393,7 @@ export async function updateContractorProfile(data: {
   yearsOfExperience: number;
   marketplaceBio: string;
   marketplaceAvailability: 'available_now' | 'this_week' | 'two_weeks' | 'next_month' | 'not_available';
-  marketplaceRate: number;
+  marketplaceMonthlyRate?: number | null;
   city: string;
   country: string;
   responseTimeHours: number;
@@ -367,9 +401,7 @@ export async function updateContractorProfile(data: {
   languages: string[];
   profilePhotoUrl?: string;
   bannerImageUrl?: string;
-  profileOverview: string;
   portfolioProjects: ContractorProfile['portfolioProjects'];
-  servicePackages: ContractorProfile['servicePackages'];
   faqItems: ContractorProfile['faqItems'];
 }): Promise<ContractorProfile> {
   try {

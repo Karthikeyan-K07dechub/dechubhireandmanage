@@ -42,7 +42,7 @@ export async function reviewTask(req: Request,res: Response,next: NextFunction){
  const updated=await ProjectTask.findOneAndUpdate({_id:task._id,status:task.status},{$set:{status:decision==='approve'?'completed':'in_progress',completedAt:decision==='approve'?new Date():null}},{new:true});if(!updated)throw new AppError('Task has changed. Refresh and retry.',409,'TASK_CHANGED');
  await TaskMessage.create({taskId:task._id,senderRole:'client',senderId:req.user!.sub,body:decision==='approve'?'Client approved task completion.':'Client requested changes. Please revise and resubmit.'});
  if(decision==='approve')for(const id of task.assigneeWorkerIds){if(await ProjectTask.countDocuments({projectId:project._id,assigneeWorkerIds:id,status:{$ne:'completed'}})===0)await recordWorkerDeliveryCompletion(project,String(id));}
- await ContractorNotification.insertMany(task.assigneeWorkerIds.map(workerId=>({workerId,type:'general',title:decision==='approve'?'Task approved':'Task changes requested',message:task.title,actionUrl:'/contractor/dashboard?tab=projects&project='+project._id})));
+ await ContractorNotification.insertMany(task.assigneeWorkerIds.map(workerId=>({workerId,type:'general',title:decision==='approve'?'Task approved':'Task changes requested',message:task.title,actionUrl:'/talent/dashboard?tab=projects&project='+project._id})));
  ok(res,updated.toObject());
  }catch(e){next(e);}}
 

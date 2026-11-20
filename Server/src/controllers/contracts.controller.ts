@@ -87,7 +87,7 @@ export async function countersignContract(req: Request, res: Response, next: Nex
       type: 'contract_activated',
       title: 'Contract active',
       message: `Your contract with ${contract.companyName} is now fully signed and active.`,
-      actionUrl: '/contractor/dashboard?tab=contract',
+      actionUrl: '/talent/dashboard?tab=contract',
     });
 
     try {

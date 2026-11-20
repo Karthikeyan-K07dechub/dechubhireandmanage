@@ -202,7 +202,7 @@ export async function sendContractActivatedEmail(
     <p>Hi ${firstName},</p>
     <p>Your contract with <strong>${companyName}</strong> has been fully signed by both parties and is now active.</p>
     <p>You can open your Dechub dashboard to review the agreement and track next steps.</p>
-    <a href="${env.CLIENT_URL}/contractor/dashboard?tab=contract" class="btn">Open Dashboard</a>
+    <a href="${env.CLIENT_URL}/talent/dashboard?tab=contract" class="btn">Open Dashboard</a>
     <p class="muted">You’ll also see this update inside your Dechub account notifications.</p>
   `);
   await queueEmail(to, `Your ${companyName} contract is active`, html);

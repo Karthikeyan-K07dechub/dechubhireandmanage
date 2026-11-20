@@ -104,7 +104,8 @@ export async function uploadProjectDocument(req: Request, res: Response, next: N
     const project = await Project.findById(id.parse(req.params.id)); if (!project) throw Errors.NotFound('Project');
     if (!req.file) throw new AppError('Choose a PDF file.', 422, 'FILE_REQUIRED');
     const documentId = new mongoose.Types.ObjectId();
-    const file = await uploadInvoiceDocument(req.file, String(project.companyId), `documents/${project._id}/${documentId}`);
+    const company = await Company.findById(project.companyId).select('companyName');
+    const file = await uploadInvoiceDocument(req.file, String(project.companyId), `documents/${project._id}/${documentId}`, company?.companyName ?? '');
     let document;
     try { document = await ProjectDocument.create({ _id: documentId, companyId: project.companyId, projectId: project._id, file, uploadedBy: req.user!.email }); }
     catch (error) { await removeInvoiceDocument(file).catch(() => logger.error('Document cleanup failed')); throw error; }
@@ -133,7 +134,7 @@ export async function replaceProjectDocument(req: Request, res: Response, next: 
     const original = await ProjectDocument.findOne({ _id: id.parse(String(req.params.key).replace(/^project-/, '')), companyId: company._id, status: 'replacement_requested' });
     if (!original) throw Errors.NotFound('Replacement request');
     if (!req.file) throw new AppError('Choose a PDF file.', 422, 'FILE_REQUIRED');
-    const file = await uploadInvoiceDocument(req.file, String(company._id), `documents/${original.projectId}/${original._id}`);
+    const file = await uploadInvoiceDocument(req.file, String(company._id), `documents/${original.projectId}/${original._id}`, company.companyName ?? '');
     let updated;
     try { updated = await ProjectDocument.findOneAndUpdate({ _id: original._id, companyId: company._id, status: 'replacement_requested', 'file.path': original.file.path }, { $set: { file, status: 'available', replacementReason: '', uploadedBy: 'Company' } }, { new: true }); }
     catch (error) { await removeInvoiceDocument(file).catch(() => logger.error('Document cleanup failed')); throw error; }

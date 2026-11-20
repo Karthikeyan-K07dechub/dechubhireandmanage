@@ -3,9 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { register, redirectToGoogle } from '../api/auth.api';
 import {
   getMyCompany,
-  getSetupIntentClientSecret,
   pollKybStatus,
-  saveBilling,
   saveBusinessDetails,
   saveIdentity,
   savePreferences,
@@ -17,7 +15,6 @@ import Step1Account from '../components/steps/Step1Account';
 import Step2CompanyIdentity from '../components/steps/Step2CompanyIdentity';
 import Step3BusinessDetails from '../components/steps/Step3BusinessDetails';
 import Step4Kyb from '../components/steps/Step4Kyb';
-import Step5Billing from '../components/steps/Step5Billing';
 import Step6Preferences from '../components/steps/Step6Preferences';
 import { initialData, initialDocs, stepConfig } from '../constants/signup';
 import type { AppHandlers, AppState, Step, DocKey } from '../types/signup';
@@ -75,8 +72,6 @@ function mergeCompanyData(state: AppState, data: MyCompanyData): AppState {
       addressZip: typeof company.addressZip === 'string' ? company.addressZip : state.formData.addressZip,
       itManagement: typeof company.itManagement === 'string' ? company.itManagement : state.formData.itManagement,
       referralSource: typeof company.referralSource === 'string' ? company.referralSource : state.formData.referralSource,
-      billCurrency: typeof company.billCurrency === 'string' ? company.billCurrency : state.formData.billCurrency,
-      billingEmail: typeof company.billingEmail === 'string' ? company.billingEmail : state.formData.billingEmail,
       payCycle: typeof company.payCycle === 'string' && company.payCycle.trim() ? company.payCycle : state.formData.payCycle,
       contractCurrency: typeof company.contractCurrency === 'string' && company.contractCurrency.trim() ? company.contractCurrency : state.formData.contractCurrency,
       companyTimezone: typeof company.companyTimezone === 'string' ? company.companyTimezone : state.formData.companyTimezone,
@@ -114,7 +109,7 @@ export default function CompanyOnboardingPage({
 }: CompanyOnboardingPageProps) {
   const initialStrength = useMemo(() => getPasswordStrength(initialData.password), []);
   const [state, setState] = useState<AppState>({
-    currentStep: initialStep,
+    currentStep: initialStep === 5 ? 6 : initialStep,
     formData: initialData,
     errors: {},
     uploadedDocs: initialDocs,
@@ -124,10 +119,8 @@ export default function CompanyOnboardingPage({
     showPassword: false,
     passwordScore: initialStrength.score,
     passwordStrength: { label: initialStrength.label, color: initialStrength.color },
-    cardBrand: '',
     serverError: null,
     kybUploadPct: 0,
-    stripeClientSecret: null,
   });
   const [booting, setBooting] = useState(Boolean(tokenStore.getAccess()));
 
@@ -155,7 +148,7 @@ export default function CompanyOnboardingPage({
 
           // Always ensure currentStep matches the initialStep passed from App.tsx
           // Merging ensures form data is pre-populated from server
-          return { ...merged, currentStep: initialStep || 1 };
+          return { ...merged, currentStep: initialStep === 5 ? 6 : initialStep };
         });
       })
       .catch((err) => {
@@ -170,37 +163,6 @@ export default function CompanyOnboardingPage({
       cancelled = true;
     };
   }, [initialStep, onBack]);
-
-  useEffect(() => {
-    if (state.currentStep !== 5 || state.stripeClientSecret !== null || !tokenStore.getAccess()) {
-      return;
-    }
-
-    let cancelled = false;
-    setState((prev) => ({ ...prev, loadingAction: prev.loadingAction ?? 'setup-intent' }));
-
-    void getSetupIntentClientSecret()
-      .then((clientSecret) => {
-        if (cancelled) return;
-        setState((prev) => ({
-          ...prev,
-          stripeClientSecret: clientSecret,
-          loadingAction: prev.loadingAction === 'setup-intent' ? null : prev.loadingAction,
-        }));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setState((prev) => ({
-          ...prev,
-          stripeClientSecret: null,
-          loadingAction: prev.loadingAction === 'setup-intent' ? null : prev.loadingAction,
-        }));
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [state.currentStep, state.stripeClientSecret]);
 
   const handleInputChange: AppHandlers['handleInputChange'] = (key, value) => {
     setState((prev) => {
@@ -237,7 +199,7 @@ export default function CompanyOnboardingPage({
       onBack();
       return;
     }
-    const previousStep = (state.currentStep - 1) as Step;
+    const previousStep = state.currentStep === 6 ? 4 : (state.currentStep - 1) as Step;
     switchStep(previousStep);
   };
 
@@ -310,31 +272,6 @@ export default function CompanyOnboardingPage({
         });
       }
 
-      if (state.currentStep === 5 && step === 6) {
-        setState((prev) => ({ ...prev, loadingAction: 'step-6' }));
-        // Always use a valid billing email (fallback to workEmail if needed)
-        let billingEmail = state.formData.billingEmail?.trim() || state.formData.workEmail?.trim();
-        // If we still don't have an email, try fetching company data (may have been delayed)
-        if (!billingEmail && tokenStore.getAccess()) {
-          try {
-            const data = await getMyCompany();
-            billingEmail = (data?.user?.email as string) || billingEmail;
-            if (billingEmail) {
-              setState((prev) => ({ ...prev, formData: { ...prev.formData, workEmail: billingEmail } }));
-            }
-          } catch (e) {
-            // ignore - we'll let server validation surface if still missing
-          }
-        }
-        // Use dummy payment if no payment method selected yet
-        const paymentMethodId = state.formData.stripePaymentMethodId || 'pm_mvp_dummy';
-        await saveBilling({
-          billCurrency: state.formData.billCurrency,
-          billingEmail,
-          paymentMethodId,
-        });
-      }
-
       setState((prev) => ({
         ...prev,
         currentStep: step,
@@ -394,8 +331,8 @@ export default function CompanyOnboardingPage({
     }
   };
 
-  const goBillingAfterKyb: AppHandlers['goBillingAfterKyb'] = async () => {
-    switchStep(5);
+  const goPreferencesAfterKyb: AppHandlers['goPreferencesAfterKyb'] = () => {
+    switchStep(6);
   };
 
   const completeSignup: AppHandlers['completeSignup'] = async () => {
@@ -442,7 +379,7 @@ export default function CompanyOnboardingPage({
     goToStep,
     switchStep,
     submitKyb,
-    goBillingAfterKyb,
+    goPreferencesAfterKyb,
     completeSignup,
     goBack,
     handleFileInput: (docKey) => (e) => selectVerificationFile(docKey, e.target.files?.[0]),
@@ -503,11 +440,9 @@ export default function CompanyOnboardingPage({
     ? <Step3BusinessDetails state={state} handlers={handlers} />
     : state.currentStep === 4
     ? <Step4Kyb state={state} handlers={handlers} />
-    : state.currentStep === 5
-    ? <Step5Billing state={state} handlers={handlers} />
     : <Step6Preferences state={state} handlers={handlers} />;
 
-  const progress = stepConfig[state.currentStep as Exclude<Step, 7>];
+  const progress = stepConfig[state.currentStep as Exclude<Step, 5 | 7>];
 
   return (
     <div className="app-shell company-onboarding">
@@ -522,7 +457,7 @@ export default function CompanyOnboardingPage({
               Finish your <span>company setup</span> and unlock the dashboard.
             </h1>
             <p className="left-sub">
-              This guided setup prepares identity, compliance, billing, and HR defaults so your
+              This guided setup prepares identity, business verification, and HR defaults so your
               team can start hiring without friction.
             </p>
 
@@ -537,8 +472,8 @@ export default function CompanyOnboardingPage({
               <div className="feature-item">
                 <div className="feature-icon fi-blue">2</div>
                 <div className="feature-text">
-                  <h4>Verification and billing</h4>
-                  <p>Complete KYB and payment setup once so future hiring moves faster.</p>
+                  <h4>Business verification</h4>
+                  <p>Submit the documents needed to verify your company.</p>
                 </div>
               </div>
               <div className="feature-item">

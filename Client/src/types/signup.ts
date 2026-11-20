@@ -47,10 +47,6 @@ export interface FormData {
 
   // Step 4 — KYB (files tracked via uploadedDocs, not here)
 
-  // Step 5 — Billing
-  billCurrency:          string;
-  billingEmail:          string;
-  stripePaymentMethodId: string;   // set by Stripe Elements after card setup
 
   // Step 6 — Preferences
   payCycle:         string;
@@ -76,12 +72,10 @@ export interface AppState {
   showPassword:  boolean;
   passwordScore: number;
   passwordStrength: { label: string; color: string };
-  cardBrand:     string;
 
   // New — production additions
   serverError:        string | null;
   kybUploadPct:       number;
-  stripeClientSecret: string | null;
 }
 
 // ─── App handlers ────────────────────────────────────────────────────────────
@@ -91,7 +85,7 @@ export interface AppHandlers {
   goToStep:             (step: Step) => Promise<void>;
   switchStep:           (step: Step) => void;
   submitKyb:            () => Promise<void>;
-  goBillingAfterKyb:   () => Promise<void>;
+  goPreferencesAfterKyb: () => void;
   completeSignup:       () => Promise<void>;
   handleFileInput:      (docKey: DocKey) => (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDragOver:           (docKey: DocKey) => (e: React.DragEvent<HTMLDivElement>) => void;

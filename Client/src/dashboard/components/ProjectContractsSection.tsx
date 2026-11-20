@@ -62,7 +62,15 @@ export default function ProjectContractsSection() {
       {!!project.contractVersions?.length && <details><summary>Contract history (current version {project.contractVersion})</summary>{project.contractVersions.map(v=><section key={v.version} className="db-card" style={{marginTop:12,padding:16}}><strong>Version {v.version} | {v.acceptedAt?'Accepted':'Sent'}</strong><p>{v.title} | {v.currency} {v.budget.toLocaleString()}</p><p>{v.description}</p><p>{v.scope}</p>{v.paymentTerms&&<p>{v.paymentTerms}</p>}<small>Sent {new Date(v.sentAt).toLocaleString()}{v.acceptedAt?' | Accepted '+new Date(v.acceptedAt).toLocaleString():''}</small></section>)}</details>}
       <ProjectTeamList project={project} />
       {(project.startDate || project.targetEndDate) && <div className="db-task-project-dates"><span><strong>Start date:</strong> {project.startDate ? new Date(project.startDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not provided'}</span><span><strong>End date:</strong> {project.targetEndDate ? new Date(project.targetEndDate).toLocaleDateString(undefined, { timeZone: 'UTC' }) : 'Not provided'}</span></div>}
-      {project.status === 'contract_sent' && <div className="db-project-action db-contract-review-callout"><p>Review the agreed scope, budget, and payment terms before starting delivery.</p><button type="button" className="db-btn-primary" disabled={Boolean(accepting)} onClick={() => void accept(project)}>{accepting === project._id ? 'Accepting...' : 'Accept contract'}</button><button type="button" className="db-btn-secondary" disabled={Boolean(accepting)} onClick={()=>{setChangeProject(project);setChangeNote('');}}>Request changes</button></div>}
+      {project.status === 'contract_sent' && (
+        <div className="db-project-action db-contract-review-callout">
+          <p>Review the agreed scope, budget, and payment terms before starting delivery.</p>
+          <div className="db-contract-review-actions">
+            <button type="button" className="db-btn-primary" disabled={Boolean(accepting)} onClick={() => void accept(project)}>{accepting === project._id ? 'Accepting...' : 'Accept contract'}</button>
+            <button type="button" className="db-btn-secondary" disabled={Boolean(accepting)} onClick={() => { setChangeProject(project); setChangeNote(''); }}>Request changes</button>
+          </div>
+        </div>
+      )}
       
       
     </article>)}

@@ -135,7 +135,7 @@ export default function FreelancerSignupPage({
         }));
 
         if (profile.kycDocumentsSubmitted) {
-          window.location.replace('/contractor/dashboard');
+          window.location.replace('/talent/dashboard');
           return;
         }
         setStep(inferOnboardingStepFromProfile(profile));
@@ -233,7 +233,7 @@ export default function FreelancerSignupPage({
     };
 
     onComplete(profile);
-    window.location.replace('/contractor/dashboard');
+    window.location.replace('/talent/dashboard');
   };
 
   const handleFirstStepContinue = async () => {
@@ -264,7 +264,7 @@ export default function FreelancerSignupPage({
   const handleBack = () => {
     if (step === 0) {
       if (resumeMode && contractorTokenStore.getAccess()) {
-        window.location.replace('/contractor/dashboard');
+        window.location.replace('/talent/dashboard');
         return;
       }
       onBack();

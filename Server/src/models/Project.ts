@@ -60,7 +60,7 @@ const projectTeamMemberSchema = new Schema<IProjectTeamMember>(
     workerId: { type: Schema.Types.ObjectId, ref: 'Worker', required: true },
     role: { type: String, required: true, trim: true, maxlength: 120 },
     agreedAmount: { type: Number, min: 0, default: null },
-    talentContract: {type:new Schema({scope:{type:String,required:true},paymentTerms:{type:String,required:true},deliverables:[String],sentAt:{type:Date,required:true}},{_id:false}),default:undefined},
+    talentContract: {type:new Schema({scope:{type:String,required:true},paymentTerms:{type:String,default:''},deliverables:[String],sentAt:{type:Date,required:true}},{_id:false}),default:undefined},
   },
   { _id: false },
 );

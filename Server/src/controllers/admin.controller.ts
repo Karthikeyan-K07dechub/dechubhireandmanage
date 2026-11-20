@@ -492,6 +492,7 @@ export async function listTalentRequests(req: Request, res: Response, next: Next
         return {
           clientContractApprovedAt: project?.clientAcceptedAt ?? null,
           projectCompleted: Boolean(project?.status === 'completed'),
+          projectPaymentDone: Boolean(project?.deliveryCompletedAt && project.paymentVerifiedAt),
           contractorContractApproved: teamIds.length > 0 && teamIds.every(id => acceptedIds.has(id)),
           contractorAcceptedCount: teamIds.filter(id => acceptedIds.has(id)).length,
           contractorTotalCount: teamIds.length,
