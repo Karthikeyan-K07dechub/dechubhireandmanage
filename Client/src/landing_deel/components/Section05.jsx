@@ -78,24 +78,21 @@ function Section05() {
           </div>
 
           <div className="flex flex-col gap-xs">
-            <div className="hidden grid-cols-1 gap-md tablet:grid tablet:grid-cols-3">
+            <div className="deel-workforce__desktop-options">
               {cards.map((card, index) => (
                 <div
                   key={card.title}
-                  className={`rounded-lg transition-colors flex flex-col justify-between hover:bg-white/5 ${index === 0 ? "bg-white/5" : ""}`}
+                  className={`rounded-lg transition-colors flex flex-col justify-between hover:bg-white/5 ${index === activeIndex ? "bg-white/5" : ""}`}
                   style={{
                     paddingTop: "24px",
                     paddingRight: "24px",
                     paddingBottom: "24px",
                     paddingLeft: "24px",
                   }}
-                  tabIndex="0"
                 >
-                  <div className="text-[18px]! [&_p]:m-0! text-content-on-dark-accessory! [&_strong]:text-surface-white! MuiBox-root mui-5a971u">
-                    <p>
-                      <strong>{card.title}</strong> {card.description}
-                    </p>
-                  </div>
+                  <button type="button" className="deel-workforce__option" aria-pressed={index === activeIndex} onClick={() => setActiveIndex(index)}>
+                    <strong>{card.title}</strong> {card.description}
+                  </button>
                   <div className="mt-xxs !-ml-xxxs">
                     <a
                       href={card.href}
@@ -115,8 +112,7 @@ function Section05() {
               ))}
             </div>
 
-            <div className="hidden tablet:block max-h-[550px] h-[550px] overflow-hidden rounded-xl">
-              <div className="[&_img]:!object-left w-full h-full max-h-[550px] [&_img]:w-full [&_img]:h-[550px]! MuiBox-root mui-ov1atl" style={{ maxWidth: "1312px" }}>
+            <div className="deel-workforce__desktop-image">
                 <img
                   alt=""
                   fetchPriority="auto"
@@ -124,15 +120,11 @@ function Section05() {
                   width="1312"
                   height="550"
                   decoding="async"
-                  className="mui-16kkgg"
-                  style={{ color: "transparent" }}
-                  sizes="(min-width: 1312px) 1312px, 100vw"
                   src={cards[activeIndex].image}
                 />
-              </div>
             </div>
 
-            <div className="tablet:hidden">
+            <div className="deel-workforce__mobile-options">
               <ul className="flex flex-col p-0">
                 {cards.map((card, index) => {
                   const open = activeIndex === index;
